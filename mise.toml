@@ -1,0 +1,16 @@
+[tools]
+go = "1.25.5"
+gofumpt = "latest"
+golangci-lint = "2.8.0"
+
+[tasks.build]
+alias = ["b"]
+description = "Build the Go project"
+outputs = ["bin/ado"]
+sources = ["./**/*.go"]
+run = "go build -o bin/ado ."
+
+[tasks.run]
+alias = ["r"]
+depends = ["build"]
+run = "bin/ado"
