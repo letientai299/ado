@@ -12,12 +12,8 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/goccy/go-json"
-	"github.com/mattn/go-isatty"
+	"github.com/letientai299/ado/internal/styles"
 )
-
-var useColor = (isatty.IsTerminal(os.Stdout.Fd()) && isatty.IsTerminal(os.Stderr.Fd())) ||
-	(isatty.IsCygwinTerminal(os.Stdout.Fd()) && isatty.IsCygwinTerminal(os.Stderr.Fd())) ||
-	os.Getenv("COLOR") == "always"
 
 func Browse(url string) {
 	var err error
@@ -41,7 +37,7 @@ func Browse(url string) {
 // In case of error, it logs the full content of stdout and stderr.
 func Bash(script string) (stdout string, err error) {
 	script = strings.TrimSpace(script)
-	log.Debugf("executing bash script:\n%s", Indent(script))
+	log.Debugf("executing bash script:\n%s", Indent(2, script))
 	cmd := exec.Command("bash", "-c", script)
 	var outBuf, errBuf bytes.Buffer
 	cmd.Stdout = &outBuf
@@ -58,9 +54,10 @@ func Bash(script string) (stdout string, err error) {
 	return strings.TrimRightFunc(stdout, unicode.IsSpace), err
 }
 
-// Indent add 2 spaces indent to every line in the string
-func Indent(s string) string {
-	return "  " + strings.ReplaceAll(s, "\n", "\n  ")
+// Indent add indentation of n spaces to every line in the string
+func Indent(n int, s string) string {
+	padding := strings.Repeat(" ", n)
+	return padding + strings.ReplaceAll(s, "\n", "\n"+padding)
 }
 
 func JSON(v any) string {
@@ -77,7 +74,7 @@ func DumpJSON(v any) {
 func encodeJSON(v any, encoder *json.Encoder) {
 	encoder.SetIndent("", "  ")
 	var options []json.EncodeOptionFunc
-	if useColor {
+	if styles.UseColor {
 		options = append(options, json.Colorize(json.DefaultColorScheme))
 	}
 
