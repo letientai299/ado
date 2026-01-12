@@ -15,6 +15,10 @@ import (
 	"github.com/letientai299/ado/internal/styles"
 )
 
+type StrErr string
+
+func (s StrErr) Error() string { return string(s) }
+
 func Browse(url string) {
 	var err error
 
@@ -64,16 +68,16 @@ func Indent(n int, s string) string {
 
 func JSON(v any) string {
 	var buf bytes.Buffer
-	encodeJSON(v, json.NewEncoder(&buf))
+	_ = encodeJSON(v, json.NewEncoder(&buf))
 	return buf.String()
 }
 
 // DumpJSON prints the object as prettified JSON in stdout.
-func DumpJSON(v any) {
-	encodeJSON(v, json.NewEncoder(os.Stdout))
+func DumpJSON(v any) error {
+	return encodeJSON(v, json.NewEncoder(os.Stdout))
 }
 
-func encodeJSON(v any, encoder *json.Encoder) {
+func encodeJSON(v any, encoder *json.Encoder) error {
 	encoder.SetIndent("", "  ")
 	var options []json.EncodeOptionFunc
 	if styles.UseColor {
@@ -82,8 +86,11 @@ func encodeJSON(v any, encoder *json.Encoder) {
 
 	err := encoder.EncodeWithOption(v, options...)
 	if err != nil {
-		log.Fatal("fail to dump json: %v, err=%v", v, err)
+		log.Errorf("fail to dump json: %v, err=%v", v, err)
+		return err
 	}
+
+	return nil
 }
 
 // ParseRepoInfo parses the origin URL to get the organization, project, and repo name.

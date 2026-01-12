@@ -90,7 +90,7 @@ func Resolve(cmd *cobra.Command, _ []string) error {
 	}
 
 	// this should be the builtin config, as nothing is loaded yet.
-	cfg := From(cmd)
+	cfg := From(cmd.Context())
 
 	// enable debug log as soon as possible
 	cfg.SetLogLevel()
@@ -134,8 +134,7 @@ func flagsResolver(cmd *cobra.Command) func(cfg *Config) error {
 	}
 }
 
-func From(cmd *cobra.Command) *Config {
-	ctx := cmd.Context()
+func From(ctx context.Context) *Config {
 	cfg := ctx.Value(ctxKeyGlobal).(*Config)
 	return cfg
 }

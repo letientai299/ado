@@ -28,3 +28,6 @@ run = """
 gotestsum --format-hide-empty-pkg --format testdox -- \
    -v -cover -race -timeout=20s ./...
 """
+
+[tasks."fmt:go"]
+run = "golangci-lint fmt"

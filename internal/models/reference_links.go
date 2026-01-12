@@ -5,6 +5,6 @@ package models
 type ReferenceLinks struct {
 	// The dictionary of links.
 	// The key is the link relationship, and the value is the link object (usually
-	// having a href property).
+	// having an href property).
 	Links map[string]any `json:"links,omitempty"`
 }
