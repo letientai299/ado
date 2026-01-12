@@ -20,7 +20,7 @@ func detectTenant(cfg *Config) error {
 		return nil // skip detecting since tenant info is already set
 	}
 
-	raw, err := util.Bash(`az account show --query "{tenantId:tenantId,username:user.name}" -o tsv`)
+	raw, err := bash(`az account show --query "{tenantId:tenantId,username:user.name}" -o tsv`)
 	if err != nil {
 		log.Errorf("fail to detect tenant: %v", err)
 		return err
@@ -38,20 +38,30 @@ func detectTenant(cfg *Config) error {
 }
 
 func detectRepo(cfg *Config) error {
-	if cfg.Repo != "" {
+	if cfg.Repo != "" && cfg.Org != "" && cfg.Project != "" {
 		return nil // skip detecting since repo info is already set
 	}
 
-	gitOrigin, err := util.Bash(`git remote get-url origin`)
+	gitOrigin, err := bash(`git remote get-url origin`)
 	if err != nil {
 		log.Errorf("fail to get git origin url: %v", err)
 		return err
 	}
 
-	cfg.Org, cfg.Project, cfg.Repo, err = util.ParseRepoInfo(gitOrigin)
+	org, project, repo, err := util.ParseRepoInfo(gitOrigin)
 	if err != nil {
 		log.Errorf("fail to parse git origin url for ADO repo info: %v", err)
 		return err
+	}
+
+	if cfg.Org == "" {
+		cfg.Org = org
+	}
+	if cfg.Project == "" {
+		cfg.Project = project
+	}
+	if cfg.Repo == "" {
+		cfg.Repo = repo
 	}
 
 	return nil

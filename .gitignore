@@ -27,3 +27,6 @@ go.work.sum
 
 bin/
 *.private.env.json
+
+*.log
+*.txt

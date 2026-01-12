@@ -24,18 +24,22 @@ const (
 	ctxKeyGlobal ctxKey = "global"
 )
 
-var configFileNames = []string{
-	".ado.yml",
-	".ado.yaml",
-	".config/ado.yml",
-	".config/ado.yaml",
-}
+var (
+	bash            = util.Bash // allow mocking bash execution in tests.
+	configFileNames = []string{
+		".ado.yml",
+		".ado.yaml",
+		".config/ado.yml",
+		".config/ado.yaml",
+	}
+)
 
 var koanfUnmarshalConf = koanf.UnmarshalConf{
 	Tag: "yaml",
 	DecoderConfig: &mapstructure.DecoderConfig{
-		TagName: "yaml",
-		Squash:  true,
+		TagName:          "yaml",
+		Squash:           true,
+		WeaklyTypedInput: true,
 	},
 }
 
@@ -167,7 +171,7 @@ func resolveConfigFile(cfg *Config) error {
 // findConfigFile looks for .ado.y(a)ml or `.config/ado.y(a)ml` in the
 // working dir, then continue the search up to the git root dir.
 func findConfigFile() (string, error) {
-	gitRoot, err := util.Bash("git rev-parse --show-toplevel")
+	gitRoot, err := bash("git rev-parse --show-toplevel")
 	if err != nil {
 		log.Warnf("fail to get git root dir: %v", err)
 		return "", err
