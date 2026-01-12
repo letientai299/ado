@@ -1,39 +1,230 @@
 package config
 
 import (
+	"context"
+	"errors"
+	"os"
+	"path/filepath"
+	"slices"
+	"strings"
+
+	"github.com/charmbracelet/log"
+	"github.com/go-viper/mapstructure/v2"
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/env/v2"
+	"github.com/knadh/koanf/providers/file"
+	"github.com/knadh/koanf/v2"
+	"github.com/letientai299/ado/internal/util"
 	"github.com/spf13/cobra"
 )
-
-// AzAdoResource is the fixed Azure DevOps resource ID, won't change.
-const AzAdoResource = "499b84ac-1321-427f-aa17-267ca6975798"
 
 type ctxKey string
 
 const (
 	ctxKeyGlobal ctxKey = "global"
-	ctxKeyToken  ctxKey = "token"
 )
 
-const (
-	EnvAdoTenantID = "ADO_TENANT_ID"
-)
-
-type Global struct {
-	Repo
-	Debug bool `json:"debug,omitempty"`
+var configFileNames = []string{
+	".ado.yml",
+	".ado.yaml",
+	".config/ado.yml",
+	".config/ado.yaml",
 }
 
-type Repo struct {
-	TenantID string `json:"tenant_id,omitempty"`
-	Name     string `json:"name,omitempty"`
-	Org      string `json:"org,omitempty"`
-	Project  string `json:"project,omitempty"`
+var koanfUnmarshalConf = koanf.UnmarshalConf{
+	Tag: "yaml",
+	DecoderConfig: &mapstructure.DecoderConfig{
+		TagName: "yaml",
+		Squash:  true,
+	},
+}
+
+const (
+	flagDebug  = "debug"
+	flagTenant = "tenant"
+)
+
+func WithDefault(ctx context.Context) context.Context {
+	cfg := builtin()
+	return context.WithValue(ctx, ctxKeyGlobal, cfg)
+}
+
+type Config struct {
+	Repository `yaml:",inline,squash"`
+	Tenant     string `yaml:"tenant,omitempty"   json:"tenant,omitempty"`
+	Username   string `yaml:"username,omitempty" json:"username,omitempty"`
+	Debug      bool   `yaml:"debug,omitempty"    json:"debug,omitempty"`
+}
+
+func (c Config) SetLogLevel() {
+	if c.Debug {
+		log.SetLevel(log.DebugLevel)
+	}
+}
+
+type Repository struct {
+	Repo    string `json:"repo,omitempty"    yaml:"repo,omitempty"`
+	Org     string `json:"org,omitempty"     yaml:"org,omitempty"`
+	Project string `json:"project,omitempty" yaml:"project,omitempty"`
 }
 
 func AddGlobalFlags(cmd *cobra.Command) {
-	cmd.PersistentFlags().Bool("debug", false, "enable debug logging")
+	cmd.PersistentFlags().BoolP(flagDebug, "d", false, "enable debug logging")
+	cmd.PersistentFlags().StringP(flagTenant, "t", "", "tenant to get access token")
 }
 
-func Resolve(cmd *cobra.Command, args []string) error {
+// Resolve load Config configs from these sources in this priority order:
+//
+//   - Built-in defaults
+//   - YAML file
+//   - Environment variables
+//   - Command line flags
+//   - Auto detect (heavy, need shell-out) for those missing values
+func Resolve(cmd *cobra.Command, _ []string) error {
+	if cmd.Name() == "help" || cmd.Name() == "doctor" {
+		return nil
+	}
+
+	// this should be the builtin config, as nothing is loaded yet.
+	cfg := From(cmd)
+
+	// enable debug log as soon as possible
+	cfg.SetLogLevel()
+
+	resolvers := []func(*Config) error{
+		resolveConfigFile,
+		resolveEnv,
+		flagsResolver(cmd),
+		autoDetect,
+	}
+
+	for _, resolve := range resolvers {
+		if err := resolve(cfg); err != nil {
+			return err
+		}
+		cfg.SetLogLevel()
+	}
+
+	log.Debugf("resolved config: %v", util.JSON(cfg))
 	return nil
+}
+
+func flagsResolver(cmd *cobra.Command) func(cfg *Config) error {
+	return func(cfg *Config) error {
+		flags := cmd.Flags()
+		var err error
+		var allErr error
+		cfg.Debug, err = flags.GetBool(flagDebug)
+		allErr = errors.Join(allErr, err)
+
+		if flags.Changed(flagTenant) {
+			cfg.Tenant, err = flags.GetString(flagTenant)
+			allErr = errors.Join(allErr, err)
+		}
+
+		if allErr != nil {
+			log.Warnf("fail to bind flags value to config: %v", util.JSON(err))
+		}
+
+		return allErr
+	}
+}
+
+func From(cmd *cobra.Command) *Config {
+	ctx := cmd.Context()
+	cfg := ctx.Value(ctxKeyGlobal).(*Config)
+	return cfg
+}
+
+// resolveConfigFile finds the YAML config file and loads it using koanf YAML
+// parsers to load the file.
+func resolveConfigFile(cfg *Config) error {
+	filePath, err := findConfigFile()
+	if err != nil {
+		return err
+	}
+
+	if filePath == "" {
+		return nil // no config file found
+	}
+
+	log.Debugf("found config file %v", filePath)
+	k := koanf.New(".")
+	parser := yaml.Parser()
+
+	if err = k.Load(file.Provider(filePath), parser); err != nil {
+		return err
+	}
+
+	if err = k.UnmarshalWithConf("", &cfg, koanfUnmarshalConf); err != nil {
+		log.Fatalf("fail to parse config file: %v", err)
+		return err
+	}
+
+	return nil
+}
+
+// findConfigFile looks for .ado.y(a)ml or `.config/ado.y(a)ml` in the
+// working dir, then continue the search up to the git root dir.
+func findConfigFile() (string, error) {
+	gitRoot, err := util.Bash("git rev-parse --show-toplevel")
+	if err != nil {
+		log.Warnf("fail to get git root dir: %v", err)
+		return "", err
+	}
+
+	wd, _ := os.Getwd()
+
+	for {
+		for _, f := range configFileNames {
+			p := filepath.Join(wd, f)
+			if _, err = os.Stat(p); err == nil {
+				return p, nil
+			}
+		}
+
+		if wd == gitRoot || wd == filepath.Dir(wd) {
+			break
+		}
+		wd = filepath.Dir(wd)
+	}
+
+	return "", nil
+}
+
+// resolveEnv binds env var with the prefix ADO_ to the config.
+func resolveEnv(cfg *Config) error {
+	k := koanf.New(".")
+	envProvider := env.Provider(".", env.Opt{
+		Prefix: "ADO_",
+		TransformFunc: func(k, v string) (string, any) {
+			key := strings.ToLower(strings.TrimPrefix(k, "ADO_"))
+			return strings.ToLower(key), v
+		},
+	})
+	err := k.Load(envProvider, nil)
+	if err != nil {
+		log.Warnf("failed to load environment variables: %v", err)
+		return err
+	}
+
+	if err = k.UnmarshalWithConf("", cfg, koanfUnmarshalConf); err != nil {
+		log.Warnf("failed to unmarshal environment variables: %v", err)
+		return err
+	}
+
+	return nil
+}
+
+func builtin() *Config {
+	return &Config{
+		Debug: isDebugEnabled(),
+	}
+}
+
+func isDebugEnabled() bool {
+	return os.Getenv("ADO_DEBUG") != "" ||
+		slices.ContainsFunc(os.Args, func(s string) bool {
+			return s == "-d" || s == "--debug"
+		})
 }

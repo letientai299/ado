@@ -28,11 +28,9 @@ type IdentityRef struct {
 	// True if the identity is a group.
 	IsContainer    bool `json:"isContainer,omitempty"`
 	IsExternalUser bool `json:"isExternalUser,omitempty"`
-	// Meta-type of the graph subject, e.g.
-	// User, Group, Scope, etc.
+	// Meta-type of the graph subject, e.g., User, Group, Scope, etc.
 	SubjectKind string `json:"subjectKind,omitempty"`
-	// Used to help identify the source of the graph subject, e.g.
-	// VSTS, AAD, MSA, etc.
+	// Used to help identify the source of the graph subject, e.g., VSTS, AAD, MSA, etc.
 	UniqueName string `json:"uniqueName,omitempty"`
 	Url        string `json:"url,omitempty"`
 }

@@ -5,14 +5,14 @@ import (
 )
 
 var Cmd = &cobra.Command{
-	Use:     "pull-request",
-	Aliases: []string{"pr"},
+	Use:     "pr",
+	Aliases: []string{"pull-request", "pull"},
 	Short:   "List, view, create or manipulate pull requests",
 }
 
 var prBrowse = &cobra.Command{
 	Use:     "browse",
-	Aliases: []string{"open", "o"},
+	Aliases: []string{"view", "v"},
 	Short:   "Browse a pull request in the web",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return nil

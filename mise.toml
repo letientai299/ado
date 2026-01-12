@@ -9,9 +9,12 @@ description = "Build the Go project"
 outputs = ["bin/ado"]
 sources = ["**/*.go"]
 # TODO (tai): rename the output binary
-run = "go build -o bin/ad ."
+run = "go build -o bin/ado ."
 
 [tasks.run]
 alias = ["r"]
 depends = ["build"]
 run = "bin/ado"
+
+[tasks.lint]
+run = "golangci-lint run --fix ./..."

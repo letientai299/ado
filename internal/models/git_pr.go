@@ -37,7 +37,7 @@ type GitPullRequest struct {
 	CreationDate *time.Time `json:"creationDate,omitempty"`
 	// The description of the pull request.
 	Description string `json:"description,omitempty"`
-	// If this is a PR from a fork this will contain information about its source.
+	// If this is a PR from a fork, this will contain information about its source.
 	ForkSource *GitForkRef `json:"forkSource,omitempty"`
 	// Multiple merge bases warning
 	HasMultipleMergeBases bool `json:"hasMultipleMergeBases,omitempty"`
@@ -54,7 +54,7 @@ type GitPullRequest struct {
 	// The commit at the head of the target branch at the time of the last pull
 	// request merge.
 	LastMergeTargetCommit *GitCommitRef `json:"lastMergeTargetCommit,omitempty"`
-	// If set, pull request merge failed for this reason.
+	// If set, the pull request merge failed for this reason.
 	MergeFailureMessage string `json:"mergeFailureMessage,omitempty"`
 	// The type of failure (if any) of the pull request merge.
 	MergeFailureType PullRequestMergeFailureType `json:"mergeFailureType,omitempty"`
@@ -95,7 +95,8 @@ type GitPullRequest struct {
 	WorkItemRefs []ResourceRef `json:"workItemRefs,omitempty"`
 }
 
-// GitPullRequestCompletionOptions represents preferences about how the pull request should be completed.
+// GitPullRequestCompletionOptions represents preferences about how the pull request should be
+// completed.
 // https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-requests/get-pull-requests-by-project
 type GitPullRequestCompletionOptions struct {
 	// List of any policy configuration ID's which auto-complete should not wait for.
@@ -137,7 +138,8 @@ type GitPullRequestCompletionOptions struct {
 	TriggeredByAutoComplete bool `json:"triggeredByAutoComplete,omitempty"`
 }
 
-// GitPullRequestMergeOptions represents the options which are used when a pull request merge is created.
+// GitPullRequestMergeOptions represents the options which are used when a pull request merge is
+// created.
 // https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-requests/get-pull-requests-by-project
 type GitPullRequestMergeOptions struct {
 	// If true, conflict resolutions applied during the merge will be put in

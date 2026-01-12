@@ -1,0 +1,43 @@
+# $schema: https://golangci-lint.run/jsonschema/golangci.jsonschema.json
+# https://golangci-lint.run/docs/configuration/
+version: "2"
+run:
+  timeout: 5m
+
+linters:
+  default: standard
+  enable:
+    # Correctness
+    - errcheck
+    - govet
+    - staticcheck
+    - contextcheck
+    - errorlint
+    - nilerr
+    - rowserrcheck
+    - sqlclosecheck
+    - wastedassign
+
+    # Performance
+    - makezero
+    - perfsprint
+    - prealloc
+    - unqueryvet
+    - mirror
+
+    # Security
+    - gosec
+formatters:
+  enable:
+    - gci
+    - gofumpt
+    - golines
+  settings:
+    gofumpt:
+      extra-rules: true
+    golines:
+      max-len: 100
+      tab-len: 2
+      shorten-comments: true
+      reformat-tags: true
+      chain-split-dots: true

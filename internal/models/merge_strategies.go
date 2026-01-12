@@ -1,6 +1,7 @@
 package models
 
-// GitPullRequestMergeStrategy represents the strategy used to merge the pull request during completion.
+// GitPullRequestMergeStrategy represents the strategy used to merge the pull
+// request during completion.
 // https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-requests/get-pull-requests-by-project
 type GitPullRequestMergeStrategy string
 
