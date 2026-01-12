@@ -54,7 +54,7 @@ func WithDefault(ctx context.Context) context.Context {
 }
 
 type Config struct {
-	Repository `yaml:",inline,squash"`
+	Repository `       yaml:",inline,squash"`
 	Tenant     string `yaml:"tenant,omitempty"   json:"tenant,omitempty"`
 	Username   string `yaml:"username,omitempty" json:"username,omitempty"`
 	Debug      bool   `yaml:"debug,omitempty"    json:"debug,omitempty"`

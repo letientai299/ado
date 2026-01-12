@@ -24,19 +24,19 @@ var ppList = &cobra.Command{
 	Use:     "list",
 	Aliases: []string{"ls"},
 	Short:   "list pull requests in the repo",
-	RunE: func(cmd *cobra.Command, args []string) error {return nil },
+	RunE:    func(cmd *cobra.Command, args []string) error { return nil },
 }
 
 var ppRun = &cobra.Command{
 	Use:     "run",
 	Aliases: []string{"c"},
 	Short:   "create a pull request",
-	RunE: func(cmd *cobra.Command, args []string) error {return nil },
+	RunE:    func(cmd *cobra.Command, args []string) error { return nil },
 }
 
 var ppBrowse = &cobra.Command{
 	Use:     "browse",
 	Aliases: []string{"u"},
 	Short:   "browse recent runs of a pipeline on the web",
-	RunE: func(cmd *cobra.Command, args []string) error {return nil },
+	RunE:    func(cmd *cobra.Command, args []string) error { return nil },
 }

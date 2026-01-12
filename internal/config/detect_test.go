@@ -1,7 +1,7 @@
 package config
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -54,7 +54,7 @@ func TestDetectTenant(t *testing.T) {
 		{
 			name: "both already set - should skip bash",
 			bash: func(script string) (string, error) {
-				return "", fmt.Errorf("should not be called")
+				return "", errors.New("should not be called")
 			},
 			initial: Config{
 				Tenant:   "existing-tenant",
@@ -68,7 +68,7 @@ func TestDetectTenant(t *testing.T) {
 		{
 			name: "bash error",
 			bash: func(script string) (string, error) {
-				return "", fmt.Errorf("bash error")
+				return "", errors.New("bash error")
 			},
 			wantErr: true,
 		},
@@ -76,12 +76,10 @@ func TestDetectTenant(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			oldBash := bash
-			defer func() { bash = oldBash }()
-			bash = tt.bash
+			t.Parallel()
 
 			cfg := tt.initial
-			err := detectTenant(&cfg)
+			err := detectTenant(&cfg, tt.bash)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -116,7 +114,7 @@ func TestDetectRepo(t *testing.T) {
 		{
 			name: "repo info already set",
 			bash: func(script string) (string, error) {
-				return "", fmt.Errorf("should not be called")
+				return "", errors.New("should not be called")
 			},
 			initial: Config{
 				Repository: Repository{
@@ -136,7 +134,7 @@ func TestDetectRepo(t *testing.T) {
 		{
 			name: "bash error",
 			bash: func(script string) (string, error) {
-				return "", fmt.Errorf("bash error")
+				return "", errors.New("bash error")
 			},
 			wantErr: true,
 		},
@@ -151,12 +149,10 @@ func TestDetectRepo(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			oldBash := bash
-			defer func() { bash = oldBash }()
-			bash = tt.bash
+			t.Parallel()
 
 			cfg := tt.initial
-			err := detectRepo(&cfg)
+			err := detectRepo(&cfg, tt.bash)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {

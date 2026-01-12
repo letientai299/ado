@@ -65,6 +65,8 @@ func TestParseRepoInfo(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.origin, func(t *testing.T) {
+			t.Parallel()
+
 			gotOrg, gotProject, gotRepo, err := util.ParseRepoInfo(tt.origin)
 			if tt.wantErr {
 				assert.Error(t, err)

@@ -8,14 +8,14 @@ import (
 )
 
 func autoDetect(cfg *Config) error {
-	if err := detectTenant(cfg); err != nil {
+	if err := detectTenant(cfg, bash); err != nil {
 		return err
 	}
 
-	return detectRepo(cfg)
+	return detectRepo(cfg, bash)
 }
 
-func detectTenant(cfg *Config) error {
+func detectTenant(cfg *Config, bash util.BashFunc) error {
 	if cfg.Tenant != "" && cfg.Username != "" {
 		return nil // skip detecting since tenant info is already set
 	}
@@ -37,7 +37,7 @@ func detectTenant(cfg *Config) error {
 	return nil
 }
 
-func detectRepo(cfg *Config) error {
+func detectRepo(cfg *Config, bash util.BashFunc) error {
 	if cfg.Repo != "" && cfg.Org != "" && cfg.Project != "" {
 		return nil // skip detecting since repo info is already set
 	}

@@ -2,6 +2,7 @@
 go = "1.25.5"
 gofumpt = "latest"
 golangci-lint = "2.8.0"
+gotestsum = "latest"
 prettier = "latest"
 
 [tasks.build]
@@ -18,4 +19,12 @@ depends = ["build"]
 run = "bin/ado"
 
 [tasks.lint]
+alias = ["l"]
 run = "golangci-lint run --fix ./..."
+
+[tasks.test]
+alias = ["t"]
+run = """
+gotestsum --format-hide-empty-pkg --format testdox -- \
+   -v -cover -race -timeout=20s ./...
+"""

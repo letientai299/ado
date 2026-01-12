@@ -33,6 +33,8 @@ func Browse(url string) {
 	}
 }
 
+type BashFunc func(script string) (string, error)
+
 // Bash executes the given script and returns stdout, and exit error.
 // In case of error, it logs the full content of stdout and stderr.
 func Bash(script string) (stdout string, err error) {
