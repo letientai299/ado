@@ -1,41 +1,33 @@
 package pull_request
 
 import (
-	"context"
-
-	"github.com/urfave/cli/v3"
+	"github.com/spf13/cobra"
 )
 
-var Cmd = &cli.Command{
-	Name:     "pull-request",
-	Aliases:  []string{"pr", "pull"},
-	Usage:    "list, view, create or manipulate pull requests",
-	Commands: []*cli.Command{prList, prCreate, prUpdate, prBrowse},
+var Cmd = &cobra.Command{
+	Use:     "pull-request",
+	Aliases: []string{"pr"},
+	Short:   "List, view, create or manipulate pull requests",
 }
 
-var prBrowse = &cli.Command{
-	Name:    "browse",
+var prBrowse = &cobra.Command{
+	Use:     "browse",
 	Aliases: []string{"open", "o"},
-	Usage:   "browse a pull request in the web",
-	Action: func(ctx context.Context, cmd *cli.Command) error {
+	Short:   "Browse a pull request in the web",
+	RunE: func(cmd *cobra.Command, args []string) error {
 		return nil
 	},
 }
 
-var prCreate = &cli.Command{
-	Name:    "create",
-	Aliases: []string{"c"},
-	Usage:   "create a pull request",
-	Action: func(ctx context.Context, cmd *cli.Command) error {
-		return nil
-	},
-}
-
-var prUpdate = &cli.Command{
-	Name:    "update",
+var prUpdate = &cobra.Command{
+	Use:     "update",
 	Aliases: []string{"u"},
-	Usage:   "update a pull request",
-	Action: func(ctx context.Context, cmd *cli.Command) error {
+	Short:   "Update a pull request",
+	RunE: func(cmd *cobra.Command, args []string) error {
 		return nil
 	},
+}
+
+func init() {
+	Cmd.AddCommand(prList, prCreate, prUpdate, prBrowse)
 }

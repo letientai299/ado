@@ -7,8 +7,9 @@ golangci-lint = "2.8.0"
 alias = ["b"]
 description = "Build the Go project"
 outputs = ["bin/ado"]
-sources = ["./**/*.go"]
-run = "go build -o bin/ado ."
+sources = ["**/*.go"]
+# TODO (tai): rename the output binary
+run = "go build -o bin/ad ."
 
 [tasks.run]
 alias = ["r"]

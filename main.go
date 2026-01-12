@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"os"
 
 	"github.com/charmbracelet/log"
@@ -9,31 +8,24 @@ import (
 	"github.com/letientai299/ado/internal/config"
 	"github.com/letientai299/ado/internal/pipeline"
 	"github.com/letientai299/ado/internal/pull_request"
-	"github.com/letientai299/ado/internal/util"
-	"github.com/urfave/cli/v3"
+	"github.com/spf13/cobra"
 )
 
 func main() {
-	log.SetLevel(log.DebugLevel)
-	tenantId := os.Getenv(config.EnvAdoTenantID)
-	token, err := util.GetToken(tenantId)
-	if err != nil {
-		log.Fatal(err)
+	rootCmd := &cobra.Command{
+		Use:   os.Args[0],
+		Short: "Azure DevOps CLI",
+		PersistentPreRunE: config.Resolve,
 	}
 
-	cmd := &cli.Command{
-		Name:  "ado",
-		Usage: "Azure DevOps CLI",
-		Commands: []*cli.Command{
-			pull_request.Cmd,
-			pipeline.Cmd,
-		},
-		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
-			return context.WithValue(ctx, "token", token), nil
-		},
-	}
+	config.AddGlobalFlags(rootCmd)
 
-	if err = cmd.Run(context.Background(), os.Args); err != nil {
+	rootCmd.AddCommand(
+		pull_request.Cmd,
+		pipeline.Cmd,
+	)
+
+	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
 }

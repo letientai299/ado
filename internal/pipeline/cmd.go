@@ -1,28 +1,31 @@
 package pipeline
 
-import "github.com/urfave/cli/v3"
+import "github.com/spf13/cobra"
 
-var Cmd = &cli.Command{
-	Name:     "pipeline",
-	Aliases:  []string{"pp"},
-	Usage:    "list, view, run pipeline",
-	Commands: []*cli.Command{ppList, ppRun, ppBrowse},
+var Cmd = &cobra.Command{
+	Use:     "pipeline",
+	Aliases: []string{"pp"},
+	Short:   "list, view, run pipeline",
 }
 
-var ppList = &cli.Command{
-	Name:    "list",
+var ppList = &cobra.Command{
+	Use:     "list",
 	Aliases: []string{"ls"},
-	Usage:   "list pull requests in the repo",
+	Short:   "list pull requests in the repo",
 }
 
-var ppRun = &cli.Command{
-	Name:    "run",
+var ppRun = &cobra.Command{
+	Use:     "run",
 	Aliases: []string{"c"},
-	Usage:   "create a pull request",
+	Short:   "create a pull request",
 }
 
-var ppBrowse = &cli.Command{
-	Name:    "browse",
+var ppBrowse = &cobra.Command{
+	Use:     "browse",
 	Aliases: []string{"u"},
-	Usage:   "browse recent runs of a pipeline on the web",
+	Short:   "browse recent runs of a pipeline on the web",
+}
+
+func init() {
+	Cmd.AddCommand(ppList, ppRun, ppBrowse)
 }

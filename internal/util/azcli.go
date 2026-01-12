@@ -15,7 +15,7 @@ func GetToken(tenantID string) (string, error) {
 	script := fmt.Sprintf(getAccessToken, config.AzAdoResource, tenantID)
 	stdout, _, err := RunBash(script)
 	if err != nil {
-		log.Error("fail to get token: %v", err)
+		log.Errorf("fail to get token: %v", err)
 		return "", err
 	}
 
