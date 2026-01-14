@@ -17,6 +17,7 @@ import (
 	"github.com/letientai299/ado/internal/styles"
 	"github.com/letientai299/ado/internal/util"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 type ctxKey string
@@ -61,6 +62,8 @@ type Config struct {
 func (c Config) SetLogLevel() {
 	if c.Debug {
 		log.SetLevel(log.DebugLevel)
+	} else {
+		log.SetLevel(log.InfoLevel)
 	}
 }
 
@@ -109,7 +112,41 @@ func Resolve(cmd *cobra.Command, _ []string) error {
 
 	styles.Init(cfg.Theme)
 	log.Debugf("resolved config: %v", util.JSON(cfg))
+	addTemplateHelpers()
 	return nil
+}
+
+func addTemplateHelpers() {
+	cobra.AddTemplateFunc("headingStyle", styles.HeadingStyle)
+	cobra.AddTemplateFunc("flagStyle", styles.FlagStyle)
+	cobra.AddTemplateFunc("cmdStyle", styles.CmdStyle)
+	cobra.AddTemplateFunc("flags", flagSlice)
+	cobra.AddTemplateFunc("flagName", flagName)
+	cobra.AddTemplateFunc("indent", util.Indent)
+	cobra.AddTemplateFunc("wrap", styles.Wrap)
+}
+
+func flagSlice(fs *pflag.FlagSet) []*pflag.Flag {
+	var list []*pflag.Flag
+	fs.VisitAll(func(f *pflag.Flag) {
+		if !f.Hidden {
+			list = append(list, f)
+		}
+	})
+	return list
+}
+
+func flagName(f *pflag.Flag) string {
+	var s string
+	if f.Shorthand != "" {
+		s = "-" + f.Shorthand + ", --" + f.Name
+	} else {
+		s = "    --" + f.Name
+	}
+	if f.Value.Type() != "bool" {
+		s += " " + f.Value.Type()
+	}
+	return s
 }
 
 func flagsResolver(cmd *cobra.Command) func(cfg *Config) error {
