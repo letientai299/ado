@@ -19,7 +19,6 @@ var prView = &cobra.Command{
 	},
 }
 
-
 func View(ctx context.Context) error {
 	cfg := config.From(ctx)
 	pr, err := rest.New(cfg.Tenant).

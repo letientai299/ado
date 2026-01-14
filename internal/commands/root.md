@@ -26,6 +26,7 @@
 **Example: Creating a PR**
 
 ```bash
+# hello world
 ado pr create --title "Fix: bug in auth" --branch feature/auth-fix
 ```
 

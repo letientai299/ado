@@ -4,17 +4,13 @@ import (
 	"os"
 
 	"github.com/charmbracelet/glamour"
-	"github.com/charmbracelet/glamour/ansi"
-	"github.com/charmbracelet/glamour/styles"
 	"github.com/charmbracelet/log"
 	"github.com/muesli/reflow/wordwrap"
 	"github.com/muesli/termenv"
 	"golang.org/x/term"
 )
 
-func boolPtr(b bool) *bool       { return &b }
-func stringPtr(s string) *string { return &s }
-func uintPtr(u uint) *uint       { return &u }
+func ptr[T any](v T) *T { return &v }
 
 const (
 	defaultListIndent = 0
@@ -31,19 +27,16 @@ var (
 	mdRenderer   *glamour.TermRenderer
 )
 
-func init() {
-	UseColor = os.Getenv("COLOR") == "always" ||
-		(term.IsTerminal(int(os.Stdout.Fd())) && term.IsTerminal(int(os.Stderr.Fd())))
-
-	initMdRenderer()
-	initUsageColorizers()
+func Init(theme Theme) {
+	UseColor = theme.Tokens.Heading != ""
+	initMdRenderer(theme)
+	initUsageColorizers(theme)
 }
 
-func initMdRenderer() {
-	style := chooseBestStyle()
+func initMdRenderer(theme Theme) {
 	var err error
 	mdRenderer, err = glamour.NewTermRenderer(
-		glamour.WithStyles(style),
+		glamour.WithStyles(theme.glamourStyle()),
 		glamour.WithWordWrap(MaxLineLength),
 		glamour.WithInlineTableLinks(true),
 	)
@@ -52,43 +45,21 @@ func initMdRenderer() {
 	}
 }
 
-func initUsageColorizers() {
-	var h, f, c string
-	if termenv.HasDarkBackground() {
-		h = *MdDark.Heading.Color
-		f = *MdDark.Code.Color
-		c = *MdDark.Code.Color
-	} else {
-		h = *MdLight.Heading.Color
-		f = *MdLight.Code.Color
-		c = *MdLight.Code.Color
-	}
-
-	HeadingStyle = colorize(h)
-	FlagStyle = colorize(f)
-	CmdStyle = colorize(c)
-}
-
-func colorize(c string) func(string) string {
+func initUsageColorizers(theme Theme) {
 	out := termenv.DefaultOutput()
-	if os.Getenv("COLOR") == "always" {
+	if theme.TrueColor {
 		out = termenv.NewOutput(os.Stdout, termenv.WithProfile(termenv.TrueColor))
 	}
+
+	HeadingStyle = colorize(out, theme.Tokens.Heading)
+	CmdStyle = colorize(out, theme.Tokens.Chroma.Function)
+	FlagStyle = colorize(out, theme.Tokens.Chroma.Operator)
+}
+
+func colorize(out *termenv.Output, c string) func(string) string {
 	return func(s string) string {
 		return out.String(s).Foreground(out.Color(c)).Bold().String()
 	}
-}
-
-func chooseBestStyle() ansi.StyleConfig {
-	if !UseColor {
-		return styles.NoTTYStyleConfig
-	}
-
-	if termenv.HasDarkBackground() {
-		return MdDark
-	}
-
-	return MdLight
 }
 
 func Markdown(md string) (string, error) {

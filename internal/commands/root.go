@@ -22,8 +22,6 @@ var doc string
 var usageTemplate string
 
 func Root() *cobra.Command {
-	addTemplateHelpers()
-
 	rootCmd := &cobra.Command{
 		Use:               os.Args[0],
 		Short:             "Azure DevOps CLI",
@@ -44,17 +42,8 @@ func Root() *cobra.Command {
 	return rootCmd
 }
 
-func addTemplateHelpers() {
-	cobra.AddTemplateFunc("headingStyle", styles.HeadingStyle)
-	cobra.AddTemplateFunc("flagStyle", styles.FlagStyle)
-	cobra.AddTemplateFunc("cmdStyle", styles.CmdStyle)
-	cobra.AddTemplateFunc("flags", flagSlice)
-	cobra.AddTemplateFunc("flagName", flagName)
-	cobra.AddTemplateFunc("indent", util.Indent)
-	cobra.AddTemplateFunc("wrap", styles.Wrap)
-}
-
 func helpFunc(cmd *cobra.Command, _ []string) {
+	addTemplateHelpers()
 	help := cmd.Long
 	if help == "" {
 		help = cmd.Short
@@ -63,6 +52,16 @@ func helpFunc(cmd *cobra.Command, _ []string) {
 	rendered, _ := styles.Markdown(help)
 	cmd.Print(strings.TrimLeftFunc(rendered, unicode.IsSpace))
 	cmd.Println(cmd.UsageString())
+}
+
+func addTemplateHelpers() {
+	cobra.AddTemplateFunc("headingStyle", styles.HeadingStyle)
+	cobra.AddTemplateFunc("flagStyle", styles.FlagStyle)
+	cobra.AddTemplateFunc("cmdStyle", styles.CmdStyle)
+	cobra.AddTemplateFunc("flags", flagSlice)
+	cobra.AddTemplateFunc("flagName", flagName)
+	cobra.AddTemplateFunc("indent", util.Indent)
+	cobra.AddTemplateFunc("wrap", styles.Wrap)
 }
 
 func flagSlice(fs *pflag.FlagSet) []*pflag.Flag {

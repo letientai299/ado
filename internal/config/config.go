@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/charmbracelet/log"
@@ -15,6 +14,7 @@ import (
 	"github.com/knadh/koanf/providers/env/v2"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/v2"
+	"github.com/letientai299/ado/internal/styles"
 	"github.com/letientai299/ado/internal/util"
 	"github.com/spf13/cobra"
 )
@@ -49,16 +49,16 @@ const (
 	flagTenant = "tenant"
 )
 
-func WithDefault(ctx context.Context) context.Context {
-	cfg := builtin()
+func WithDefault(ctx context.Context, cfg *Config) context.Context {
 	return context.WithValue(ctx, ctxKeyGlobal, cfg)
 }
 
 type Config struct {
-	Repository Repository `yaml:"repository,omitempty" json:"repository,omitempty"`
-	Tenant     string     `yaml:"tenant,omitempty"     json:"tenant,omitempty"`
-	Username   string     `yaml:"username,omitempty"   json:"username,omitempty"`
-	Debug      bool       `yaml:"debug,omitempty"      json:"debug,omitempty"`
+	Repository Repository   `yaml:"repository,omitempty" json:"repository,omitempty"`
+	Tenant     string       `yaml:"tenant,omitempty"     json:"tenant,omitempty"`
+	Username   string       `yaml:"username,omitempty"   json:"username,omitempty"`
+	Debug      bool         `yaml:"debug,omitempty"      json:"debug,omitempty"`
+	Theme      styles.Theme `yaml:"theme"                json:"theme"`
 }
 
 func (c Config) SetLogLevel() {
@@ -90,10 +90,6 @@ func AddGlobalFlags(cmd *cobra.Command) {
 //   - Command line flags
 //   - Auto detect (heavy, need shell-out) for those missing values
 func Resolve(cmd *cobra.Command, _ []string) error {
-	if cmd.Name() == "help" || cmd.Name() == "doctor" {
-		return nil
-	}
-
 	// this should be the builtin config, as nothing is loaded yet.
 	cfg := From(cmd.Context())
 
@@ -114,6 +110,7 @@ func Resolve(cmd *cobra.Command, _ []string) error {
 		cfg.SetLogLevel()
 	}
 
+	styles.Init(cfg.Theme)
 	log.Debugf("resolved config: %v", util.JSON(cfg))
 	return nil
 }
@@ -222,17 +219,4 @@ func resolveEnv(cfg *Config) error {
 	}
 
 	return nil
-}
-
-func builtin() *Config {
-	return &Config{
-		Debug: isDebugEnabled(),
-	}
-}
-
-func isDebugEnabled() bool {
-	return os.Getenv("ADO_DEBUG") != "" ||
-		slices.ContainsFunc(os.Args, func(s string) bool {
-			return s == "-d" || s == "--debug"
-		})
 }
