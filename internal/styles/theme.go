@@ -170,8 +170,7 @@ func (t Theme) glamourStyle() ansi.StyleConfig {
 		CodeBlock: ansi.StyleCodeBlock{
 			StyleBlock: ansi.StyleBlock{
 				StylePrimitive: ansi.StylePrimitive{
-					Color:           ptr(t.Tokens.Markdown.CodeBlock),
-					BackgroundColor: ptr(t.Tokens.Markdown.CodeBackground),
+					Color: ptr(t.Tokens.Markdown.CodeBlock),
 				},
 				Indent: ptr(uint(2)),
 			},
@@ -184,7 +183,8 @@ func (t Theme) glamourStyle() ansi.StyleConfig {
 					BackgroundColor: ptr(t.Tokens.Chroma.ErrorBackground),
 				},
 				Comment: ansi.StylePrimitive{
-					Color: ptr(t.Tokens.Chroma.Comment),
+					Color:  ptr(t.Tokens.Chroma.Comment),
+					Italic: ptr(true),
 				},
 				CommentPreproc: ansi.StylePrimitive{
 					Color: ptr(t.Tokens.Chroma.CommentPreproc),

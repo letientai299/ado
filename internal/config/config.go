@@ -4,20 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/charmbracelet/log"
 	"github.com/go-viper/mapstructure/v2"
-	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/env/v2"
-	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/v2"
 	"github.com/letientai299/ado/internal/styles"
-	"github.com/letientai299/ado/internal/util"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 )
 
 type ctxKey string
@@ -46,6 +40,11 @@ const (
 	flagDebug  = "debug"
 	flagTenant = "tenant"
 )
+
+func From(ctx context.Context) *Config {
+	cfg := ctx.Value(ctxKeyGlobal).(*Config)
+	return cfg
+}
 
 func WithDefault(ctx context.Context, cfg *Config) context.Context {
 	return context.WithValue(ctx, ctxKeyGlobal, cfg)
@@ -80,6 +79,8 @@ func (r Repository) WebURL() string {
 func AddGlobalFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().BoolP(flagDebug, "d", false, "enable debug logging")
 	cmd.PersistentFlags().StringP(flagTenant, "t", "", "tenant to get access token")
+	cmd.PersistentFlags().
+		StringP("something", "s", "", "a very long string fdas fsdaf df dsafads fadsf saf sdf sdafsd fsa fsaf dsf dsf sdf dsfad fds fdsf af adfda fad d fa sfdsa ")
 }
 
 // Resolve load Config configs from these sources in this priority order:
@@ -112,41 +113,7 @@ func Resolve(cmd *cobra.Command, _ []string) error {
 
 	styles.Init(cfg.Theme)
 	log.Debugf("resolved config: %v", styles.YAML(cfg))
-	addTemplateHelpers()
 	return nil
-}
-
-func addTemplateHelpers() {
-	cobra.AddTemplateFunc("headingStyle", styles.HeadingStyle)
-	cobra.AddTemplateFunc("flagStyle", styles.FlagStyle)
-	cobra.AddTemplateFunc("cmdStyle", styles.CmdStyle)
-	cobra.AddTemplateFunc("flags", flagSlice)
-	cobra.AddTemplateFunc("flagName", flagName)
-	cobra.AddTemplateFunc("indent", util.Indent)
-	cobra.AddTemplateFunc("wrap", styles.Wrap)
-}
-
-func flagSlice(fs *pflag.FlagSet) []*pflag.Flag {
-	var list []*pflag.Flag
-	fs.VisitAll(func(f *pflag.Flag) {
-		if !f.Hidden {
-			list = append(list, f)
-		}
-	})
-	return list
-}
-
-func flagName(f *pflag.Flag) string {
-	var s string
-	if f.Shorthand != "" {
-		s = "-" + f.Shorthand + ", --" + f.Name
-	} else {
-		s = "    --" + f.Name
-	}
-	if f.Value.Type() != "bool" {
-		s += " " + f.Value.Type()
-	}
-	return s
 }
 
 func flagsResolver(cmd *cobra.Command) func(cfg *Config) error {
@@ -171,67 +138,6 @@ func flagsResolver(cmd *cobra.Command) func(cfg *Config) error {
 
 		return allErr
 	}
-}
-
-func From(ctx context.Context) *Config {
-	cfg := ctx.Value(ctxKeyGlobal).(*Config)
-	return cfg
-}
-
-// resolveConfigFile finds the YAML config file and loads it using koanf YAML
-// parsers to load the file.
-func resolveConfigFile(cfg *Config) error {
-	filePath, err := findConfigFile()
-	if err != nil {
-		return err
-	}
-
-	if filePath == "" {
-		return nil // no config file found
-	}
-
-	log.Debugf("found config file %v", filePath)
-	k := koanf.New(".")
-	parser := yaml.Parser()
-
-	if err = k.Load(file.Provider(filePath), parser); err != nil {
-		return err
-	}
-
-	if err = k.UnmarshalWithConf("", &cfg, koanfUnmarshalConf); err != nil {
-		log.Fatalf("fail to parse config file: %v", err)
-		return err
-	}
-
-	return nil
-}
-
-// findConfigFile looks for .ado.y(a)ml or `.config/ado.y(a)ml` in the
-// working dir, then continue the search up to the git root dir.
-func findConfigFile() (string, error) {
-	gitRoot, err := util.GitRoot()
-	if err != nil {
-		log.Warnf("fail to get git root dir: %v", err)
-		return "", err
-	}
-
-	wd, _ := os.Getwd()
-
-	for {
-		for _, f := range configFileNames {
-			p := filepath.Join(wd, f)
-			if _, err = os.Stat(p); err == nil {
-				return p, nil
-			}
-		}
-
-		if wd == gitRoot || wd == filepath.Dir(wd) {
-			break
-		}
-		wd = filepath.Dir(wd)
-	}
-
-	return "", nil
 }
 
 // resolveEnv binds env var with the prefix ADO_ to the config.
