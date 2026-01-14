@@ -16,13 +16,17 @@ func Test_createThemeConfigFiles(t *testing.T) {
 	gitRoot, err := util.GitRoot()
 	require.NoError(t, err)
 
+	type ThemeConfig struct {
+		Theme styles.Theme `yaml:"theme"`
+	}
+
 	themesDir := filepath.Join(gitRoot, "etc/themes")
 	for _, theme := range all {
 		path := filepath.Join(themesDir, theme.Name+".yml")
 		f, err := os.Create(path)
 		require.NoError(t, err)
 		enc := yaml.NewEncoder(f)
-		_ = enc.Encode(theme)
+		_ = enc.Encode(ThemeConfig{Theme: theme})
 		_ = f.Close()
 	}
 }
