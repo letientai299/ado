@@ -33,14 +33,14 @@ func newConfig() *config.Config {
 
 func chooseBestStyle(useColor bool) styles.Theme {
 	if !useColor {
-		return styles.ThemeNoTTy
+		return styles.NoTTy
 	}
 
 	if !termenv.HasDarkBackground() {
-		return styles.ThemeLight
+		return styles.Light
 	}
 
-	return styles.ThemeTokyoNight
+	return styles.TokyoNight
 }
 
 func isDebugEnabled() bool {

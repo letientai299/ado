@@ -1,8 +1,8 @@
 package styles
 
-// ThemeDark is based on DarkStyleConfig from
+// Dark is based on DarkStyleConfig from
 // https://raw.githubusercontent.com/charmbracelet/glamour/refs/heads/master/styles/styles.go
-var ThemeDark = Theme{
+var Dark = Theme{
 	Name:      "dark",
 	TrueColor: true,
 	Tokens: Tokens{

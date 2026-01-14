@@ -1,8 +1,8 @@
 package styles
 
-// ThemeLight is based on LightStyleConfig from
+// Light is based on LightStyleConfig from
 // https://raw.githubusercontent.com/charmbracelet/glamour/refs/heads/master/styles/styles.go
-var ThemeLight = Theme{
+var Light = Theme{
 	Name:      "light",
 	TrueColor: true,
 	Tokens: Tokens{

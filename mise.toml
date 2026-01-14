@@ -11,7 +11,10 @@ description = "Build the Go project"
 outputs = ["bin/ado"]
 sources = ["*.go", "internal/**/*.*"]
 # TODO (tai): rename the output binary
-run = "go build -o bin/ado ."
+run = [
+  "go build -o bin/ado .",
+  "ls -lah ./bin/ado",
+]
 
 [tasks.run]
 alias = ["r"]

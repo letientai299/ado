@@ -1,6 +1,0 @@
-tenant: my-tenant
-username: my-user
-debug: true
-repo: my-repo
-org: my-org
-project: my-project

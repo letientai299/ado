@@ -1,8 +1,8 @@
 package styles
 
-// ThemeTokyoNight is based on
+// TokyoNight is based on
 // https://raw.githubusercontent.com/charmbracelet/glamour/refs/heads/master/styles/tokyo-night.go
-var ThemeTokyoNight = Theme{
+var TokyoNight = Theme{
 	Name:      "tokyo-night",
 	TrueColor: true,
 	Tokens: Tokens{

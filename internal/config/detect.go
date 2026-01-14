@@ -8,11 +8,11 @@ import (
 )
 
 func autoDetect(cfg *Config) error {
-	if err := detectTenant(cfg, bash); err != nil {
+	if err := detectTenant(cfg, util.Bash); err != nil {
 		return err
 	}
 
-	return detectRepo(cfg, bash)
+	return detectRepo(cfg, util.Bash)
 }
 
 func detectTenant(cfg *Config, bash util.BashFunc) error {

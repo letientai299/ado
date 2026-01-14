@@ -1,8 +1,8 @@
 package styles
 
-// ThemeNoTTy only use ascii chars, no color, based on ASCIIStyleConfig from
+// NoTTy only use ascii chars, no color, based on ASCIIStyleConfig from
 // https://raw.githubusercontent.com/charmbracelet/glamour/refs/heads/master/styles/styles.go
-var ThemeNoTTy = Theme{
+var NoTTy = Theme{
 	Name:      "noTTY",
 	TrueColor: false,
 	Tokens: Tokens{
