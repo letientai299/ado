@@ -13,6 +13,11 @@ type Theme struct {
 // Tokens contain the color code that the application will use to render outputs
 // Each field should be a
 type Tokens struct {
+	Markdown MarkdownTokens `json:"markdown" yaml:"markdown"`
+	Chroma   ChromaTokens   `json:"chroma"   yaml:"chroma"`
+}
+
+type MarkdownTokens struct {
 	Text           string `json:"text"            yaml:"text"`
 	Heading        string `json:"heading"         yaml:"heading"`
 	H1             string `json:"h1"              yaml:"h1"`
@@ -25,8 +30,6 @@ type Tokens struct {
 	Code           string `json:"code"            yaml:"code"`
 	CodeBackground string `json:"code_background" yaml:"code_background"`
 	CodeBlock      string `json:"code_block"      yaml:"code_block"`
-
-	Chroma ChromaTokens `json:"chroma" yaml:"chroma"`
 }
 
 type ChromaTokens struct {
@@ -65,7 +68,7 @@ func (t Theme) glamourStyle() ansi.StyleConfig {
 			StylePrimitive: ansi.StylePrimitive{
 				BlockPrefix: "\n",
 				BlockSuffix: "\n",
-				Color:       ptr(t.Tokens.Text),
+				Color:       ptr(t.Tokens.Markdown.Text),
 			},
 			Margin: ptr(uint(defaultMargin)),
 		},
@@ -80,14 +83,14 @@ func (t Theme) glamourStyle() ansi.StyleConfig {
 		Heading: ansi.StyleBlock{
 			StylePrimitive: ansi.StylePrimitive{
 				BlockSuffix: "\n",
-				Color:       ptr(t.Tokens.Heading),
+				Color:       ptr(t.Tokens.Markdown.Heading),
 				Bold:        ptr(true),
 			},
 		},
 		H1: ansi.StyleBlock{
 			StylePrimitive: ansi.StylePrimitive{
-				Color:           ptr(t.Tokens.H1),
-				BackgroundColor: ptr(t.Tokens.H1Background),
+				Color:           ptr(t.Tokens.Markdown.H1),
+				BackgroundColor: ptr(t.Tokens.Markdown.H1Background),
 				Bold:            ptr(true),
 			},
 		},
@@ -127,7 +130,7 @@ func (t Theme) glamourStyle() ansi.StyleConfig {
 			Bold: ptr(true),
 		},
 		HorizontalRule: ansi.StylePrimitive{
-			Color:  ptr(t.Tokens.HorizontalRule),
+			Color:  ptr(t.Tokens.Markdown.HorizontalRule),
 			Format: "\n--------\n",
 		},
 		Item: ansi.StylePrimitive{
@@ -142,33 +145,33 @@ func (t Theme) glamourStyle() ansi.StyleConfig {
 			Unticked:       "[ ] ",
 		},
 		Link: ansi.StylePrimitive{
-			Color:     ptr(t.Tokens.Link),
+			Color:     ptr(t.Tokens.Markdown.Link),
 			Underline: ptr(true),
 		},
 		LinkText: ansi.StylePrimitive{
-			Color: ptr(t.Tokens.LinkText),
+			Color: ptr(t.Tokens.Markdown.LinkText),
 			Bold:  ptr(true),
 		},
 		Image: ansi.StylePrimitive{
-			Color:     ptr(t.Tokens.Image),
+			Color:     ptr(t.Tokens.Markdown.Image),
 			Underline: ptr(true),
 		},
 		ImageText: ansi.StylePrimitive{
-			Color:  ptr(t.Tokens.ImageText),
+			Color:  ptr(t.Tokens.Markdown.ImageText),
 			Format: "Image: {{.text}} →",
 		},
 		Code: ansi.StyleBlock{
 			StylePrimitive: ansi.StylePrimitive{
-				Color:           ptr(t.Tokens.Code),
-				BackgroundColor: ptr(t.Tokens.CodeBackground),
+				Color:           ptr(t.Tokens.Markdown.Code),
+				BackgroundColor: ptr(t.Tokens.Markdown.CodeBackground),
 			},
 		},
 
 		CodeBlock: ansi.StyleCodeBlock{
 			StyleBlock: ansi.StyleBlock{
 				StylePrimitive: ansi.StylePrimitive{
-					Color:           ptr(t.Tokens.CodeBlock),
-					BackgroundColor: ptr(t.Tokens.CodeBackground),
+					Color:           ptr(t.Tokens.Markdown.CodeBlock),
+					BackgroundColor: ptr(t.Tokens.Markdown.CodeBackground),
 				},
 				Indent: ptr(uint(2)),
 			},

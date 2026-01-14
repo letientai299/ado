@@ -1,18 +1,19 @@
 name: noTTY
 true_color: false
 tokens:
-  text: ""
-  heading: ""
-  h1: ""
-  h1_background: ""
-  horizontal_rule: ""
-  link: ""
-  link_text: ""
-  image: ""
-  image_text: ""
-  code: ""
-  code_background: ""
-  code_block: ""
+  markdown:
+    text: ""
+    heading: ""
+    h1: ""
+    h1_background: ""
+    horizontal_rule: ""
+    link: ""
+    link_text: ""
+    image: ""
+    image_text: ""
+    code: ""
+    code_background: ""
+    code_block: ""
   chroma:
     text: ""
     error: ""

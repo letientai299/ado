@@ -52,7 +52,7 @@ func initMdRenderer(theme Theme) {
 }
 
 func initColorizers(out *termenv.Output, theme Theme) {
-	HeadingStyle = colorize(out, theme.Tokens.Heading)
+	HeadingStyle = colorize(out, theme.Tokens.Markdown.Heading)
 	CmdStyle = colorize(out, theme.Tokens.Chroma.Function)
 	FlagStyle = colorize(out, theme.Tokens.Chroma.Operator)
 }

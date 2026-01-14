@@ -1,18 +1,19 @@
 name: tokyo-night
 true_color: true
 tokens:
-  text: "#a9b1d6"
-  heading: "#bb9af7"
-  h1: "#bb9af7"
-  h1_background: ""
-  horizontal_rule: "#565f89"
-  link: "#7aa2f7"
-  link_text: "#2ac3de"
-  image: "#7aa2f7"
-  image_text: "#2ac3de"
-  code: "#9ece6a"
-  code_background: ""
-  code_block: "#ff9e64"
+  markdown:
+    text: "#a9b1d6"
+    heading: "#bb9af7"
+    h1: "#bb9af7"
+    h1_background: ""
+    horizontal_rule: "#565f89"
+    link: "#7aa2f7"
+    link_text: "#2ac3de"
+    image: "#7aa2f7"
+    image_text: "#2ac3de"
+    code: "#9ece6a"
+    code_background: ""
+    code_block: "#ff9e64"
   chroma:
     text: "#a9b1d6"
     error: "#a9b1d6"

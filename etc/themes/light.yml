@@ -1,18 +1,19 @@
 name: light
 true_color: true
 tokens:
-  text: "234"
-  heading: "27"
-  h1: "228"
-  h1_background: "63"
-  horizontal_rule: "249"
-  link: "36"
-  link_text: "29"
-  image: "205"
-  image_text: "243"
-  code: "203"
-  code_background: "254"
-  code_block: "242"
+  markdown:
+    text: "234"
+    heading: "27"
+    h1: "228"
+    h1_background: "63"
+    horizontal_rule: "249"
+    link: "36"
+    link_text: "29"
+    image: "205"
+    image_text: "243"
+    code: "203"
+    code_background: "254"
+    code_block: "242"
   chroma:
     text: "#2A2A2A"
     error: "#F1F1F1"

@@ -1,18 +1,19 @@
 name: dark
 true_color: true
 tokens:
-  text: "252"
-  heading: "39"
-  h1: "228"
-  h1_background: "63"
-  horizontal_rule: "240"
-  link: "30"
-  link_text: "35"
-  image: "212"
-  image_text: "243"
-  code: "167"
-  code_background: "236"
-  code_block: "244"
+  markdown:
+    text: "252"
+    heading: "39"
+    h1: "228"
+    h1_background: "63"
+    horizontal_rule: "240"
+    link: "30"
+    link_text: "35"
+    image: "212"
+    image_text: "243"
+    code: "167"
+    code_background: "236"
+    code_block: "244"
   chroma:
     text: "#C4C4C4"
     error: "#F1F1F1"
