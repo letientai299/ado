@@ -23,7 +23,9 @@ func Test_createThemeConfigFiles(t *testing.T) {
 	themesDir := filepath.Join(gitRoot, "etc/themes")
 	for _, theme := range all {
 		path := filepath.Join(themesDir, theme.Name+".yml")
-		f, err := os.Create(path)
+		f, err := os.Create(
+			filepath.Clean(path),
+		) // nolint:gosec // G304: Potential file inclusion via variable. test code.
 		require.NoError(t, err)
 		enc := yaml.NewEncoder(f)
 		_ = enc.Encode(ThemeConfig{Theme: theme})

@@ -79,8 +79,6 @@ func (r Repository) WebURL() string {
 func AddGlobalFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().BoolP(flagDebug, "d", false, "enable debug logging")
 	cmd.PersistentFlags().StringP(flagTenant, "t", "", "tenant to get access token")
-	cmd.PersistentFlags().
-		StringP("something", "s", "", "a very long string fdas fsdaf df dsafads fadsf saf sdf sdafsd fsa fsaf dsf dsf sdf dsfad fds fdsf af adfda fad d fa sfdsa ")
 }
 
 // Resolve load Config configs from these sources in this priority order:

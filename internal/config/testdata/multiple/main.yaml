@@ -1,0 +1,6 @@
+section1:
+  key1: val1
+  include!: inc1.yaml
+section2:
+  key2: val2
+  include!: inc2.yaml

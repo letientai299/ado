@@ -50,7 +50,9 @@ func loadYAMLWithIncludes(path string, visited map[string]struct{}) ([]byte, err
 	}
 	visited[absPath] = struct{}{}
 
-	data, err := os.ReadFile(absPath)
+	data, err := os.ReadFile(
+		filepath.Clean(absPath),
+	) // nolint:gosec // G304: Potential file inclusion via variable. we trust the path here.
 	if err != nil {
 		return nil, fmt.Errorf("reading %s: %w", path, err)
 	}
@@ -75,52 +77,12 @@ func processIncludes(node ast.Node, baseDir string, visited map[string]struct{})
 		return nil
 	}
 
-	mapping, ok := node.(*ast.MappingNode)
-	if !ok {
-		return processIncludesChildren(node, baseDir, visited)
-	}
-
-	newValues := make([]*ast.MappingValueNode, 0, len(mapping.Values))
-
-	for _, mv := range mapping.Values {
-		if mv.Key.String() == "include!" {
-			includePath := filepath.Join(baseDir, mv.Value.String())
-
-			// Clone visited map for this branch
-			branchVisited := make(map[string]struct{})
-			for k, v := range visited {
-				branchVisited[k] = v
-			}
-
-			includedData, err := loadYAMLWithIncludes(includePath, branchVisited)
-			if err != nil {
-				return fmt.Errorf("processing include %s: %w", mv.Value.String(), err)
-			}
-
-			includedFile, err := parser.ParseBytes(includedData, 0)
-			if err != nil {
-				return fmt.Errorf("parsing included file %s: %w", includePath, err)
-			}
-
-			if len(includedFile.Docs) > 0 {
-				if incMapping, ok := includedFile.Docs[0].Body.(*ast.MappingNode); ok {
-					newValues = append(newValues, incMapping.Values...)
-				}
-			}
-		} else {
-			if err := processIncludes(mv.Value, baseDir, visited); err != nil {
-				return err
-			}
-			newValues = append(newValues, mv)
-		}
-	}
-
-	mapping.Values = newValues
-	return nil
-}
-
-func processIncludesChildren(node ast.Node, baseDir string, visited map[string]struct{}) error {
 	switch n := node.(type) {
+	case *ast.MappingNode:
+		err := processMappingNode(n, baseDir, visited)
+		if err != nil {
+			return err
+		}
 	case *ast.MappingValueNode:
 		return processIncludes(n.Value, baseDir, visited)
 	case *ast.SequenceNode:
@@ -129,8 +91,77 @@ func processIncludesChildren(node ast.Node, baseDir string, visited map[string]s
 				return err
 			}
 		}
+	case *ast.DocumentNode:
+		return processIncludes(n.Body, baseDir, visited)
 	}
+
 	return nil
+}
+
+func processMappingNode(n *ast.MappingNode, baseDir string, visited map[string]struct{}) error {
+	newValues := make([]*ast.MappingValueNode, 0, len(n.Values))
+	for _, mv := range n.Values {
+		var key string
+		if s, ok := mv.Key.(*ast.StringNode); ok {
+			key = s.Value
+		} else {
+			key = mv.Key.String()
+		}
+
+		if key == "include!" {
+			var err error
+			newValues, err = parseIncludeFile(mv, baseDir, visited, newValues)
+			if err != nil {
+				return err
+			}
+			continue
+		}
+
+		if err := processIncludes(mv.Value, baseDir, visited); err != nil {
+			return err
+		}
+		newValues = append(newValues, mv)
+	}
+	n.Values = newValues
+	return nil
+}
+
+func parseIncludeFile(
+	mv *ast.MappingValueNode,
+	baseDir string,
+	visited map[string]struct{},
+	valNodes []*ast.MappingValueNode,
+) ([]*ast.MappingValueNode, error) {
+	var val string
+	if s, ok := mv.Value.(*ast.StringNode); ok {
+		val = s.Value
+	} else {
+		val = mv.Value.String()
+	}
+	includePath := filepath.Join(baseDir, val)
+
+	// Clone visited the map for this branch
+	branchVisited := make(map[string]struct{})
+	for k, v := range visited {
+		branchVisited[k] = v
+	}
+
+	includedData, err := loadYAMLWithIncludes(includePath, branchVisited)
+	if err != nil {
+		return nil, fmt.Errorf("processing include %s: %w", val, err)
+	}
+
+	includedFile, err := parser.ParseBytes(includedData, 0)
+	if err != nil {
+		return nil, fmt.Errorf("parsing included file %s: %w", includePath, err)
+	}
+
+	if len(includedFile.Docs) > 0 {
+		if incMapping, ok := includedFile.Docs[0].Body.(*ast.MappingNode); ok {
+			valNodes = append(valNodes, incMapping.Values...)
+		}
+	}
+	return valNodes, nil
 }
 
 // findConfigFile looks for .ado.y(a)ml or `.config/ado.y(a)ml` in the
