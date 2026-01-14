@@ -3,16 +3,12 @@ package util
 import (
 	"bytes"
 	"fmt"
-	"net/url"
-	"os"
 	"os/exec"
 	"runtime"
 	"strings"
 	"unicode"
 
 	"github.com/charmbracelet/log"
-	"github.com/goccy/go-json"
-	"github.com/letientai299/ado/internal/styles"
 )
 
 type StrErr string
@@ -66,106 +62,5 @@ func Indent(n int, s string) string {
 	return padding + strings.ReplaceAll(s, "\n", "\n"+padding)
 }
 
-func JSON(v any) string {
-	var buf bytes.Buffer
-	_ = encodeJSON(v, json.NewEncoder(&buf))
-	return buf.String()
-}
-
-// DumpJSON prints the object as prettified JSON in stdout.
-func DumpJSON(v any) error {
-	return encodeJSON(v, json.NewEncoder(os.Stdout))
-}
-
-func encodeJSON(v any, encoder *json.Encoder) error {
-	encoder.SetIndent("", "  ")
-	var options []json.EncodeOptionFunc
-	if styles.UseColor {
-		options = append(options, json.Colorize(json.DefaultColorScheme))
-	}
-
-	err := encoder.EncodeWithOption(v, options...)
-	if err != nil {
-		log.Errorf("fail to dump json: %v, err=%v", v, err)
-		return err
-	}
-
-	return nil
-}
-
-// ParseRepoInfo parses the origin URL to get the organization, project, and repo name.
-// It recognizes these URL formats:
-//
-//   - General format: https://dev.azure.com/{org}/{project}/_git/{repo}
-//   - Per instance: https://{org}.{host}/{project}/_git/{repo}
-//   - SSH format: git@ssh.dev.azure.com:v3/{org}/{project}/{repo}
-func ParseRepoInfo(origin string) (string, string, string, error) {
-	if strings.HasPrefix(origin, "git@") {
-		return parseRepoInfoSSH(origin)
-	}
-
-	u, err := url.Parse(origin)
-	if err != nil {
-		return "", "", "", err
-	}
-
-	path := strings.TrimPrefix(u.Path, "/")
-	parts := strings.Split(path, "/")
-
-	var org, project, repo string
-
-	// Find _git index
-	gitIdx := -1
-	for i, part := range parts {
-		if part == "_git" {
-			gitIdx = i
-			break
-		}
-	}
-
-	if gitIdx == -1 {
-		return "", "", "", fmt.Errorf("invalid Azure DevOps url: %s", origin)
-	}
-
-	if gitIdx+1 >= len(parts) {
-		return "", "", "", fmt.Errorf("invalid Azure DevOps url (missing repo): %s", origin)
-	}
-	repo = parts[gitIdx+1]
-
-	if gitIdx-1 < 0 {
-		return "", "", "", fmt.Errorf("invalid Azure DevOps url (missing project): %s", origin)
-	}
-	project = parts[gitIdx-1]
-
-	if u.Hostname() == "dev.azure.com" {
-		if len(parts) < 1 {
-			return "", "", "", fmt.Errorf("invalid Azure DevOps url (missing org): %s", origin)
-		}
-		org = parts[0]
-	} else {
-		hostParts := strings.Split(u.Hostname(), ".")
-		if len(hostParts) < 2 {
-			return "", "", "", fmt.Errorf("invalid Azure DevOps host: %s", origin)
-		}
-		org = hostParts[0]
-	}
-
-	return org, project, repo, nil
-}
-
-func parseRepoInfoSSH(origin string) (string, string, string, error) {
-	// SSH format: git@ssh.dev.azure.com:v3/{org}/{project}/{repo}
-	parts := strings.SplitN(origin, ":", 2)
-	if len(parts) != 2 {
-		return "", "", "", fmt.Errorf("invalid ssh url: %s", origin)
-	}
-	path := parts[1]
-	pathParts := strings.Split(strings.TrimPrefix(path, "/"), "/")
-	if len(pathParts) < 4 {
-		return "", "", "", fmt.Errorf("invalid ssh url path: %s", origin)
-	}
-	// pathParts should be ["v3", "{org}", "{project}", "{repo}"]
-	return pathParts[1], pathParts[2], pathParts[3], nil
-}
 
 func Ptr[T any](v T) *T { return &v }

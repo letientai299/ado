@@ -30,3 +30,10 @@ bin/
 
 *.log
 *.txt
+
+
+# AI related files
+.claude
+.ai/
+.ai.*/
+.output.txt

@@ -25,6 +25,7 @@ func Root() *cobra.Command {
 		Short:             "Azure DevOps CLI",
 		Long:              doc,
 		PersistentPreRunE: config.Resolve,
+		SilenceUsage: true,
 	}
 
 	root.SetUsageTemplate(usageTemplate)

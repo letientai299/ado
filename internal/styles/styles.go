@@ -18,19 +18,25 @@ const (
 	MaxLineLength     = 100
 )
 
-var UseColor bool
+var mdRenderer *glamour.TermRenderer
 
 var (
 	HeadingStyle func(string) string
 	FlagStyle    func(string) string
 	CmdStyle     func(string) string
-	mdRenderer   *glamour.TermRenderer
 )
 
 func Init(theme Theme) {
-	UseColor = theme.Tokens.Heading != ""
 	initMdRenderer(theme)
-	initUsageColorizers(theme)
+
+	out := termenv.DefaultOutput()
+	if theme.TrueColor {
+		out = termenv.NewOutput(os.Stdout, termenv.WithProfile(termenv.TrueColor))
+	}
+
+	initColorizers(out, theme)
+	initYAMLPrinter(out, theme)
+	initJSONColorScheme(out, theme)
 }
 
 func initMdRenderer(theme Theme) {
@@ -45,12 +51,7 @@ func initMdRenderer(theme Theme) {
 	}
 }
 
-func initUsageColorizers(theme Theme) {
-	out := termenv.DefaultOutput()
-	if theme.TrueColor {
-		out = termenv.NewOutput(os.Stdout, termenv.WithProfile(termenv.TrueColor))
-	}
-
+func initColorizers(out *termenv.Output, theme Theme) {
 	HeadingStyle = colorize(out, theme.Tokens.Heading)
 	CmdStyle = colorize(out, theme.Tokens.Chroma.Function)
 	FlagStyle = colorize(out, theme.Tokens.Chroma.Operator)

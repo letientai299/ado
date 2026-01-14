@@ -6,7 +6,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/letientai299/ado/internal/config"
 	"github.com/letientai299/ado/internal/rest"
-	"github.com/letientai299/ado/internal/util"
+	"github.com/letientai299/ado/internal/styles"
 	"github.com/spf13/cobra"
 )
 
@@ -30,5 +30,5 @@ func View(ctx context.Context) error {
 		return err
 	}
 
-	return util.DumpJSON(pr)
+	return styles.PrintYAML(pr)
 }

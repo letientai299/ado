@@ -111,7 +111,7 @@ func Resolve(cmd *cobra.Command, _ []string) error {
 	}
 
 	styles.Init(cfg.Theme)
-	log.Debugf("resolved config: %v", util.JSON(cfg))
+	log.Debugf("resolved config: %v", styles.YAML(cfg))
 	addTemplateHelpers()
 	return nil
 }
@@ -154,8 +154,11 @@ func flagsResolver(cmd *cobra.Command) func(cfg *Config) error {
 		flags := cmd.Flags()
 		var err error
 		var allErr error
-		cfg.Debug, err = flags.GetBool(flagDebug)
-		allErr = errors.Join(allErr, err)
+
+		if flags.Changed(flagDebug) {
+			cfg.Debug, err = flags.GetBool(flagDebug)
+			allErr = errors.Join(allErr, err)
+		}
 
 		if flags.Changed(flagTenant) {
 			cfg.Tenant, err = flags.GetString(flagTenant)
@@ -163,7 +166,7 @@ func flagsResolver(cmd *cobra.Command) func(cfg *Config) error {
 		}
 
 		if allErr != nil {
-			log.Warnf("fail to bind flags value to config: %v", util.JSON(err))
+			log.Warnf("fail to bind flags value to config: %v", styles.YAML(err))
 		}
 
 		return allErr

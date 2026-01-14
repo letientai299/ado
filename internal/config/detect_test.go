@@ -1,13 +1,12 @@
-package util_test
+package config
 
 import (
 	"testing"
 
-	"github.com/letientai299/ado/internal/util"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseRepoInfo(t *testing.T) {
+func Test_parseRepoInfo(t *testing.T) {
 	tests := []struct {
 		origin      string
 		wantOrg     string
@@ -67,7 +66,7 @@ func TestParseRepoInfo(t *testing.T) {
 		t.Run(tt.origin, func(t *testing.T) {
 			t.Parallel()
 
-			gotOrg, gotProject, gotRepo, err := util.ParseRepoInfo(tt.origin)
+			gotOrg, gotProject, gotRepo, err := parseRepoInfo(tt.origin)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {

@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -64,8 +65,22 @@ func call(c Client, req *http.Request) (io.ReadCloser, error) {
 
 func decode[T any](body io.ReadCloser) (*T, error) {
 	t := new(T)
-	if err := json.NewDecoder(body).Decode(t); err != nil {
-		log.Error("fail to decode response body", "target_type", reflect.TypeFor[T](), "err", err)
+	bs, err := io.ReadAll(body)
+	if err != nil {
+		log.Errorf("fail to read response body: %v", err)
+		return nil, err
+	}
+
+	if err = json.NewDecoder(bytes.NewReader(bs)).Decode(t); err != nil {
+		log.Error(
+			"fail to decode response body",
+			"target_type",
+			reflect.TypeFor[T](),
+			"err",
+			err,
+			"body",
+			string(bs),
+		)
 		return nil, err
 	}
 

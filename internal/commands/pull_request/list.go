@@ -12,12 +12,14 @@ import (
 	"github.com/letientai299/ado/internal/models"
 	"github.com/letientai299/ado/internal/rest"
 	"github.com/letientai299/ado/internal/rest/git_prs"
+	"github.com/letientai299/ado/internal/styles"
 	"github.com/letientai299/ado/internal/util"
 	"github.com/spf13/cobra"
 )
 
 const (
 	outputJSON   = "json"
+	outputYAML   = "yaml"
 	outputSimple = "simple"
 )
 
@@ -70,7 +72,11 @@ func List(ctx context.Context, opts listOptions) error {
 
 func render(ctx context.Context, all []models.GitPullRequest, output string) error {
 	if output == outputJSON {
-		return util.DumpJSON(all)
+		return styles.DumpJSON(all)
+	}
+
+	if output == outputYAML {
+		return styles.PrintYAML(all)
 	}
 
 	if output == outputSimple {
