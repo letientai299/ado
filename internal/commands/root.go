@@ -3,13 +3,10 @@ package commands
 import (
 	_ "embed"
 	"os"
-	"strings"
-	"unicode"
 
 	"github.com/letientai299/ado/internal/commands/pipeline"
 	"github.com/letientai299/ado/internal/commands/pull_request"
 	"github.com/letientai299/ado/internal/config"
-	"github.com/letientai299/ado/internal/styles"
 	"github.com/spf13/cobra"
 )
 
@@ -39,24 +36,4 @@ func Root() *cobra.Command {
 
 	config.AddGlobalFlags(root)
 	return root
-}
-
-type helpFunc func(cmd *cobra.Command, args []string)
-
-func prettifyHelp(defaultFn helpFunc) helpFunc {
-	return func(cmd *cobra.Command, args []string) {
-		if err := config.Resolve(cmd, args); err != nil {
-			defaultFn(cmd, args)
-			return
-		}
-
-		help := cmd.Long
-		if help == "" {
-			help = cmd.Short
-		}
-
-		rendered, _ := styles.Markdown(help)
-		cmd.Print(strings.TrimLeftFunc(rendered, unicode.IsSpace))
-		cmd.Println(cmd.UsageString())
-	}
 }

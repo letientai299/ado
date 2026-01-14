@@ -62,5 +62,4 @@ func Indent(n int, s string) string {
 	return padding + strings.ReplaceAll(s, "\n", "\n"+padding)
 }
 
-
 func Ptr[T any](v T) *T { return &v }

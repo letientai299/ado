@@ -21,9 +21,10 @@ const (
 var mdRenderer *glamour.TermRenderer
 
 var (
-	HeadingStyle func(string) string
-	FlagStyle    func(string) string
-	CmdStyle     func(string) string
+	HeadingStyle  func(string) string
+	FlagStyle     func(string) string
+	FlagTypeStyle func(string) string
+	CmdStyle      func(string) string
 )
 
 func Init(theme Theme) {
@@ -55,6 +56,7 @@ func initColorizers(out *termenv.Output, theme Theme) {
 	HeadingStyle = colorize(out, theme.Tokens.Markdown.Heading)
 	CmdStyle = colorize(out, theme.Tokens.Chroma.Function)
 	FlagStyle = colorize(out, theme.Tokens.Chroma.Operator)
+	FlagTypeStyle = colorize(out, theme.Tokens.Chroma.KeywordType)
 }
 
 func colorize(out *termenv.Output, c string) func(string) string {
