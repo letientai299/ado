@@ -22,7 +22,7 @@ func (g Git) PRs(repo config.Repository) GitPRs {
 		repo.Org,
 		repo.Project,
 		"_apis/git/repositories",
-		repo.Repo,
+		repo.Name,
 		"pullrequests",
 	)
 

@@ -16,7 +16,7 @@ func Cmd() *cobra.Command {
 		Short:   "List, view, create or manipulate pull requests",
 		Long:    doc,
 	}
-	cmd.AddCommand(prList, prCreate, prUpdate, prView)
+	cmd.AddCommand(ListCmd(), prCreate, prUpdate, prView)
 	return cmd
 }
 

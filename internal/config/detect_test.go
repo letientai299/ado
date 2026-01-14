@@ -107,7 +107,7 @@ func TestDetectRepo(t *testing.T) {
 				Repository: Repository{
 					Org:     "org",
 					Project: "project",
-					Repo:    "repo",
+					Name:    "repo",
 				},
 			},
 		},
@@ -118,14 +118,14 @@ func TestDetectRepo(t *testing.T) {
 			},
 			initial: Config{
 				Repository: Repository{
-					Repo:    "existing-repo",
+					Name:    "existing-repo",
 					Org:     "existing-org",
 					Project: "existing-project",
 				},
 			},
 			expected: Config{
 				Repository: Repository{
-					Repo:    "existing-repo",
+					Name:    "existing-repo",
 					Org:     "existing-org",
 					Project: "existing-project",
 				},

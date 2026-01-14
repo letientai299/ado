@@ -18,7 +18,7 @@ import (
 //go:embed root.md
 var doc string
 
-//go:embed usage.tmpl
+//go:embed usage.tpl
 var usageTemplate string
 
 func Root() *cobra.Command {

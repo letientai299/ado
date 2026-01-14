@@ -42,7 +42,7 @@ func TestResolve(t *testing.T) {
 				Username: "env-user",    // from env
 				Debug:    true,          // from flag
 				Repository: Repository{
-					Repo:    "file-repo",        // from file
+					Name:    "file-repo",        // from file
 					Org:     "detected-org",     // from auto-detect
 					Project: "detected-project", // from auto-detect
 				},
@@ -59,7 +59,7 @@ func TestResolve(t *testing.T) {
 				Tenant:   "flag-tenant",
 				Username: "detected-user",
 				Repository: Repository{
-					Repo:    "detected-repo",
+					Name:    "detected-repo",
 					Org:     "detected-org",
 					Project: "detected-project",
 				},
@@ -118,7 +118,7 @@ func TestResolveConfigFile(t *testing.T) {
 		Username: "my-user",
 		Debug:    true,
 		Repository: Repository{
-			Repo:    "my-repo",
+			Name:    "my-repo",
 			Org:     "my-org",
 			Project: "my-project",
 		},
@@ -148,7 +148,7 @@ func TestResolveEnv(t *testing.T) {
 				Username: "my-user",
 				Debug:    true,
 				Repository: Repository{
-					Repo:    "my-repo",
+					Name:    "my-repo",
 					Org:     "my-org",
 					Project: "my-project",
 				},

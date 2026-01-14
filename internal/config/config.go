@@ -3,6 +3,7 @@ package config
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -54,10 +55,10 @@ func WithDefault(ctx context.Context) context.Context {
 }
 
 type Config struct {
-	Repository `       yaml:",inline,squash"`
-	Tenant     string `yaml:"tenant,omitempty"   json:"tenant,omitempty"`
-	Username   string `yaml:"username,omitempty" json:"username,omitempty"`
-	Debug      bool   `yaml:"debug,omitempty"    json:"debug,omitempty"`
+	Repository Repository `yaml:"repository,omitempty" json:"repository,omitempty"`
+	Tenant     string     `yaml:"tenant,omitempty"     json:"tenant,omitempty"`
+	Username   string     `yaml:"username,omitempty"   json:"username,omitempty"`
+	Debug      bool       `yaml:"debug,omitempty"      json:"debug,omitempty"`
 }
 
 func (c Config) SetLogLevel() {
@@ -67,9 +68,13 @@ func (c Config) SetLogLevel() {
 }
 
 type Repository struct {
-	Repo    string `json:"repo,omitempty"    yaml:"repo,omitempty"`
 	Org     string `json:"org,omitempty"     yaml:"org,omitempty"`
 	Project string `json:"project,omitempty" yaml:"project,omitempty"`
+	Name    string `json:"name,omitempty"    yaml:"name,omitempty"`
+}
+
+func (r Repository) WebURL() string {
+	return fmt.Sprintf("https://dev.azure.com/%s/%s/_git/%s", r.Org, r.Project, r.Name)
 }
 
 func AddGlobalFlags(cmd *cobra.Command) {

@@ -38,7 +38,7 @@ func detectTenant(cfg *Config, bash util.BashFunc) error {
 }
 
 func detectRepo(cfg *Config, bash util.BashFunc) error {
-	if cfg.Repo != "" && cfg.Org != "" && cfg.Project != "" {
+	if cfg.Repository.Name != "" && cfg.Repository.Org != "" && cfg.Repository.Project != "" {
 		return nil // skip detecting since repo info is already set
 	}
 
@@ -54,14 +54,14 @@ func detectRepo(cfg *Config, bash util.BashFunc) error {
 		return err
 	}
 
-	if cfg.Org == "" {
-		cfg.Org = org
+	if cfg.Repository.Org == "" {
+		cfg.Repository.Org = org
 	}
-	if cfg.Project == "" {
-		cfg.Project = project
+	if cfg.Repository.Project == "" {
+		cfg.Repository.Project = project
 	}
-	if cfg.Repo == "" {
-		cfg.Repo = repo
+	if cfg.Repository.Name == "" {
+		cfg.Repository.Name = repo
 	}
 
 	return nil
