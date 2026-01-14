@@ -25,20 +25,11 @@ func Root() *cobra.Command {
 		Short:             "Azure DevOps CLI",
 		Long:              doc,
 		PersistentPreRunE: config.Resolve,
-		SilenceUsage: true,
+		SilenceUsage:      true,
 	}
 
 	root.SetUsageTemplate(usageTemplate)
 	root.SetHelpFunc(prettifyHelp(root.HelpFunc()))
-
-	// ensure config is resolved
-	usageFunc := root.UsageFunc()
-	root.SetUsageFunc(func(cmd *cobra.Command) error {
-		if err := config.Resolve(cmd, nil); err != nil {
-			return err
-		}
-		return usageFunc(cmd)
-	})
 
 	root.AddCommand(
 		pull_request.Cmd(),
