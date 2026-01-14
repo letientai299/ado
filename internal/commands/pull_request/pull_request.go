@@ -16,17 +16,8 @@ func Cmd() *cobra.Command {
 		Short:   "List, view, create or manipulate pull requests",
 		Long:    doc,
 	}
-	cmd.AddCommand(prList, prCreate, prUpdate, prBrowse)
+	cmd.AddCommand(prList, prCreate, prUpdate, prView)
 	return cmd
-}
-
-var prBrowse = &cobra.Command{
-	Use:     "browse",
-	Aliases: []string{"view", "v"},
-	Short:   "Browse a pull request in the web",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return nil
-	},
 }
 
 var prUpdate = &cobra.Command{

@@ -167,3 +167,5 @@ func parseRepoInfoSSH(origin string) (string, string, string, error) {
 	// pathParts should be ["v3", "{org}", "{project}", "{repo}"]
 	return pathParts[1], pathParts[2], pathParts[3], nil
 }
+
+func Ptr[T any](v T) *T { return &v }

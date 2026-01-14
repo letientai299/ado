@@ -5,7 +5,9 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/letientai299/ado/internal/config"
+	"github.com/letientai299/ado/internal/models"
 	"github.com/letientai299/ado/internal/rest"
+	"github.com/letientai299/ado/internal/rest/git_prs"
 	"github.com/letientai299/ado/internal/util"
 	"github.com/spf13/cobra"
 )
@@ -21,12 +23,18 @@ var prList = &cobra.Command{
 
 func List(ctx context.Context) error {
 	cfg := config.From(ctx)
-	pr, err := rest.New(cfg.Tenant).
-		Git().PRs(cfg.Repository).ByID(ctx, 1329796)
+	list, err := rest.New(cfg.Tenant).
+		Git().
+		PRs(cfg.Repository).
+		List(ctx, git_prs.ListQuery{
+			SearchCriteria: &git_prs.SearchCriteria{
+				Status: util.Ptr(models.PullRequestStatusActive),
+			},
+		})
 	if err != nil {
 		log.Error(err)
 		return err
 	}
 
-	return util.DumpJSON(pr)
+	return util.DumpJSON(list)
 }
