@@ -18,26 +18,22 @@ const (
 	MaxLineLength     = 100
 )
 
-var mdRenderer *glamour.TermRenderer
-
 var (
-	HeadingStyle  func(string) string
-	FlagStyle     func(string) string
-	FlagTypeStyle func(string) string
-	CmdStyle      func(string) string
+	mdRenderer *glamour.TermRenderer
+	theme      = NoTTy
+	out        = termenv.DefaultOutput()
 )
 
-func Init(theme Theme) {
-	initMdRenderer(theme)
+func Init(th Theme) {
+	theme = th
+	initMdRenderer(th)
 
-	out := termenv.DefaultOutput()
-	if theme.TrueColor {
+	if th.TrueColor {
 		out = termenv.NewOutput(os.Stdout, termenv.WithProfile(termenv.TrueColor))
 	}
 
-	initColorizers(out, theme)
-	initYAMLPrinter(out, theme)
-	initJSONColorScheme(out, theme)
+	initYAMLPrinter(out, th)
+	initJSONColorScheme(out, th)
 }
 
 func initMdRenderer(theme Theme) {
@@ -52,21 +48,21 @@ func initMdRenderer(theme Theme) {
 	}
 }
 
-func initColorizers(out *termenv.Output, theme Theme) {
-	HeadingStyle = colorize(out, theme.Tokens.Markdown.Heading)
-	CmdStyle = colorize(out, theme.Tokens.Chroma.Function)
-	FlagStyle = colorize(out, theme.Tokens.Chroma.Operator)
-	FlagTypeStyle = colorize(out, theme.Tokens.Chroma.KeywordType)
+func HeadingStyle(s string) string  { return colorize(s, theme.Tokens.Markdown.Heading) }
+func CmdStyle(s string) string      { return colorize(s, theme.Tokens.Chroma.Function) }
+func FlagStyle(s string) string     { return colorize(s, theme.Tokens.Chroma.Operator) }
+func FlagTypeStyle(s string) string { return colorize(s, theme.Tokens.Chroma.KeywordType) }
+
+func colorize(s, c string) string {
+	return out.String(s).Foreground(out.Color(c)).Bold().String()
 }
 
-func colorize(out *termenv.Output, c string) func(string) string {
-	return func(s string) string {
-		return out.String(s).Foreground(out.Color(c)).Bold().String()
+func Markdown(md string) string {
+	s, err := mdRenderer.Render(md)
+	if err != nil {
+		log.Fatal(err)
 	}
-}
-
-func Markdown(md string) (string, error) {
-	return mdRenderer.Render(md)
+	return s
 }
 
 func Wrap(s string) string {

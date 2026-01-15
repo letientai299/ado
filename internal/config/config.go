@@ -20,6 +20,8 @@ const (
 	ctxKeyGlobal ctxKey = "global"
 )
 
+// var once = new(sync.Once)
+
 var configFileNames = []string{
 	".ado.yml",
 	".ado.yaml",
@@ -89,6 +91,14 @@ func AddGlobalFlags(cmd *cobra.Command) {
 //   - Command line flags
 //   - Auto detect (heavy, need shell-out) for those missing values
 func Resolve(cmd *cobra.Command, _ []string) error {
+	// 	var err error
+	// 	once.Do(func() {
+	// 		err = resolve(cmd)
+	// 	})
+	// 	return err
+	// }
+	//
+	// func resolve(cmd *cobra.Command) error {
 	// this should be the builtin config, as nothing is loaded yet.
 	cfg := From(cmd.Context())
 

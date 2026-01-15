@@ -3,6 +3,7 @@ package commands
 import (
 	_ "embed"
 	"os"
+	"sync"
 
 	"github.com/letientai299/ado/internal/commands/pipeline"
 	"github.com/letientai299/ado/internal/commands/pull_request"
@@ -10,23 +11,31 @@ import (
 	"github.com/spf13/cobra"
 )
 
-//go:embed root.md
-var doc string
+var (
+	//go:embed root.md
+	doc string
+	//go:embed usage.tpl
+	usageTemplate string
+	//go:embed help.tpl
+	helpTemplate string
+)
 
-//go:embed usage.tpl
-var usageTemplate string
+var initOnce sync.Once
 
 func Root() *cobra.Command {
 	root := &cobra.Command{
-		Use:               os.Args[0],
-		Short:             "Azure DevOps CLI",
-		Long:              doc,
-		PersistentPreRunE: config.Resolve,
-		SilenceUsage:      true,
+		Use:   os.Args[0],
+		Short: "Azure DevOps CLI",
+		Long:  doc,
+		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+			return initConfig(cmd.Root())
+		},
+		SilenceUsage: true,
 	}
 
+	root.SetHelpTemplate(helpTemplate)
 	root.SetUsageTemplate(usageTemplate)
-	root.SetHelpFunc(prettifyHelp(root.HelpFunc()))
+	root.SetHelpFunc(helpFunc(root.HelpFunc()))
 
 	root.AddCommand(
 		pull_request.Cmd(),
@@ -36,4 +45,14 @@ func Root() *cobra.Command {
 
 	config.AddGlobalFlags(root)
 	return root
+}
+
+func initConfig(cmd *cobra.Command) error {
+	var err error
+	initOnce.Do(func() {
+		if err = config.Resolve(cmd, nil); err == nil {
+			addTemplateHelpers()
+		}
+	})
+	return err
 }

@@ -3,33 +3,17 @@ package commands
 import (
 	"fmt"
 	"strings"
-	"unicode"
 
-	"github.com/letientai299/ado/internal/config"
 	"github.com/letientai299/ado/internal/styles"
 	"github.com/letientai299/ado/internal/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
-type helpFunc func(cmd *cobra.Command, args []string)
-
-func prettifyHelp(defaultFn helpFunc) helpFunc {
+func helpFunc(defaultHelp func(*cobra.Command, []string)) func(*cobra.Command, []string) {
 	return func(cmd *cobra.Command, args []string) {
-		if err := config.Resolve(cmd, args); err != nil {
-			defaultFn(cmd, args)
-			return
-		}
-
-		help := cmd.Long
-		if help == "" {
-			help = "# " + cmd.Short
-		}
-
-		addTemplateHelpers()
-		rendered, _ := styles.Markdown(help)
-		cmd.Print(strings.TrimLeftFunc(rendered, unicode.IsSpace))
-		cmd.Println(cmd.UsageString())
+		_ = initConfig(cmd.Root())
+		defaultHelp(cmd, args)
 	}
 }
 
@@ -37,6 +21,7 @@ func addTemplateHelpers() {
 	cobra.AddTemplateFunc("headingStyle", styles.HeadingStyle)
 	cobra.AddTemplateFunc("cmdStyle", styles.CmdStyle)
 	cobra.AddTemplateFunc("renderFlags", renderFlags)
+	cobra.AddTemplateFunc("markdown", styles.Markdown)
 }
 
 func renderFlags(cmd *cobra.Command) string {
