@@ -33,9 +33,6 @@ func renderFlags(cmd *cobra.Command) string {
 	var sb strings.Builder
 
 	renderSection := func(title string, fs *pflag.FlagSet) {
-		if sb.Len() > 0 {
-			sb.WriteString("\n")
-		}
 		sb.WriteString("\n")
 		sb.WriteString(styles.HeadingStyle(title))
 		sb.WriteString("\n")
