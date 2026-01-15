@@ -10,33 +10,29 @@ import (
 )
 
 func autoDetect(cfg *Config) error {
-	if err := detectTenant(cfg, util.Bash); err != nil {
+	if err := getToken(cfg, util.Bash); err != nil {
 		return err
 	}
 
 	return detectRepo(cfg, util.Bash)
 }
 
-func detectTenant(cfg *Config, bash util.BashFunc) error {
-	if cfg.Tenant != "" && cfg.Username != "" {
-		return nil // skip detecting since tenant info is already set
+func getToken(cfg *Config, bash util.BashFunc) error {
+	if cfg.Token != "" {
+		return nil
 	}
 
-	raw, err := bash(`az account show --query "{tenantId:tenantId,username:user.name}" -o tsv`)
-	if err != nil {
-		log.Errorf("fail to detect tenant: %v", err)
-		return err
-	}
-
-	parts := strings.Split(raw, "\t")
+	var err error
 	if cfg.Tenant == "" {
-		cfg.Tenant = parts[0]
+		cfg.Tenant, err = bash(`az account show --query tenantId -o tsv`)
+		if err != nil {
+			log.Errorf("fail to detect tenant: %v", err)
+			return err
+		}
 	}
 
-	if cfg.Username == "" {
-		cfg.Username = parts[1]
-	}
-	return nil
+	cfg.Token, err = util.GetToken(cfg.Tenant)
+	return err
 }
 
 func detectRepo(cfg *Config, bash util.BashFunc) error {

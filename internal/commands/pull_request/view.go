@@ -21,7 +21,7 @@ var prView = &cobra.Command{
 
 func View(ctx context.Context) error {
 	cfg := config.From(ctx)
-	pr, err := rest.New(cfg.Tenant).
+	pr, err := rest.New(cfg.Token).
 		Git().
 		PRs(cfg.Repository).
 		ByID(ctx, 1329796)
@@ -30,5 +30,5 @@ func View(ctx context.Context) error {
 		return err
 	}
 
-	return styles.PrintYAML(pr)
+	return styles.DumpYAML(pr)
 }

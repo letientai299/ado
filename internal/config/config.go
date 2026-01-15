@@ -21,6 +21,7 @@ const (
 const (
 	envAdoTenant = "ADO_TENANT"
 	envAdoDebug  = "ADO_DEBUG"
+	envAdoPat    = "ADO_PAT"
 )
 
 var configFileNames = []string{
@@ -46,10 +47,20 @@ func WithDefault(ctx context.Context, cfg *Config) context.Context {
 
 type Config struct {
 	Repository Repository   `yaml:"repository,omitempty" json:"repository,omitempty"`
-	Tenant     string       `yaml:"tenant,omitempty"     json:"tenant,omitempty"`
-	Username   string       `yaml:"username,omitempty"   json:"username,omitempty"`
 	Debug      bool         `yaml:"debug,omitempty"      json:"debug,omitempty"`
 	Theme      styles.Theme `yaml:"theme"                json:"theme"`
+
+	// Tenant is used to generate Microsoft Entra token, could be auto-detected via az CLI.
+	// If the default tenant is not the one usable for ADO queries, users can set this value
+	// in the config file, or via envAdoTenant.
+	//
+	// If Token is already set via envAdoPat, the Tenant value is unused.
+	Tenant string `yaml:"tenant,omitempty" json:"tenant,omitempty"`
+
+	// Token is used to authenticate to ADO, must not be logged.
+	// If envAdoPat is available, this will be set to its value.
+	// Otherwise, this will try to generate a Microsoft Entra token via az CLI.
+	Token string `yaml:"-" json:"-"`
 }
 
 func (c Config) SetLogLevel() {
@@ -104,7 +115,7 @@ func Resolve(cmd *cobra.Command, _ []string) error {
 	}
 
 	styles.Init(cfg.Theme)
-	log.Debugf("resolved config: %v", styles.YAML(cfg))
+	log.Debugf("resolved config:\n%v", styles.YAML(cfg))
 	return nil
 }
 
@@ -141,6 +152,10 @@ func resolveEnv(cfg *Config) error {
 	if v, ok := os.LookupEnv(envAdoDebug); ok {
 		v = strings.ToLower(v)
 		cfg.Debug = v != "false" && v != "0"
+	}
+
+	if v, ok := os.LookupEnv(envAdoPat); ok {
+		cfg.Token = v
 	}
 
 	return nil

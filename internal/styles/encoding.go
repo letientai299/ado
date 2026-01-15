@@ -1,6 +1,7 @@
 package styles
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"strings"
@@ -26,15 +27,15 @@ func YAML(v any) string {
 
 	// Fast path for non-colored output
 	if yamlPrinter == nil {
-		return "\n" + string(bs)
+		return string(bs)
 	}
 
 	// Tokenize and colorize
 	tokens := lexer.Tokenize(string(bs))
-	return "\n" + yamlPrinter.PrintTokens(tokens)
+	return yamlPrinter.PrintTokens(tokens)
 }
 
-func PrintYAML(v any) error {
+func DumpYAML(v any) error {
 	bs, err := encodeYAML(v)
 	if err != nil {
 		log.Errorf("fail to marshal yaml: %v, err=%v", v, err)
@@ -131,6 +132,16 @@ func colorCodes(out *termenv.Output, color string) (prefix, suffix string) {
 // DumpJSON prints the object as prettified JSON to stdout
 func DumpJSON(v any) error {
 	encoder := json.NewEncoder(os.Stdout)
+	return encodeJSON(v, encoder)
+}
+
+func JSON(v any) string {
+	var buf bytes.Buffer
+	_ = encodeJSON(v, json.NewEncoder(&buf))
+	return buf.String()
+}
+
+func encodeJSON(v any, encoder *json.Encoder) error {
 	encoder.SetIndent("", "  ")
 
 	// Use the theme color scheme if colors are enabled

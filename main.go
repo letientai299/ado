@@ -15,9 +15,10 @@ import (
 )
 
 func main() {
+	log.SetReportCaller(true)
 	ctx := config.WithDefault(context.Background(), newConfig())
 	if err := commands.Root().ExecuteContext(ctx); err != nil {
-		log.Fatal(err)
+		os.Exit(1)
 	}
 }
 

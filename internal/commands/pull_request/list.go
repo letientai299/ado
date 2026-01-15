@@ -23,6 +23,18 @@ const (
 	outputSimple = "simple"
 )
 
+type PR = models.GitPullRequest
+
+type listOptions struct {
+	filterOptions
+	output string
+}
+
+type filterOptions struct {
+	mine  bool
+	draft bool
+}
+
 func ListCmd() *cobra.Command {
 	opt := listOptions{
 		output: outputSimple,
@@ -33,7 +45,10 @@ func ListCmd() *cobra.Command {
 		Aliases: []string{"ls"},
 		Short:   "List pull requests in the repo",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return List(cmd.Context(), opt)
+			ctx := cmd.Context()
+			cfg := config.From(ctx)
+			client := rest.New(cfg.Token)
+			return listProcessor{opts: opt, cfg: cfg, client: client}.process(ctx)
 		},
 	}
 
@@ -48,45 +63,75 @@ func ListCmd() *cobra.Command {
 	return cmd
 }
 
-func List(ctx context.Context, opts listOptions) error {
-	log.Debugf("listing options: %+v", opts)
+type listProcessor struct {
+	opts   listOptions
+	client *rest.Client
+	cfg    *config.Config
+}
 
-	cfg := config.From(ctx)
+func (l listProcessor) process(ctx context.Context) error {
+	prs, err := l.query(ctx)
+	if err != nil {
+		return err
+	}
+
+	prs, err = l.filter(ctx, prs)
+	if err != nil {
+		return err
+	}
+
+	return l.render(ctx, prs)
+}
+
+func (l listProcessor) query(ctx context.Context) ([]models.GitPullRequest, error) {
 	criteria := &git_prs.SearchCriteria{
 		Status: util.Ptr(models.PullRequestStatusActive),
 	}
 
-	all, err := rest.New(cfg.Tenant).
-		Git().
-		PRs(cfg.Repository).
+	all, err := l.client.Git().
+		PRs(l.cfg.Repository).
 		List(ctx, git_prs.ListQuery{SearchCriteria: criteria})
 	if err != nil {
 		log.Error(err)
-		return err
+		return nil, err
 	}
-
-	opts.username = cfg.Username
-	all = slices.DeleteFunc(all, opts.match)
-	return render(ctx, all, opts.output)
+	return all, nil
 }
 
-func render(ctx context.Context, all []models.GitPullRequest, output string) error {
-	if output == outputJSON {
+func (l listProcessor) filter(ctx context.Context, all []PR) ([]PR, error) {
+	var id *string
+	if l.opts.mine {
+		identity, err := l.client.Identity(ctx, l.cfg.Repository.Org)
+		if err != nil {
+			return nil, err
+		}
+		id = &identity.Id
+	}
+
+	f := l.opts.filterOptions
+	return slices.DeleteFunc(all, func(pr PR) bool {
+		if !f.draft && pr.IsDraft {
+			return true
+		}
+
+		return id != nil && pr.CreatedBy.Id != *id
+	}), nil
+}
+
+func (l listProcessor) render(ctx context.Context, all []PR) error {
+	switch l.opts.output {
+	case outputYAML:
+		return styles.DumpYAML(all)
+	case outputJSON:
 		return styles.DumpJSON(all)
-	}
-
-	if output == outputYAML {
-		return styles.PrintYAML(all)
-	}
-
-	if output == outputSimple {
+	case outputSimple:
 		return renderSimple(ctx, all)
+	default:
+		return util.StrErr("unknown output format: " + l.opts.output)
 	}
-
-	return util.StrErr("unknown output format: " + output)
 }
 
-func renderSimple(ctx context.Context, all []models.GitPullRequest) error {
+func renderSimple(ctx context.Context, all []PR) error {
 	cfg := config.From(ctx)
 	baseURL, _ := url.JoinPath(cfg.Repository.WebURL(), "pullRequest")
 	for _, pr := range all {
@@ -96,31 +141,6 @@ func renderSimple(ctx context.Context, all []models.GitPullRequest) error {
 		fmt.Println(pr.Title)
 		fmt.Println("  " + pr.CreatedBy.DisplayName)
 		fmt.Println("  " + baseURL + "/" + strconv.Itoa(pr.PullRequestId))
-		fmt.Println("  " + pr.Url)
 	}
 	return nil
-}
-
-type listOptions struct {
-	filterOptions
-	output string
-}
-
-type filterOptions struct {
-	mine     bool
-	username string
-	draft    bool
-}
-
-func (f filterOptions) match(pr models.GitPullRequest) bool {
-	if !f.draft && pr.IsDraft {
-		return true
-	}
-
-	if f.mine {
-		// NOTE (tai): the UniqueName might not be the az account username in some other ADO org setup.
-		return pr.CreatedBy.UniqueName != f.username
-	}
-
-	return false
 }

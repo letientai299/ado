@@ -49,3 +49,12 @@ type IdentityRefWithVote struct {
 	// Groups or teams that this reviewer is a member of.
 	VotedFor []IdentityRef `json:"votedFor,omitempty"`
 }
+
+type Identity struct {
+	Id                  string `json:"id"`
+	Descriptor          string `json:"descriptor"`
+	SubjectDescriptor   string `json:"subjectDescriptor"`
+	ProviderDisplayName string `json:"providerDisplayName"`
+	IsActive            bool   `json:"isActive"`
+	Account             string `json:"properties.Account.$value"`
+}

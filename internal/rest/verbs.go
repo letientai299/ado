@@ -12,6 +12,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/goccy/go-json"
 	"github.com/letientai299/ado/internal/rest/_shared"
+	"github.com/letientai299/ado/internal/styles"
 	"github.com/letientai299/ado/internal/util"
 )
 
@@ -89,9 +90,12 @@ func decode[T any](body io.ReadCloser) (*T, error) {
 
 func extractError(code int, body io.ReadCloser) error {
 	msg, err := io.ReadAll(body)
+	var x any
+	_ = json.Unmarshal(msg, &x)
+	s := styles.YAML(x)
 	if code >= 500 {
-		return errors.Join(ErrInternalServer, err, util.StrErr(msg))
+		return errors.Join(ErrInternalServer, err, util.StrErr(s))
 	}
 
-	return errors.Join(ErrInvalidRequest, err, util.StrErr(msg))
+	return errors.Join(ErrInvalidRequest, err, util.StrErr(s))
 }
