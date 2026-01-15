@@ -38,7 +38,17 @@ func TestLoadYAMLWithIncludes(t *testing.T) {
 		{
 			name:     "multiple inclusions at different levels",
 			filePath: "testdata/multiple/main.yaml",
-			expected: "a: 1\nb: 2\nsection1:\n  key1: val1\nsection2:\n  key2: val2\n",
+			expected: "section1:\n  a: 1\n  key1: val1\nsection2:\n  b: 2\n  key2: val2\n",
+		},
+		{
+			name:     "merge key include",
+			filePath: "testdata/merge/main.yaml",
+			expected: "outer:\n  name: base\n  value: 123\n  extra: added\n",
+		},
+		{
+			name:     "merge key include with override",
+			filePath: "testdata/merge_override/main.yaml",
+			expected: "outer:\n  value: 456\n  name: overridden\n",
 		},
 	}
 
