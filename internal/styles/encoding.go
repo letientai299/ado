@@ -66,7 +66,7 @@ func encodeYAML(v any) ([]byte, error) {
 
 // initYAMLPrinter creates the YAML printer with theme colors
 // This is called once from Init() when the theme is set
-func initYAMLPrinter(out *termenv.Output, theme Theme) {
+func initYAMLPrinter(out *termenv.Output) {
 	// Helper to create a property with ANSI escape codes
 	printFn := func(color string) func() *printer.Property {
 		if color == "" {
@@ -91,7 +91,7 @@ func initYAMLPrinter(out *termenv.Output, theme Theme) {
 
 // initJSONColorScheme creates the JSON color scheme with theme colors
 // This is called once from Init() when the theme is set
-func initJSONColorScheme(out *termenv.Output, theme Theme) {
+func initJSONColorScheme(out *termenv.Output) {
 	// Helper to create a ColorFormat with ANSI escape codes
 	colorFmt := func(color string) json.ColorFormat {
 		if color == "" {

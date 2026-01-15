@@ -6,7 +6,6 @@ import (
 	"slices"
 
 	"github.com/charmbracelet/log"
-	"github.com/charmbracelet/x/term"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/letientai299/ado/internal/commands"
 	"github.com/letientai299/ado/internal/config"
@@ -23,20 +22,13 @@ func main() {
 }
 
 func newConfig() *config.Config {
-	useColor := os.Getenv("COLOR") == "always" ||
-		(term.IsTerminal(os.Stdout.Fd()) && term.IsTerminal(os.Stderr.Fd()))
-
 	return &config.Config{
 		Debug: isDebugEnabled(),
-		Theme: chooseBestStyle(useColor),
+		Theme: chooseStyle(),
 	}
 }
 
-func chooseBestStyle(useColor bool) styles.Theme {
-	if !useColor {
-		return styles.NoTTy
-	}
-
+func chooseStyle() styles.Theme {
 	if !termenv.HasDarkBackground() {
 		return styles.Light
 	}

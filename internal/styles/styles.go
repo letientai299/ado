@@ -5,9 +5,9 @@ import (
 
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/log"
+	"github.com/charmbracelet/x/term"
 	"github.com/muesli/reflow/wordwrap"
 	"github.com/muesli/termenv"
-	"golang.org/x/term"
 )
 
 func ptr[T any](v T) *T { return &v }
@@ -25,15 +25,32 @@ var (
 )
 
 func Init(th Theme) {
-	theme = th
-	initMdRenderer(th)
+	if useColor() {
+		theme = th
+	}
 
-	if th.TrueColor {
+	prepare()
+}
+
+func prepare() {
+	initMdRenderer(theme)
+
+	if theme.TrueColor {
 		out = termenv.NewOutput(os.Stdout, termenv.WithProfile(termenv.TrueColor))
 	}
 
-	initYAMLPrinter(out, th)
-	initJSONColorScheme(out, th)
+	initYAMLPrinter(out)
+	initJSONColorScheme(out)
+}
+
+func useColor() bool {
+	v := os.Getenv("COLOR")
+	if v == "never" {
+		return false
+	}
+
+	return v == "always" ||
+		(term.IsTerminal(os.Stdout.Fd()) && term.IsTerminal(os.Stderr.Fd()))
 }
 
 func initMdRenderer(theme Theme) {
@@ -66,7 +83,7 @@ func Markdown(md string) string {
 }
 
 func Wrap(s string) string {
-	w, _, err := term.GetSize(int(os.Stdout.Fd()))
+	w, _, err := term.GetSize(os.Stdout.Fd())
 	if err != nil || w <= 0 {
 		w = MaxLineLength
 	}
