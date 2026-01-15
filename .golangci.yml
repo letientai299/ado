@@ -24,6 +24,7 @@ linters:
     - prealloc
     - unqueryvet
     - mirror
+    - tparallel
 
     # Security
     - gosec

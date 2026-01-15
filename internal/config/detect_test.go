@@ -7,6 +7,8 @@ import (
 )
 
 func Test_parseRepoInfo(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		origin      string
 		wantOrg     string
