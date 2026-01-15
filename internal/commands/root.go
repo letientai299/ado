@@ -41,6 +41,7 @@ func Root() *cobra.Command {
 		pull_request.Cmd(),
 		pipeline.Cmd(),
 		Doctor(),
+		Version(),
 	)
 
 	config.AddGlobalFlags(root)
