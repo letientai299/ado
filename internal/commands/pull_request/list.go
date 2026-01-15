@@ -35,7 +35,7 @@ type filterOptions struct {
 	draft bool
 }
 
-func ListCmd() *cobra.Command {
+func listCmd() *cobra.Command {
 	opt := listOptions{
 		output: outputSimple,
 	}

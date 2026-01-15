@@ -10,13 +10,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var prView = &cobra.Command{
-	Use:     "view",
-	Aliases: []string{"view", "v"},
-	Short:   "View detail of a pull request",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return View(cmd.Context())
-	},
+func viewCmd() *cobra.Command {
+	c := &cobra.Command{
+		Use:     "view",
+		Aliases: []string{"view", "v"},
+		Short:   "View detail of a pull request",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return View(cmd.Context())
+		},
+	}
+	return c
 }
 
 func View(ctx context.Context) error {
