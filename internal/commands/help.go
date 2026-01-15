@@ -33,7 +33,9 @@ func renderFlags(cmd *cobra.Command) string {
 	var sb strings.Builder
 
 	renderSection := func(title string, fs *pflag.FlagSet) {
-		sb.WriteString("\n")
+		if sb.Len() > 0 {
+			sb.WriteString("\n")
+		}
 		sb.WriteString(styles.HeadingStyle(title))
 		sb.WriteString("\n")
 		sb.WriteString(renderFlagsWithMax(fs, maxFlag))
@@ -48,7 +50,7 @@ func renderFlags(cmd *cobra.Command) string {
 		renderSection("Global Flags:", cmd.InheritedFlags())
 	}
 
-	return sb.String()
+	return "\n\n" + strings.TrimSpace(sb.String()) + "\n"
 }
 
 func calcMaxFlagLen(fss ...*pflag.FlagSet) flagMaxLen {
