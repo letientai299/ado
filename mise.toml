@@ -34,3 +34,13 @@ gotestsum --format-hide-empty-pkg --format testdox -- \
 
 [tasks."fmt:go"]
 run = "golangci-lint fmt"
+
+[tasks.release]
+alias = ["rel"]
+description = "Build the binary with compact size and better performance for release"
+outputs = ["bin/ado"]
+sources = ["*.go", "internal/**/*.*"]
+run = [
+  "CGO_ENABLED=0 go build -ldflags=\"-s -w\" -gcflags=\"all=-l -B\" -trimpath -o bin/ado .",
+  "ls -lah ./bin/ado",
+]
