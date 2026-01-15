@@ -4,12 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/charmbracelet/log"
-	"github.com/go-viper/mapstructure/v2"
-	"github.com/knadh/koanf/providers/env/v2"
-	"github.com/knadh/koanf/v2"
 	"github.com/letientai299/ado/internal/styles"
 	"github.com/spf13/cobra"
 )
@@ -20,22 +18,16 @@ const (
 	ctxKeyGlobal ctxKey = "global"
 )
 
-// var once = new(sync.Once)
+const (
+	envAdoTenant = "ADO_TENANT"
+	envAdoDebug  = "ADO_DEBUG"
+)
 
 var configFileNames = []string{
 	".ado.yml",
 	".ado.yaml",
 	".config/ado.yml",
 	".config/ado.yaml",
-}
-
-var koanfUnmarshalConf = koanf.UnmarshalConf{
-	Tag: "yaml",
-	DecoderConfig: &mapstructure.DecoderConfig{
-		TagName:          "yaml",
-		Squash:           true,
-		WeaklyTypedInput: true,
-	},
 }
 
 const (
@@ -91,14 +83,6 @@ func AddGlobalFlags(cmd *cobra.Command) {
 //   - Command line flags
 //   - Auto detect (heavy, need shell-out) for those missing values
 func Resolve(cmd *cobra.Command, _ []string) error {
-	// 	var err error
-	// 	once.Do(func() {
-	// 		err = resolve(cmd)
-	// 	})
-	// 	return err
-	// }
-	//
-	// func resolve(cmd *cobra.Command) error {
 	// this should be the builtin config, as nothing is loaded yet.
 	cfg := From(cmd.Context())
 
@@ -150,23 +134,13 @@ func flagsResolver(cmd *cobra.Command) func(cfg *Config) error {
 
 // resolveEnv binds env var with the prefix ADO_ to the config.
 func resolveEnv(cfg *Config) error {
-	k := koanf.New(".")
-	envProvider := env.Provider(".", env.Opt{
-		Prefix: "ADO_",
-		TransformFunc: func(k, v string) (string, any) {
-			key := strings.ToLower(strings.TrimPrefix(k, "ADO_"))
-			return strings.ToLower(key), v
-		},
-	})
-	err := k.Load(envProvider, nil)
-	if err != nil {
-		log.Warnf("failed to load environment variables: %v", err)
-		return err
+	if v, ok := os.LookupEnv(envAdoTenant); ok {
+		cfg.Tenant = v
 	}
 
-	if err = k.UnmarshalWithConf("", cfg, koanfUnmarshalConf); err != nil {
-		log.Warnf("failed to unmarshal environment variables: %v", err)
-		return err
+	if v, ok := os.LookupEnv(envAdoDebug); ok {
+		v = strings.ToLower(v)
+		cfg.Debug = v != "false" && v != "0"
 	}
 
 	return nil
