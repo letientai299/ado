@@ -1,0 +1,10 @@
+# https://lefthook.dev/configuration/
+pre-commit:
+  parallel: true
+  commands:
+    lint:
+      run: mise lint
+      stage_fixed: true
+    tidy:
+      run: go mod tidy
+      stage_fixed: true

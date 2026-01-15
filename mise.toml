@@ -3,6 +3,7 @@ go = "1.25.5"
 gofumpt = "latest"
 golangci-lint = "2.8.0"
 gotestsum = "latest"
+lefthook = "1.11.14"
 prettier = "latest"
 
 [tasks.build]
