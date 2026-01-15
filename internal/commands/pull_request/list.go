@@ -25,20 +25,19 @@ const (
 
 type PR = models.GitPullRequest
 
+// listOptions holds configuration for the pr list command.
+// These values can be set in the config file under "pull-request.list".
 type listOptions struct {
-	filterOptions
-	output string
-}
-
-type filterOptions struct {
-	mine  bool
-	draft bool
+	// Mine shows only PRs created by you
+	Mine bool `yaml:"mine" json:"mine"`
+	// Draft includes draft PRs
+	Draft bool `yaml:"draft" json:"draft"`
+	// Output format: simple, json, yaml
+	Output string `yaml:"output" json:"output"`
 }
 
 func listCmd() *cobra.Command {
-	opt := listOptions{
-		output: outputSimple,
-	}
+	opt := registerDefaultOptions()
 
 	cmd := &cobra.Command{
 		Use:     "list",
@@ -55,16 +54,32 @@ func listCmd() *cobra.Command {
 	flags := cmd.PersistentFlags()
 
 	// filter flags
-	flags.BoolVarP(&opt.mine, "mine", "m", false, "show only PRs created by you")
-	flags.BoolVar(&opt.draft, "draft", false, "include draft PRs")
+	flags.BoolVarP(&opt.Mine, "mine", "m", false, "show only PRs created by you")
+	flags.BoolVar(&opt.Draft, "draft", false, "include draft PRs")
 
 	// render flags
-	flags.StringVarP(&opt.output, "output", "o", opt.output, "include draft PRs")
+	flags.StringVarP(&opt.Output, "output", "o", opt.Output, "output format (simple, json, yaml)")
 	return cmd
 }
 
+func registerDefaultOptions() *listOptions {
+	opt := &listOptions{
+		Output: outputSimple,
+	}
+
+	config.Register(config.CommandConfig{
+		Path: "pull-request.list",
+		Desc: "Configuration for the pull-request list command",
+		// TODO (tai): support Partial<Config> and callback for more logic after command config is
+		//  resolved
+		Target: opt,
+	})
+
+	return opt
+}
+
 type listProcessor struct {
-	opts   listOptions
+	opts   *listOptions
 	client *rest.Client
 	cfg    *config.Config
 }
@@ -100,7 +115,7 @@ func (l listProcessor) query(ctx context.Context) ([]models.GitPullRequest, erro
 
 func (l listProcessor) filter(ctx context.Context, all []PR) ([]PR, error) {
 	var id *string
-	if l.opts.mine {
+	if l.opts.Mine {
 		identity, err := l.client.Identity(ctx, l.cfg.Repository.Org)
 		if err != nil {
 			return nil, err
@@ -108,9 +123,8 @@ func (l listProcessor) filter(ctx context.Context, all []PR) ([]PR, error) {
 		id = &identity.Id
 	}
 
-	f := l.opts.filterOptions
 	return slices.DeleteFunc(all, func(pr PR) bool {
-		if !f.draft && pr.IsDraft {
+		if !l.opts.Draft && pr.IsDraft {
 			return true
 		}
 
@@ -119,7 +133,7 @@ func (l listProcessor) filter(ctx context.Context, all []PR) ([]PR, error) {
 }
 
 func (l listProcessor) render(ctx context.Context, all []PR) error {
-	switch l.opts.output {
+	switch l.opts.Output {
 	case outputYAML:
 		return styles.DumpYAML(all)
 	case outputJSON:
@@ -127,7 +141,7 @@ func (l listProcessor) render(ctx context.Context, all []PR) error {
 	case outputSimple:
 		return renderSimple(ctx, all)
 	default:
-		return util.StrErr("unknown output format: " + l.opts.output)
+		return util.StrErr("unknown output format: " + l.opts.Output)
 	}
 }
 

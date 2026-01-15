@@ -115,7 +115,6 @@ func Resolve(cmd *cobra.Command, _ []string) error {
 	}
 
 	styles.Init(cfg.Theme)
-	log.Debugf("resolved config:\n%v", styles.YAML(cfg))
 	return nil
 }
 

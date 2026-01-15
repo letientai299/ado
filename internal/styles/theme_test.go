@@ -16,10 +16,6 @@ func Test_createThemeConfigFiles(t *testing.T) {
 	gitRoot, err := util.GitRoot()
 	require.NoError(t, err)
 
-	type ThemeConfig struct {
-		Theme styles.Theme `yaml:"theme"`
-	}
-
 	themesDir := filepath.Join(gitRoot, "etc/themes")
 	for _, theme := range all {
 		path := filepath.Join(themesDir, theme.Name+".yml")
@@ -28,7 +24,7 @@ func Test_createThemeConfigFiles(t *testing.T) {
 		) // nolint:gosec // G304: Potential file inclusion via variable. test code.
 		require.NoError(t, err)
 		enc := yaml.NewEncoder(f)
-		_ = enc.Encode(ThemeConfig{Theme: theme})
+		_ = enc.Encode(theme)
 		_ = f.Close()
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/letientai299/ado/internal/commands/config_cmd"
 	"github.com/letientai299/ado/internal/commands/pipeline"
 	"github.com/letientai299/ado/internal/commands/pull_request"
 	"github.com/letientai299/ado/internal/config"
@@ -40,6 +41,7 @@ func Root() *cobra.Command {
 	root.AddCommand(
 		pull_request.Cmd(),
 		pipeline.Cmd(),
+		config_cmd.Cmd(),
 		Doctor(),
 		Version(),
 	)

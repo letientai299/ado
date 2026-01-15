@@ -1,0 +1,3 @@
+outer:
+  extra: added
+  include!: base.yaml
