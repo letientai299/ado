@@ -24,17 +24,22 @@ func doctorCheck() error {
 	// TODO (tai): refactor this to use lipgloss for styling success and failure check.
 	log.Info("Checking prerequisites...")
 
-	if _, err := exec.LookPath("git"); err != nil {
-		log.Error("git is not installed or not in PATH")
-		return fmt.Errorf("git not found: %w", err)
+	checkExec := func(name, displayName string) error {
+		if _, err := exec.LookPath(name); err != nil {
+			log.Error(displayName + " is not installed or not in PATH")
+			return fmt.Errorf("%s not found: %w", name, err)
+		}
+		log.Info(fmt.Sprintf("✓ %s is installed", displayName))
+		return nil
 	}
-	log.Info("✓ git is installed")
 
-	if _, err := exec.LookPath("az"); err != nil {
-		log.Error("Azure CLI (az) is not installed or not in PATH")
-		return fmt.Errorf("az CLI not found: %w", err)
+	if err := checkExec("git", "git"); err != nil {
+		return err
 	}
-	log.Info("✓ Azure CLI (az) is installed")
+
+	if err := checkExec("az", "Azure CLI (az)"); err != nil {
+		return err
+	}
 
 	log.Info("Checking Azure CLI authentication...")
 	_, err := util.Bash("az account show")
