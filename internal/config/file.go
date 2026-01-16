@@ -144,18 +144,13 @@ func processIncludes(data map[string]any, baseDir string, visited map[string]str
 // findConfigFile looks for .ado.y(a)ml or `.config/ado.y(a)ml` in the
 // working dir, then continue the search up to the git root dir.
 func findConfigFile() (string, error) {
-	gitRoot, err := util.GitRoot()
-	if err != nil {
-		log.Warnf("fail to get git root dir: %v", err)
-		return "", err
-	}
-
 	wd, _ := os.Getwd()
+	gitRoot := util.TryGitRoot()
 
 	for {
 		for _, f := range configFileNames {
 			p := filepath.Join(wd, f)
-			if _, err = os.Stat(p); err == nil {
+			if _, err := os.Stat(p); err == nil {
 				return p, nil
 			}
 		}
