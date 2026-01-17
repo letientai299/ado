@@ -32,10 +32,6 @@ func doctorCheck() error {
 		return nil
 	}
 
-	if err := checkExec("git", "git"); err != nil {
-		return err
-	}
-
 	if err := checkExec("az", "Azure CLI (az)"); err != nil {
 		return err
 	}
