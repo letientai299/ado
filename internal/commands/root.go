@@ -29,7 +29,7 @@ func Root() *cobra.Command {
 		Short: "Azure DevOps CLI",
 		Long:  doc,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
-			return initConfig(cmd.Root())
+			return initConfig(cmd)
 		},
 		SilenceUsage: true,
 	}

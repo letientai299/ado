@@ -17,6 +17,7 @@ import (
 	"github.com/letientai299/ado/internal/styles"
 	"github.com/letientai299/ado/internal/util"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 const (
@@ -44,6 +45,9 @@ type listConfig struct {
 func (l *listConfig) OnResolved(c *cobra.Command) error {
 	// TODO (tai): doesn't work correctly, as the flag.Changed() isn't checked.
 	fs := c.Flags()
+	fs.VisitAll(func(flag *pflag.Flag) {
+		log.Debug(flag)
+	})
 	if !fs.Changed("output") {
 		l.output = l.DefaultOutput
 	}
