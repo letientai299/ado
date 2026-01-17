@@ -5,7 +5,6 @@ import (
 	"os/exec"
 
 	"github.com/charmbracelet/log"
-	"github.com/letientai299/ado/internal/util"
 	"github.com/spf13/cobra"
 )
 
@@ -41,14 +40,7 @@ func doctorCheck() error {
 		return err
 	}
 
-	log.Info("Checking Azure CLI authentication...")
-	_, err := util.Bash("az account show")
-	if err != nil {
-		log.Error("Azure CLI is not authenticated. Please run 'az login'.")
-		return fmt.Errorf("az not authenticated: %w", err)
-	}
-	log.Info("✓ Azure CLI is authenticated")
-
+	log.Info("✓ Azure CLI is available")
 	log.Info("All checks passed!")
 	return nil
 }

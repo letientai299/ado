@@ -7,7 +7,7 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/goccy/go-yaml"
-	"github.com/letientai299/ado/internal/util"
+	"github.com/letientai299/ado/internal/util/gitcli"
 )
 
 const includeDirective = "include!"
@@ -145,7 +145,7 @@ func processIncludes(data map[string]any, baseDir string, visited map[string]str
 // working dir, then continue the search up to the git root dir.
 func findConfigFile() (string, error) {
 	wd, _ := os.Getwd()
-	gitRoot := util.TryGitRoot()
+	gitRoot := gitcli.TryRoot()
 
 	for {
 		for _, f := range configFileNames {

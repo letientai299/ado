@@ -6,41 +6,42 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/log"
-	"github.com/letientai299/ado/internal/util"
+	"github.com/letientai299/ado/internal/util/azcli"
+	"github.com/letientai299/ado/internal/util/sh"
 )
 
 func autoDetect(cfg *Config) error {
-	if err := getToken(cfg, util.Bash); err != nil {
+	if err := getToken(cfg, sh.Run); err != nil {
 		return err
 	}
 
-	return detectRepo(cfg, util.Bash)
+	return detectRepo(cfg, sh.Run)
 }
 
-func getToken(cfg *Config, bash util.BashFunc) error {
+func getToken(cfg *Config, run sh.ScriptRunner) error {
 	if cfg.Token != "" {
 		return nil
 	}
 
 	var err error
 	if cfg.Tenant == "" {
-		cfg.Tenant, err = bash(`az account show --query tenantId -o tsv`)
+		cfg.Tenant, err = run(`az account show --query tenantId -o tsv`)
 		if err != nil {
 			log.Errorf("fail to detect tenant: %v", err)
 			return err
 		}
 	}
 
-	cfg.Token, err = util.GetToken(cfg.Tenant)
+	cfg.Token, err = azcli.GetToken(cfg.Tenant)
 	return err
 }
 
-func detectRepo(cfg *Config, bash util.BashFunc) error {
+func detectRepo(cfg *Config, run sh.ScriptRunner) error {
 	if cfg.Repository.Name != "" && cfg.Repository.Org != "" && cfg.Repository.Project != "" {
 		return nil // skip detecting since repo info is already set
 	}
 
-	gitOrigin, err := bash(`git remote get-url origin`)
+	gitOrigin, err := run(`git remote get-url origin`)
 	if err != nil {
 		log.Errorf("fail to get git origin url: %v", err)
 		return err

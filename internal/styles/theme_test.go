@@ -7,13 +7,13 @@ import (
 
 	"github.com/goccy/go-yaml"
 	"github.com/letientai299/ado/internal/styles"
-	"github.com/letientai299/ado/internal/util"
+	"github.com/letientai299/ado/internal/util/gitcli"
 	"github.com/stretchr/testify/require"
 )
 
 func Test_createThemeConfigFiles(t *testing.T) {
 	all := []styles.Theme{styles.Light, styles.TokyoNight, styles.Dark, styles.NoTTy}
-	gitRoot, err := util.GitRoot()
+	gitRoot, err := gitcli.Root()
 	require.NoError(t, err)
 
 	themesDir := filepath.Join(gitRoot, "etc/themes")

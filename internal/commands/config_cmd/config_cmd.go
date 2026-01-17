@@ -41,9 +41,10 @@ const configTemplate = `
 // Cmd returns the config command group
 func Cmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "config",
-		Short: "Manage ADO configuration",
-		Long:  "Commands for managing ADO CLI configuration files and schemas.",
+		Use:     "config",
+		Aliases: []string{"cfg"},
+		Short:   "Manage ADO configuration",
+		Long:    "Commands for managing ADO CLI configuration files and schemas.",
 	}
 	cmd.AddCommand(schemaCmd(), initCmd())
 	return cmd
