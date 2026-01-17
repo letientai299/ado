@@ -3,6 +3,7 @@ package styles
 import (
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/log"
@@ -20,9 +21,10 @@ const (
 )
 
 var (
-	mdRenderer *glamour.TermRenderer
-	theme      = NoTTy
-	out        = termenv.DefaultOutput()
+	mdRenderer     *glamour.TermRenderer
+	mdRendererOnce sync.Once
+	theme          = NoTTy
+	out            = termenv.DefaultOutput()
 )
 
 func Init(th Theme) {
@@ -34,8 +36,6 @@ func Init(th Theme) {
 }
 
 func prepare() {
-	initMdRenderer(theme)
-
 	if theme.TrueColor {
 		out = termenv.NewOutput(os.Stdout, termenv.WithProfile(termenv.TrueColor))
 	}
@@ -58,16 +58,20 @@ func UseColor() bool {
 		(term.IsTerminal(os.Stdout.Fd()) && term.IsTerminal(os.Stderr.Fd()))
 }
 
-func initMdRenderer(theme Theme) {
-	var err error
-	mdRenderer, err = glamour.NewTermRenderer(
-		glamour.WithStyles(theme.glamourStyle()),
-		glamour.WithWordWrap(MaxLineLength),
-		glamour.WithInlineTableLinks(true),
-	)
-	if err != nil {
-		log.Fatalf("fail to create markdown renderer: %v", err)
-	}
+// initMdRenderer lazily initializes the glamour markdown renderer.
+// Note: chroma's lexer init happens at import time and cannot be deferred.
+func initMdRenderer() {
+	mdRendererOnce.Do(func() {
+		var err error
+		mdRenderer, err = glamour.NewTermRenderer(
+			glamour.WithStyles(theme.glamourStyle()),
+			glamour.WithWordWrap(MaxLineLength),
+			glamour.WithInlineTableLinks(true),
+		)
+		if err != nil {
+			log.Fatalf("fail to create markdown renderer: %v", err)
+		}
+	})
 }
 
 func Heading(s string) string       { return colorize(s, theme.Tokens.Markdown.Heading) }
@@ -84,14 +88,6 @@ func colorize(s, c string) string {
 	return out.String(s).Foreground(out.Color(c)).Bold().String()
 }
 
-func Markdown(md string) string {
-	s, err := mdRenderer.Render(md)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return s
-}
-
 func Wrap(s string) string {
 	w, _, err := term.GetSize(os.Stdout.Fd())
 	if err != nil || w <= 0 {
@@ -101,6 +97,17 @@ func Wrap(s string) string {
 		w = MaxLineLength
 	}
 	return wordwrap.String(s, w)
+}
+
+// Markdown renders markdown with syntax highlighting.
+// The renderer is initialized lazily on first call.
+func Markdown(md string) string {
+	initMdRenderer()
+	s, err := mdRenderer.Render(md)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return s
 }
 
 // Indent add indentation of n spaces to every line in the string
