@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/charmbracelet/log"
 	"github.com/letientai299/ado/internal/styles"
+	"github.com/letientai299/ado/internal/util/azcli"
+	"github.com/letientai299/ado/internal/util/sh"
 	"github.com/spf13/cobra"
 )
 
@@ -54,16 +57,41 @@ type Config struct {
 	// If the default tenant is not the one usable for ADO queries, users can set this value
 	// in the config file, or via envAdoTenant.
 	//
-	// If Token is already set via envAdoPat, the Tenant value is unused.
+	// If token is already set via envAdoPat, the Tenant value is unused.
 	Tenant string `yaml:"tenant,omitempty" json:"tenant,omitempty"`
 
-	// Token is used to authenticate to ADO, must not be logged.
+	// token is used to authenticate to ADO, must not be logged.
 	// If envAdoPat is available, this will be set to its value.
-	// Otherwise, this will try to generate a Microsoft Entra token via az CLI.
-	Token string `yaml:"-" json:"-"`
+	// Otherwise, Token() will lazily generate a Microsoft Entra token via az CLI.
+	token     string `yaml:"-" json:"-"`
+	tokenOnce sync.Once
 
 	// cmd is bound to executing cobra.Command at runtime in Resolve.
 	cmd *cobra.Command
+}
+
+// Token returns the authentication token, lazily fetching it via az CLI if needed.
+func (c *Config) Token() (string, error) {
+	var err error
+	c.tokenOnce.Do(func() {
+		if c.token != "" {
+			return
+		}
+		c.token, err = c.fetchToken()
+	})
+	return c.token, err
+}
+
+func (c *Config) fetchToken() (string, error) {
+	if c.Tenant == "" {
+		var err error
+		c.Tenant, err = sh.Run(`az account show --query tenantId -o tsv`)
+		if err != nil {
+			log.Errorf("fail to detect tenant: %v", err)
+			return "", err
+		}
+	}
+	return azcli.GetToken(c.Tenant)
 }
 
 func (c Config) SetLogLevel() {
@@ -158,7 +186,7 @@ func resolveEnv(cfg *Config) error {
 	}
 
 	if v, ok := os.LookupEnv(envAdoPat); ok {
-		cfg.Token = v
+		cfg.token = v
 	}
 
 	return nil

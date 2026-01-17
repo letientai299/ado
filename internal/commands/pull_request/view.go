@@ -24,7 +24,11 @@ func viewCmd() *cobra.Command {
 
 func View(ctx context.Context) error {
 	cfg := config.From(ctx)
-	pr, err := rest.New(cfg.Token).
+	token, err := cfg.Token()
+	if err != nil {
+		return err
+	}
+	pr, err := rest.New(token).
 		Git().
 		PRs(cfg.Repository).
 		ByID(ctx, 1329796)

@@ -6,34 +6,11 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/log"
-	"github.com/letientai299/ado/internal/util/azcli"
 	"github.com/letientai299/ado/internal/util/sh"
 )
 
 func autoDetect(cfg *Config) error {
-	if err := getToken(cfg, sh.Run); err != nil {
-		return err
-	}
-
 	return detectRepo(cfg, sh.Run)
-}
-
-func getToken(cfg *Config, run sh.ScriptRunner) error {
-	if cfg.Token != "" {
-		return nil
-	}
-
-	var err error
-	if cfg.Tenant == "" {
-		cfg.Tenant, err = run(`az account show --query tenantId -o tsv`)
-		if err != nil {
-			log.Errorf("fail to detect tenant: %v", err)
-			return err
-		}
-	}
-
-	cfg.Token, err = azcli.GetToken(cfg.Tenant)
-	return err
 }
 
 func detectRepo(cfg *Config, run sh.ScriptRunner) error {

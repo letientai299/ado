@@ -68,7 +68,11 @@ func listCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			cfg := config.From(ctx)
-			client := rest.New(cfg.Token)
+			token, err := cfg.Token()
+			if err != nil {
+				return err
+			}
+			client := rest.New(token)
 			baseURL, _ := url.JoinPath(cfg.Repository.WebURL(), "pullRequest")
 			return listProcessor{
 				opts:    opts,
