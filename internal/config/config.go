@@ -61,6 +61,9 @@ type Config struct {
 	// If envAdoPat is available, this will be set to its value.
 	// Otherwise, this will try to generate a Microsoft Entra token via az CLI.
 	Token string `yaml:"-" json:"-"`
+
+	// cmd is bound to executing cobra.Command at runtime in Resolve.
+	cmd *cobra.Command
 }
 
 func (c Config) SetLogLevel() {
@@ -96,6 +99,7 @@ func AddGlobalFlags(cmd *cobra.Command) {
 func Resolve(cmd *cobra.Command, _ []string) error {
 	// this should be the builtin config, as nothing is loaded yet.
 	cfg := From(cmd.Context())
+	cfg.cmd = cmd
 
 	// enable debug log as soon as possible
 	cfg.SetLogLevel()

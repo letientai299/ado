@@ -39,7 +39,7 @@ func resolveConfigFile(cfg *Config) error {
 	if err = yaml.Unmarshal(data, &rawData); err != nil {
 		return fmt.Errorf("parsing config for command configs: %w", err)
 	}
-	if err = resolveCommandConfigs(rawData); err != nil {
+	if err = resolveCommandConfigs(cfg.cmd, rawData); err != nil {
 		return fmt.Errorf("resolving command configs: %w", err)
 	}
 

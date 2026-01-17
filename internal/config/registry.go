@@ -6,7 +6,12 @@ import (
 	"sync"
 
 	"github.com/goccy/go-yaml"
+	"github.com/spf13/cobra"
 )
+
+type CommandConfigurer interface {
+	OnResolved(c *cobra.Command) error
+}
 
 // CommandConfig represents a command's configuration registration.
 type CommandConfig struct {
@@ -15,7 +20,7 @@ type CommandConfig struct {
 	// Desc is description for documentation/schema generation
 	Desc string
 	// Target is a pointer to the config struct to unmarshal into
-	Target any
+	Target CommandConfigurer
 }
 
 var (
@@ -51,7 +56,7 @@ func Registry() map[string]*CommandConfig {
 }
 
 // resolveCommandConfigs extracts command-specific configs from raw YAML data.
-func resolveCommandConfigs(data map[string]any) error {
+func resolveCommandConfigs(cmd *cobra.Command, data map[string]any) error {
 	registryMu.RLock()
 	defer registryMu.RUnlock()
 
@@ -67,8 +72,12 @@ func resolveCommandConfigs(data map[string]any) error {
 			return fmt.Errorf("marshaling config for %s: %w", path, err)
 		}
 
-		if err := yaml.UnmarshalWithOptions(bytes, cmdCfg.Target, yaml.Strict()); err != nil {
+		if err = yaml.UnmarshalWithOptions(bytes, cmdCfg.Target, yaml.Strict()); err != nil {
 			return fmt.Errorf("parsing config for %s: %w", path, err)
+		}
+
+		if err = cmdCfg.Target.OnResolved(cmd); err != nil {
+			return err
 		}
 	}
 

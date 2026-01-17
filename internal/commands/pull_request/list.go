@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/charmbracelet/log"
 	"github.com/letientai299/ado/internal/config"
@@ -25,19 +26,36 @@ const (
 
 type PR = models.GitPullRequest
 
-// listOptions holds configuration for the pr list command.
+// listConfig holds configuration for the pr list command.
 // These values can be set in the config file under "pull-request.list".
-type listOptions struct {
-	// Mine shows only PRs created by you
-	Mine bool `yaml:"mine" json:"mine"`
-	// Draft includes draft PRs
-	Draft bool `yaml:"draft" json:"draft"`
-	// Output format: simple, json, yaml
-	Output string `yaml:"output" json:"output"`
+type listConfig struct {
+	DefaultOutput         string            `yaml:"default_output"`
+	CustomOutputTemplates map[string]string `yaml:"custom_output_templates"`
+
+	output string // output format to use
+	mine   bool   // shows only your PRs
+	draft  bool   // whether to include draft PRs
+}
+
+func (l *listConfig) OnResolved(c *cobra.Command) error {
+	// TODO (tai): doesn't work correctly, as the flag.Changed() isn't checked.
+	fs := c.Flags()
+	if !fs.Changed("output") {
+		l.output = l.DefaultOutput
+	}
+	return nil
 }
 
 func listCmd() *cobra.Command {
-	opt := registerDefaultOptions()
+	opts := &listConfig{
+		DefaultOutput:         outputSimple,
+		CustomOutputTemplates: make(map[string]string),
+	}
+
+	config.Register(config.CommandConfig{
+		Path:   "pull-request.list",
+		Target: opts,
+	})
 
 	cmd := &cobra.Command{
 		Use:     "list",
@@ -47,39 +65,31 @@ func listCmd() *cobra.Command {
 			ctx := cmd.Context()
 			cfg := config.From(ctx)
 			client := rest.New(cfg.Token)
-			return listProcessor{opts: opt, cfg: cfg, client: client}.process(ctx)
+			return listProcessor{opts: opts, cfg: cfg, client: client}.process(ctx)
 		},
 	}
 
 	flags := cmd.PersistentFlags()
 
 	// filter flags
-	flags.BoolVarP(&opt.Mine, "mine", "m", false, "show only PRs created by you")
-	flags.BoolVar(&opt.Draft, "draft", false, "include draft PRs")
+	flags.BoolVarP(&opts.mine, "mine", "m", false, "show only your PRs")
+	flags.BoolVar(&opts.draft, "draft", false, "include draft PRs")
 
 	// render flags
-	flags.StringVarP(&opt.Output, "output", "o", opt.Output, "output format (simple, json, yaml)")
+	flags.StringVarP(
+		&opts.output,
+		"output",
+		"o",
+		// TODO (tai): help should show resolved config value instead of hard-coded values
+		opts.DefaultOutput,
+		// TODO (tai): remove json format
+		"output format (builtin: simple, json, yaml)",
+	)
 	return cmd
 }
 
-func registerDefaultOptions() *listOptions {
-	opt := &listOptions{
-		Output: outputSimple,
-	}
-
-	config.Register(config.CommandConfig{
-		Path: "pull-request.list",
-		Desc: "Configuration for the pull-request list command",
-		// TODO (tai): support Partial<Config> and callback for more logic after command config is
-		//  resolved
-		Target: opt,
-	})
-
-	return opt
-}
-
 type listProcessor struct {
-	opts   *listOptions
+	opts   *listConfig
 	client *rest.Client
 	cfg    *config.Config
 }
@@ -115,7 +125,7 @@ func (l listProcessor) query(ctx context.Context) ([]models.GitPullRequest, erro
 
 func (l listProcessor) filter(ctx context.Context, all []PR) ([]PR, error) {
 	var id *string
-	if l.opts.Mine {
+	if l.opts.mine {
 		identity, err := l.client.Identity(ctx, l.cfg.Repository.Org)
 		if err != nil {
 			return nil, err
@@ -124,7 +134,7 @@ func (l listProcessor) filter(ctx context.Context, all []PR) ([]PR, error) {
 	}
 
 	return slices.DeleteFunc(all, func(pr PR) bool {
-		if !l.opts.Draft && pr.IsDraft {
+		if !l.opts.draft && pr.IsDraft {
 			return true
 		}
 
@@ -133,7 +143,7 @@ func (l listProcessor) filter(ctx context.Context, all []PR) ([]PR, error) {
 }
 
 func (l listProcessor) render(ctx context.Context, all []PR) error {
-	switch l.opts.Output {
+	switch strings.ToLower(l.opts.output) {
 	case outputYAML:
 		return styles.DumpYAML(all)
 	case outputJSON:
@@ -141,7 +151,7 @@ func (l listProcessor) render(ctx context.Context, all []PR) error {
 	case outputSimple:
 		return renderSimple(ctx, all)
 	default:
-		return util.StrErr("unknown output format: " + l.opts.Output)
+		return util.StrErr("unknown output format: " + l.opts.output)
 	}
 }
 

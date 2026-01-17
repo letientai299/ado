@@ -3,6 +3,7 @@ package config
 import (
 	"testing"
 
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -18,11 +19,6 @@ func TestResolveCommandConfigs(t *testing.T) {
 		registry = originalRegistry
 		registryMu.Unlock()
 	}()
-
-	type TestConfig struct {
-		Output string `yaml:"output"`
-		Mine   bool   `yaml:"mine"`
-	}
 
 	var testConfig TestConfig
 	Register(CommandConfig{
@@ -40,7 +36,7 @@ func TestResolveCommandConfigs(t *testing.T) {
 		},
 	}
 
-	err := resolveCommandConfigs(data)
+	err := resolveCommandConfigs(nil, data)
 	require.NoError(t, err)
 
 	assert.Equal(t, "json", testConfig.Output)
@@ -74,7 +70,7 @@ func TestRegisterCommandConfigPanicsOnDuplicate(t *testing.T) {
 		registryMu.Unlock()
 	}()
 
-	var cfg1, cfg2 struct{}
+	var cfg1, cfg2 TestConfig
 
 	Register(CommandConfig{
 		Path:   "test.path",
@@ -89,4 +85,13 @@ func TestRegisterCommandConfigPanicsOnDuplicate(t *testing.T) {
 			Target: &cfg2,
 		})
 	})
+}
+
+type TestConfig struct {
+	Output string `yaml:"output"`
+	Mine   bool   `yaml:"mine"`
+}
+
+func (t TestConfig) OnResolved(c *cobra.Command) error {
+	return nil
 }
