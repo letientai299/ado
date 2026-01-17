@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/charmbracelet/log"
 	"github.com/goccy/go-json"
 )
 
@@ -46,18 +47,22 @@ func cachePath(key string) (string, error) {
 func Get[T any](key string, v *T) bool {
 	path, err := cachePath(key)
 	if err != nil {
+		log.Debug("cache miss: failed to get cache path", "key", key, "err", err)
 		return false
 	}
 
 	data, err := os.ReadFile(path) //nolint:gosec
 	if err != nil {
+		log.Debug("cache miss", "key", key, "path", path)
 		return false
 	}
 
-	if err := json.Unmarshal(data, v); err != nil {
+	if err = json.Unmarshal(data, v); err != nil {
+		log.Debug("cache error: failed to unmarshal", "key", key, "path", path, "err", err)
 		return false
 	}
 
+	log.Debug("cache hit", "key", key, "path", path)
 	return true
 }
 
@@ -67,6 +72,8 @@ func Set(key string, v any) error {
 	if err != nil {
 		return err
 	}
+
+	log.Debug("cache set", "key", key, "path", path)
 
 	if err = os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return err
