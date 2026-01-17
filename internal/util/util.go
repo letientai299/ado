@@ -9,6 +9,7 @@ import (
 	"unicode"
 
 	"github.com/charmbracelet/log"
+	"github.com/letientai299/ado/internal/styles"
 )
 
 type StrErr string
@@ -39,7 +40,7 @@ type BashFunc func(script string) (string, error)
 // In case of error, it logs the full content of stdout and stderr.
 func Bash(script string) (stdout string, err error) {
 	script = strings.TrimSpace(script)
-	log.Debugf("executing bash script:\n%s", Indent(2, script))
+	log.Debugf("executing bash script:\n%s", styles.Indent(2, script))
 	cmd := exec.Command("bash", "-c", script)
 	var outBuf, errBuf bytes.Buffer
 	cmd.Stdout = &outBuf
@@ -54,12 +55,6 @@ func Bash(script string) (stdout string, err error) {
 		log.Errorf("stderr:\n%s", stderr)
 	}
 	return strings.TrimRightFunc(stdout, unicode.IsSpace), err
-}
-
-// Indent add indentation of n spaces to every line in the string
-func Indent(n int, s string) string {
-	padding := strings.Repeat(" ", n)
-	return padding + strings.ReplaceAll(s, "\n", "\n"+padding)
 }
 
 func Ptr[T any](v T) *T { return &v }

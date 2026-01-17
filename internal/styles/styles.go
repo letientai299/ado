@@ -2,6 +2,7 @@ package styles
 
 import (
 	"os"
+	"strings"
 
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/log"
@@ -96,4 +97,10 @@ func Wrap(s string) string {
 		w = MaxLineLength
 	}
 	return wordwrap.String(s, w)
+}
+
+// Indent add indentation of n spaces to every line in the string
+func Indent(n int, s string) string {
+	padding := strings.Repeat(" ", n)
+	return padding + strings.ReplaceAll(s, "\n", "\n"+padding)
 }

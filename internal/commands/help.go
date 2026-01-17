@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/letientai299/ado/internal/styles"
-	"github.com/letientai299/ado/internal/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -131,7 +130,7 @@ func formatFlag(f *pflag.Flag, nameMax, typeMax int) string {
 	if fullFlagLen+len(usage)+1 <= styles.MaxLineLength {
 		return fmt.Sprintf("%s %s", fullFlag, usage)
 	}
-	return fmt.Sprintf("%s\n%s", fullFlag, util.Indent(4, styles.Wrap(usage)))
+	return fmt.Sprintf("%s\n%s", fullFlag, styles.Indent(4, styles.Wrap(usage)))
 }
 
 type flagMaxLen struct {
