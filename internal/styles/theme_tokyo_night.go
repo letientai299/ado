@@ -6,6 +6,9 @@ var TokyoNight = Theme{
 	Name:      "tokyo-night",
 	TrueColor: true,
 	Tokens: Tokens{
+		Warn:    "#e0af68",
+		Error:   "#f7768e",
+		Success: "#9ece6a",
 		Markdown: MarkdownTokens{
 			Text:           "#a9b1d6",
 			Heading:        "#bb9af7",

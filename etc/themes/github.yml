@@ -1,6 +1,9 @@
 name: github
 true_color: true
 tokens:
+  warning: "#ffa657"
+  error: "#f85149"
+  success: "#7ee787"
   markdown:
     text: "#e6edf3"
     heading: "#58a6ff"

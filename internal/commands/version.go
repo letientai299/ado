@@ -22,7 +22,7 @@ func Version() *cobra.Command {
 			printInfo := func(key, value string) {
 				fmt.Printf(
 					"%s %s\n",
-					styles.HeadingStyle(fmt.Sprintf("%-12s", key)),
+					styles.Heading(fmt.Sprintf("%-12s", key)),
 					value,
 				)
 			}

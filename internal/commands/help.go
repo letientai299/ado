@@ -18,10 +18,10 @@ func helpFunc(defaultHelp func(*cobra.Command, []string)) func(*cobra.Command, [
 }
 
 func addTemplateHelpers() {
-	cobra.AddTemplateFunc("headingStyle", styles.HeadingStyle)
-	cobra.AddTemplateFunc("cmdStyle", styles.CmdStyle)
+	for name, fn := range styles.TemplateFuncs {
+		cobra.AddTemplateFunc(name, fn)
+	}
 	cobra.AddTemplateFunc("renderFlags", renderFlags)
-	cobra.AddTemplateFunc("markdown", styles.Markdown)
 }
 
 func renderFlags(cmd *cobra.Command) string {
@@ -36,7 +36,7 @@ func renderFlags(cmd *cobra.Command) string {
 		if sb.Len() > 0 {
 			sb.WriteString("\n")
 		}
-		sb.WriteString(styles.HeadingStyle(title))
+		sb.WriteString(styles.Heading(title))
 		sb.WriteString("\n")
 		sb.WriteString(renderFlagsWithMax(fs, maxFlag))
 		sb.WriteString("\n")

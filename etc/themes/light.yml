@@ -1,6 +1,9 @@
 name: light
 true_color: true
 tokens:
+  warning: "#A3A322"
+  error: "#FD5B5B"
+  success: "#00D787"
   markdown:
     text: "234"
     heading: "27"

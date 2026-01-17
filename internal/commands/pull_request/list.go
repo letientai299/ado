@@ -2,11 +2,12 @@ package pull_request
 
 import (
 	"context"
-	"fmt"
+	_ "embed"
 	"net/url"
 	"slices"
 	"strconv"
 	"strings"
+	"text/template"
 
 	"github.com/charmbracelet/log"
 	"github.com/letientai299/ado/internal/config"
@@ -23,6 +24,9 @@ const (
 	outputYAML   = "yaml"
 	outputSimple = "simple"
 )
+
+//go:embed list_simple.tpl
+var listSimpleTpl string
 
 type PR = models.GitPullRequest
 
@@ -59,13 +63,19 @@ func listCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:     "list",
-		Aliases: []string{"ls"},
+		Aliases: []string{"ls", "l"},
 		Short:   "List pull requests in the repo",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			cfg := config.From(ctx)
 			client := rest.New(cfg.Token)
-			return listProcessor{opts: opts, cfg: cfg, client: client}.process(ctx)
+			baseURL, _ := url.JoinPath(cfg.Repository.WebURL(), "pullRequest")
+			return listProcessor{
+				opts:    opts,
+				cfg:     cfg,
+				client:  client,
+				baseURL: baseURL,
+			}.process(ctx)
 		},
 	}
 
@@ -89,9 +99,10 @@ func listCmd() *cobra.Command {
 }
 
 type listProcessor struct {
-	opts   *listConfig
-	client *rest.Client
-	cfg    *config.Config
+	opts    *listConfig
+	client  *rest.Client
+	cfg     *config.Config
+	baseURL string
 }
 
 func (l listProcessor) process(ctx context.Context) error {
@@ -105,7 +116,7 @@ func (l listProcessor) process(ctx context.Context) error {
 		return err
 	}
 
-	return l.render(ctx, prs)
+	return l.render(prs)
 }
 
 func (l listProcessor) query(ctx context.Context) ([]models.GitPullRequest, error) {
@@ -142,29 +153,30 @@ func (l listProcessor) filter(ctx context.Context, all []PR) ([]PR, error) {
 	}), nil
 }
 
-func (l listProcessor) render(ctx context.Context, all []PR) error {
-	switch strings.ToLower(l.opts.output) {
+func (l listProcessor) render(all []PR) error {
+	output := strings.ToLower(l.opts.output)
+	switch output {
 	case outputYAML:
 		return styles.DumpYAML(all)
 	case outputJSON:
 		return styles.DumpJSON(all)
 	case outputSimple:
-		return renderSimple(ctx, all)
+		return l.renderTemplate(listSimpleTpl, all)
 	default:
-		return util.StrErr("unknown output format: " + l.opts.output)
+		if tpl, ok := l.opts.CustomOutputTemplates[output]; ok {
+			return l.renderTemplate(tpl, all)
+		}
 	}
+
+	return util.StrErr("unknown output format: " + l.opts.output)
 }
 
-func renderSimple(ctx context.Context, all []PR) error {
-	cfg := config.From(ctx)
-	baseURL, _ := url.JoinPath(cfg.Repository.WebURL(), "pullRequest")
-	for _, pr := range all {
-		if pr.IsDraft {
-			fmt.Print("DRAFT | ")
-		}
-		fmt.Println(pr.Title)
-		fmt.Println("  " + pr.CreatedBy.DisplayName)
-		fmt.Println("  " + baseURL + "/" + strconv.Itoa(pr.PullRequestId))
-	}
-	return nil
+func (l listProcessor) renderTemplate(tpl string, all []PR) error {
+	return styles.RenderTemplate(tpl, all, template.FuncMap{
+		"webURL": l.webURL,
+	})
+}
+
+func (l listProcessor) webURL(pr PR) string {
+	return l.baseURL + "/" + strconv.Itoa(pr.PullRequestId)
 }

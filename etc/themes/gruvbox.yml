@@ -1,6 +1,9 @@
 name: gruvbox
 true_color: true
 tokens:
+  warning: "#fabd2f"
+  error: "#fb4934"
+  success: "#b8bb26"
   markdown:
     text: "#ebdbb2"
     heading: "#fabd2f"

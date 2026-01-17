@@ -13,6 +13,10 @@ type Theme struct {
 // Tokens contain the color code that the application will use to render outputs
 // Each field should be a
 type Tokens struct {
+	Warn    string `json:"warning" yaml:"warning"`
+	Error   string `json:"error"   yaml:"error"`
+	Success string `json:"success" yaml:"success"`
+
 	Markdown MarkdownTokens `json:"markdown" yaml:"markdown"`
 	Chroma   ChromaTokens   `json:"chroma"   yaml:"chroma"`
 }

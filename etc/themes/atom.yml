@@ -1,6 +1,9 @@
 name: atom
 true_color: true
 tokens:
+  warning: "#e5c07b"
+  error: "#e86671"
+  success: "#98c379"
   markdown:
     text: "#abb2bf"
     heading: "#c678dd"

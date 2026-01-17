@@ -65,10 +65,15 @@ func initMdRenderer(theme Theme) {
 	}
 }
 
-func HeadingStyle(s string) string  { return colorize(s, theme.Tokens.Markdown.Heading) }
-func CmdStyle(s string) string      { return colorize(s, theme.Tokens.Chroma.Function) }
+func Heading(s string) string       { return colorize(s, theme.Tokens.Markdown.Heading) }
+func Person(s string) string        { return colorize(s, theme.Tokens.Chroma.Name) }
+func Time(s string) string          { return colorize(s, theme.Tokens.Chroma.Number) }
+func Cmd(s string) string           { return colorize(s, theme.Tokens.Chroma.Function) }
 func FlagStyle(s string) string     { return colorize(s, theme.Tokens.Chroma.Operator) }
 func FlagTypeStyle(s string) string { return colorize(s, theme.Tokens.Chroma.KeywordType) }
+func Warn(s string) string          { return colorize(s, theme.Tokens.Warn) }
+func Success(s string) string       { return colorize(s, theme.Tokens.Success) }
+func Error(s string) string         { return colorize(s, theme.Tokens.Error) }
 
 func colorize(s, c string) string {
 	return out.String(s).Foreground(out.Color(c)).Bold().String()

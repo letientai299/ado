@@ -6,6 +6,9 @@ var NoTTy = Theme{
 	Name:      "noTTY",
 	TrueColor: false,
 	Tokens: Tokens{
+		Warn:    "",
+		Error:   "",
+		Success: "",
 		Markdown: MarkdownTokens{
 			Text:           "",
 			Heading:        "",

@@ -6,6 +6,9 @@ var Dark = Theme{
 	Name:      "dark",
 	TrueColor: true,
 	Tokens: Tokens{
+		Warn:    "#E2E210",
+		Error:   "#FD5B5B",
+		Success: "#00D787",
 		Markdown: MarkdownTokens{
 			Text:           "252",
 			Heading:        "39",

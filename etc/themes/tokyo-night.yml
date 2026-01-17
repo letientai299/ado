@@ -1,6 +1,9 @@
 name: tokyo-night
 true_color: true
 tokens:
+  warning: "#e0af68"
+  error: "#f7768e"
+  success: "#9ece6a"
   markdown:
     text: "#a9b1d6"
     heading: "#bb9af7"

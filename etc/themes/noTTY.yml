@@ -1,6 +1,9 @@
 name: noTTY
 true_color: false
 tokens:
+  warning: ""
+  error: ""
+  success: ""
   markdown:
     text: ""
     heading: ""
