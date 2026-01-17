@@ -59,18 +59,6 @@ jobs:
           key: go-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
           restore-keys: go-${{ runner.os }}-
 
-      - name: Install UPX
-        shell: bash
-        run: |
-          case "${{ matrix.goos }}" in
-            linux)
-              curl -sL https://github.com/upx/upx/releases/download/v5.1.0/upx-5.1.0-${{ matrix.goarch }}_linux.tar.xz | tar xJ
-              sudo mv upx-5.1.0-${{ matrix.goarch }}_linux/upx /usr/local/bin/
-              ;;
-            darwin) brew install upx ;;
-            windows) choco install upx ;;
-          esac
-
       - name: Build release binary
         shell: bash
         env:
@@ -78,10 +66,6 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
         run: mise run release
-
-      - name: Compress binary with UPX
-        shell: bash
-        run: upx --best --lzma bin/ado || true
 
       - name: Rename binary
         shell: bash
