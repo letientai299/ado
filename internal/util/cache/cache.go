@@ -44,26 +44,27 @@ func cachePath(key string) (string, error) {
 }
 
 // Get retrieves a cached value by key. Returns false if not found or error.
-func Get[T any](key string, v *T) bool {
+func Get[T any](key string) (*T, bool) {
+	v := new(T)
 	path, err := cachePath(key)
 	if err != nil {
 		log.Debug("cache miss: failed to get cache path", "key", key, "err", err)
-		return false
+		return v, false
 	}
 
 	data, err := os.ReadFile(path) //nolint:gosec
 	if err != nil {
 		log.Debug("cache miss", "key", key, "path", path)
-		return false
+		return v, false
 	}
 
 	if err = json.Unmarshal(data, v); err != nil {
 		log.Debug("cache error: failed to unmarshal", "key", key, "path", path, "err", err)
-		return false
+		return v, false
 	}
 
 	log.Debug("cache hit", "key", key, "path", path)
-	return true
+	return v, true
 }
 
 // Set stores a value in the cache by key.
