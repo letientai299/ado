@@ -49,7 +49,7 @@ func Get[T any](key string, v *T) bool {
 		return false
 	}
 
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) //nolint:gosec
 	if err != nil {
 		return false
 	}
@@ -61,14 +61,14 @@ func Get[T any](key string, v *T) bool {
 	return true
 }
 
-// Set stores a value in cache by key.
+// Set stores a value in the cache by key.
 func Set(key string, v any) error {
 	path, err := cachePath(key)
 	if err != nil {
 		return err
 	}
 
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+	if err = os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return err
 	}
 
@@ -78,13 +78,4 @@ func Set(key string, v any) error {
 	}
 
 	return os.WriteFile(path, data, 0o600)
-}
-
-// Delete removes a cached value by key.
-func Delete(key string) error {
-	path, err := cachePath(key)
-	if err != nil {
-		return err
-	}
-	return os.Remove(path)
 }

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"os"
-	"runtime/pprof"
 	"slices"
 
 	"github.com/charmbracelet/log"
@@ -15,13 +14,6 @@ import (
 )
 
 func main() {
-	if cpuProfile := os.Getenv("ADO_CPUPROFILE"); cpuProfile != "" {
-		f, _ := os.Create(cpuProfile)
-		defer f.Close()
-		_ = pprof.StartCPUProfile(f)
-		defer pprof.StopCPUProfile()
-	}
-
 	useColor := styles.UseColor()
 	if !useColor {
 		log.SetColorProfile(termenv.Ascii)
