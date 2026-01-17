@@ -26,7 +26,7 @@ var (
 )
 
 func Init(th Theme) {
-	if useColor() {
+	if UseColor() {
 		theme = th
 	}
 
@@ -44,7 +44,11 @@ func prepare() {
 	initJSONColorScheme(out)
 }
 
-func useColor() bool {
+func UseColor() bool {
+	if termenv.EnvNoColor() {
+		return false
+	}
+
 	v := os.Getenv("COLOR")
 	if v == "never" {
 		return false

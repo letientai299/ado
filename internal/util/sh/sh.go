@@ -26,15 +26,17 @@ func Run(script string) (string, error) {
 }
 
 // Bash executes the given script using bash and returns stdout and any error.
+// Uses --norc and --noprofile for faster startup by skipping rc/profile files.
 // If the execution fails, it logs stdout and stderr for debugging.
 func Bash(script string) (stdout string, err error) {
-	return execShell("bash", "-c", script)
+	return execShell("bash", "--norc", "--noprofile", "-c", script)
 }
 
 // Pwsh executes the given script using PowerShell (pwsh) and returns stdout and any error.
+// Uses -NoProfile, -NoLogo, -NonInteractive for faster startup and non-interactive execution.
 // If the execution fails, it logs stdout and stderr for debugging.
 func Pwsh(script string) (stdout string, err error) {
-	return execShell("pwsh", "-Command", script)
+	return execShell("pwsh", "-NoProfile", "-NoLogo", "-NonInteractive", "-Command", script)
 }
 
 func execShell(shell string, args ...string) (stdout string, err error) {
