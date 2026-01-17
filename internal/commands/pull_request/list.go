@@ -44,22 +44,36 @@ type ListConfig struct {
 	keywords []string // keywords to do filter PRs title and description
 
 	/* rendering */
-	output string // output format to use
+	output *util.EnumFlag // output format to use
 }
 
 func (l *ListConfig) OnResolved(c *cobra.Command) error {
-	// TODO (tai): doesn't work correctly, as the flag.Changed() isn't checked.
-	fs := c.Flags()
-	if !fs.Changed("output") {
-		l.output = l.DefaultOutput
+	// Add custom output formats from config
+	for name := range l.CustomOutputTemplates {
+		l.output.AddAllowed(name)
 	}
-	return nil
+
+	// Update default value if configured
+	if l.DefaultOutput != "" {
+		flag := c.PersistentFlags().Lookup("output")
+		if flag != nil {
+			flag.DefValue = l.DefaultOutput
+		}
+		// Set the value if not explicitly changed by user
+		if !c.Flags().Changed("output") {
+			_ = l.output.Set(l.DefaultOutput)
+		}
+	}
+
+	// Validate after all allowed values have been added
+	return l.output.Validate()
 }
 
 func listCmd() *cobra.Command {
 	opts := &ListConfig{
 		DefaultOutput:         outputSimple,
 		CustomOutputTemplates: make(map[string]string),
+		output:                util.NewEnumFlag(outputSimple, outputJSON, outputYAML),
 	}
 
 	config.Register(config.CommandConfig{
@@ -97,15 +111,12 @@ func listCmd() *cobra.Command {
 	flags.BoolVar(&opts.draft, "draft", false, "include draft PRs")
 
 	// render flags
-	flags.StringVarP(
-		&opts.output,
-		"output",
-		"o",
-		// TODO (tai): help should show resolved config value instead of hard-coded values
-		opts.DefaultOutput,
-		// TODO (tai): remove json format
-		"output format (builtin: simple, json, yaml)",
-	)
+	flags.VarP(opts.output, "output", "o", "output format")
+
+	if err := opts.output.RegisterCompletion(cmd, "output"); err != nil {
+		log.Error("failed to register output flag completion: " + err.Error())
+	}
+
 	return cmd
 }
 
@@ -178,7 +189,7 @@ func containsAll(pr PR, keywords []string) bool {
 }
 
 func (l listProcessor) render(all []PR) error {
-	output := strings.ToLower(l.opts.output)
+	output := strings.ToLower(l.opts.output.Value())
 	switch output {
 	case outputYAML:
 		return styles.DumpYAML(all)
@@ -192,7 +203,7 @@ func (l listProcessor) render(all []PR) error {
 		}
 	}
 
-	return util.StrErr("unknown output format: " + l.opts.output)
+	return util.StrErr("unknown output format: " + l.opts.output.Value())
 }
 
 func (l listProcessor) renderTemplate(tpl string, all []PR) error {

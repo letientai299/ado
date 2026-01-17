@@ -11,7 +11,7 @@ import (
 
 func helpFunc(defaultHelp func(*cobra.Command, []string)) func(*cobra.Command, []string) {
 	return func(cmd *cobra.Command, args []string) {
-		_ = initConfig(cmd.Root())
+		_ = initConfig(cmd)
 		defaultHelp(cmd, args)
 	}
 }
