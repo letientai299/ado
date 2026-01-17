@@ -40,7 +40,7 @@ alias = ["rel"]
 description = "Build the binary with compact size and better performance for release"
 outputs = ["bin/ado"]
 sources = ["*.go", "internal/**/*.*"]
-run = [
-  "CGO_ENABLED=0 go build -ldflags=\"-s -w\" -gcflags=\"all=-l -B\" -trimpath -o bin/ado .",
-  "ls -lah ./bin/ado",
-]
+env = { CGO_ENABLED = "0" }
+# Use single quotes for flag values to avoid quote escaping issues on Windows.
+# Double quotes get mangled when mise passes commands through Windows shells.
+run = "go build -ldflags='-s -w' -gcflags='all=-l -B' -trimpath -o bin/ado ."
