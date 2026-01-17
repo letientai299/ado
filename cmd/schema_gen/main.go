@@ -88,13 +88,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	gitRoot, err := gitcli.Root()
-	if err != nil {
-		log.Fatalf("failed to find git root: %v", err)
-	}
-
+	gitRoot := gitcli.Root()
 	outputPath := filepath.Join(gitRoot, "etc", "schemas", "config.json")
-	if err := os.MkdirAll(filepath.Dir(outputPath), 0o750); err != nil {
+	if err = os.MkdirAll(filepath.Dir(outputPath), 0o750); err != nil {
 		log.Fatalf("failed to create directory: %v", err)
 	}
 

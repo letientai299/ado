@@ -7,28 +7,20 @@ import (
 	"github.com/go-git/go-git/v5"
 )
 
-// TryRoot finds the git repo root, or fallback to current working if fail
-func TryRoot() string {
-	gitRoot, err := Root()
-	if err == nil {
-		return gitRoot
-	}
+// Root finds the git repo root, or fallback to current working if fail
+func Root() string {
 	wd, _ := os.Getwd()
-	return wd
-}
-
-func Root() (string, error) {
 	repo, err := Open()
 	if err != nil {
-		return "", err
+		return wd
 	}
 
 	wt, err := repo.Worktree()
 	if err != nil {
-		return "", err
+		return wd
 	}
 
-	return wt.Filesystem.Root(), nil
+	return wt.Filesystem.Root()
 }
 
 func Open() (*git.Repository, error) {

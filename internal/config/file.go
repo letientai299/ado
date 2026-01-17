@@ -145,7 +145,7 @@ func processIncludes(data map[string]any, baseDir string, visited map[string]str
 // working dir, then continue the search up to the git root dir.
 func findConfigFile() (string, error) {
 	wd, _ := os.Getwd()
-	gitRoot := gitcli.TryRoot()
+	gitRoot := gitcli.Root()
 
 	for {
 		for _, f := range configFileNames {
