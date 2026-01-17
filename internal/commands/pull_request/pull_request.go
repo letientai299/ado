@@ -3,6 +3,7 @@ package pull_request
 import (
 	_ "embed"
 
+	"github.com/letientai299/ado/internal/models"
 	"github.com/spf13/cobra"
 )
 
@@ -23,4 +24,14 @@ func Cmd() *cobra.Command {
 		updateCmd(),
 	)
 	return cmd
+}
+
+type PR struct {
+	PullRequestId int
+	Title         string
+	Description   string
+	IsDraft       bool
+	CreatedBy     models.IdentityRef
+	CreationDate  string
+	WebURL        string
 }

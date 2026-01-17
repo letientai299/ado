@@ -16,6 +16,7 @@ import (
 	"github.com/letientai299/ado/internal/rest/git_prs"
 	"github.com/letientai299/ado/internal/styles"
 	"github.com/letientai299/ado/internal/util"
+	"github.com/letientai299/ado/internal/util/foreach"
 	"github.com/spf13/cobra"
 )
 
@@ -27,8 +28,6 @@ const (
 
 //go:embed list_simple.tpl
 var listSimpleTpl string
-
-type PR = models.GitPullRequest
 
 // ListConfig holds configuration for the pr list command.
 // These values can be set in the config file under "pull-request.list".
@@ -141,7 +140,27 @@ func (l listProcessor) process(ctx context.Context) error {
 	return l.render(prs)
 }
 
-func (l listProcessor) query(ctx context.Context) ([]models.GitPullRequest, error) {
+func (l listProcessor) toPR(m models.GitPullRequest) PR {
+	pr := PR{
+		PullRequestId: m.PullRequestId,
+		Title:         m.Title,
+		Description:   m.Description,
+		IsDraft:       m.IsDraft,
+	}
+
+	if m.CreatedBy != nil {
+		pr.CreatedBy = *m.CreatedBy
+	}
+
+	if m.CreationDate != nil {
+		pr.CreationDate = m.CreationDate.Format("2006-01-02 15:04:05")
+	}
+
+	pr.WebURL = l.webURL(pr)
+	return pr
+}
+
+func (l listProcessor) query(ctx context.Context) ([]PR, error) {
 	criteria := &git_prs.SearchCriteria{
 		Status: util.Ptr(models.PullRequestStatusActive),
 	}
@@ -153,7 +172,8 @@ func (l listProcessor) query(ctx context.Context) ([]models.GitPullRequest, erro
 		log.Error(err)
 		return nil, err
 	}
-	return all, nil
+
+	return foreach.Map(all, l.toPR), nil
 }
 
 func (l listProcessor) filter(ctx context.Context, all []PR) ([]PR, error) {

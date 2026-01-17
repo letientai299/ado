@@ -2,6 +2,7 @@ package pull_request
 
 import (
 	"context"
+	"net/url"
 
 	"github.com/charmbracelet/log"
 	"github.com/letientai299/ado/internal/config"
@@ -28,7 +29,7 @@ func View(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	pr, err := rest.New(token).
+	m, err := rest.New(token).
 		Git().
 		PRs(cfg.Repository).
 		ByID(ctx, 1329796)
@@ -36,6 +37,8 @@ func View(ctx context.Context) error {
 		log.Error(err)
 		return err
 	}
-
+	baseURL, _ := url.JoinPath(cfg.Repository.WebURL(), "pullRequest")
+	lp := listProcessor{baseURL: baseURL}
+	pr := lp.toPR(*m)
 	return styles.DumpYAML(pr)
 }
