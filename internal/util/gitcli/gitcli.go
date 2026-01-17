@@ -18,14 +18,7 @@ func TryRoot() string {
 }
 
 func Root() (string, error) {
-	wd, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
-
-	repo, err := git.PlainOpenWithOptions(wd, &git.PlainOpenOptions{
-		DetectDotGit: true,
-	})
+	repo, err := Open()
 	if err != nil {
 		return "", err
 	}
@@ -36,4 +29,34 @@ func Root() (string, error) {
 	}
 
 	return wt.Filesystem.Root(), nil
+}
+
+func Open() (*git.Repository, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+
+	return git.PlainOpenWithOptions(wd, &git.PlainOpenOptions{
+		DetectDotGit: true,
+	})
+}
+
+// RemoteURL returns the first URL of the specified remote.
+func RemoteURL(remoteName string) (string, error) {
+	repo, err := Open()
+	if err != nil {
+		return "", err
+	}
+
+	remote, err := repo.Remote(remoteName)
+	if err != nil {
+		return "", err
+	}
+
+	if len(remote.Config().URLs) == 0 {
+		return "", git.ErrRemoteNotFound
+	}
+
+	return remote.Config().URLs[0], nil
 }

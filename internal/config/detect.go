@@ -6,19 +6,23 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/log"
-	"github.com/letientai299/ado/internal/util/sh"
+	"github.com/letientai299/ado/internal/util/gitcli"
 )
 
 func autoDetect(cfg *Config) error {
-	return detectRepo(cfg, sh.Run)
+	return detectRepo(cfg)
 }
 
-func detectRepo(cfg *Config, run sh.ScriptRunner) error {
+func detectRepo(cfg *Config) error {
+	if !cfg.cmd.Runnable() || cfg.cmd.Name() == "help" {
+		return nil
+	}
+
 	if cfg.Repository.Name != "" && cfg.Repository.Org != "" && cfg.Repository.Project != "" {
 		return nil // skip detecting since repo info is already set
 	}
 
-	gitOrigin, err := run(`git remote get-url origin`)
+	gitOrigin, err := gitcli.RemoteURL("origin")
 	if err != nil {
 		log.Errorf("fail to get git origin url: %v", err)
 		return err
