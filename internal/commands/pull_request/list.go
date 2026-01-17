@@ -30,7 +30,7 @@ var listSimpleTpl string
 
 type PR = models.GitPullRequest
 
-// listConfig holds configuration for the pr list command.
+// ListConfig holds configuration for the pr list command.
 // These values can be set in the config file under "pull-request.list".
 type ListConfig struct {
 	// Default output format to use if not specified.
@@ -38,9 +38,13 @@ type ListConfig struct {
 	// Custom output templates is a map of output format names to their templates.
 	CustomOutputTemplates map[string]string `yaml:"custom_output_templates" json:"custom_output_templates"`
 
+	/* filtering */
+	mine     bool     // shows only your PRs
+	draft    bool     // whether to include draft PRs
+	keywords []string // keywords to do filter PRs title and description
+
+	/* rendering */
 	output string // output format to use
-	mine   bool   // shows only your PRs
-	draft  bool   // whether to include draft PRs
 }
 
 func (l *ListConfig) OnResolved(c *cobra.Command) error {
@@ -76,6 +80,7 @@ func listCmd() *cobra.Command {
 			}
 			client := rest.New(token)
 			baseURL, _ := url.JoinPath(cfg.Repository.WebURL(), "pullRequest")
+			opts.keywords = args
 			return listProcessor{
 				opts:    opts,
 				cfg:     cfg,
@@ -155,8 +160,21 @@ func (l listProcessor) filter(ctx context.Context, all []PR) ([]PR, error) {
 			return true
 		}
 
-		return id != nil && pr.CreatedBy.Id != *id
+		if id != nil && pr.CreatedBy.Id != *id {
+			return true
+		}
+
+		return !containsAll(pr, l.opts.keywords)
 	}), nil
+}
+
+func containsAll(pr PR, keywords []string) bool {
+	for _, pattern := range keywords {
+		if !strings.Contains(pr.Title, pattern) && !strings.Contains(pr.Description, pattern) {
+			return false
+		}
+	}
+	return true
 }
 
 func (l listProcessor) render(all []PR) error {
