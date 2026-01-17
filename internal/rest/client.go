@@ -7,18 +7,11 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/letientai299/ado/internal/models"
-	"github.com/letientai299/ado/internal/util"
 )
 
 const (
 	apiVersion = "7.1"
 	adoHost    = "https://dev.azure.com"
-)
-
-const (
-	ErrNotFound       util.StrErr = "not found"
-	ErrInternalServer util.StrErr = "ADO server internal error"
-	ErrInvalidRequest util.StrErr = "invalid request"
 )
 
 func New(token string) *Client {
@@ -49,16 +42,10 @@ func (c Client) Identity(ctx context.Context, org string) (*models.Identity, err
 		return nil, err
 	}
 
-	body, err := call(c, req)
-	if err != nil {
-		return nil, err
-	}
-
 	type Temp struct {
 		AuthenticatedUser *models.Identity `json:"authenticatedUser"`
 	}
-
-	t, err := decode[Temp](body)
+	t, err := call[Temp](c, req)
 	if err != nil {
 		return nil, err
 	}
