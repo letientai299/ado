@@ -14,21 +14,30 @@ import (
 )
 
 func main() {
+	useColor := styles.UseColor()
+	if !useColor {
+		log.SetColorProfile(termenv.Ascii)
+	}
+
 	log.SetReportCaller(true)
-	ctx := config.WithDefault(context.Background(), newConfig())
+	ctx := config.WithDefault(context.Background(), newConfig(useColor))
 	if err := commands.Root().ExecuteContext(ctx); err != nil {
 		os.Exit(1)
 	}
 }
 
-func newConfig() *config.Config {
+func newConfig(useColor bool) *config.Config {
 	return &config.Config{
 		Debug: isDebugEnabled(),
-		Theme: chooseStyle(),
+		Theme: chooseStyle(useColor),
 	}
 }
 
-func chooseStyle() styles.Theme {
+func chooseStyle(useColor bool) styles.Theme {
+	if !useColor {
+		return styles.NoTTy
+	}
+
 	if !termenv.HasDarkBackground() {
 		return styles.Light
 	}
