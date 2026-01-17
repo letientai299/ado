@@ -1,3 +1,4 @@
+# $schema: https://mise.jdx.dev/schema/mise-task.json
 [tools]
 go = "1.25.5"
 gofumpt = "latest"
@@ -6,20 +7,22 @@ gotestsum = "latest"
 lefthook = "1.11.14"
 prettier = "latest"
 
+[env]
+CGO_ENABLED = "0"
+ADO_EXE="bin/ado"  # allow overriding to bin/ado.exe on windows
+_.file = ".env"
+
 [tasks.build]
 alias = ["b"]
 description = "Build the Go project"
-outputs = ["bin/ado"]
+outputs = ["{{env.ADO_EXE}}"]
 sources = ["*.go", "internal/**/*.*"]
-run = [
-  "go build -o bin/ado .",
-  "ls -lah ./bin/ado",
-]
+run = "go build -v -o {{env.ADO_EXE}} ."
 
 [tasks.run]
 alias = ["r"]
 depends = ["build"]
-run = "bin/ado"
+run = "{{env.ADO_EXE}}"
 
 [tasks.lint]
 alias = ["l"]
@@ -27,20 +30,17 @@ run = "golangci-lint run --fix ./..."
 
 [tasks.test]
 alias = ["t"]
-run = """
-gotestsum --format-hide-empty-pkg --format testdox -- \
-   -v -cover -race -timeout=20s ./...
-"""
+env = { CGO_ENABLED = "1" }
+run = "gotestsum --format-hide-empty-pkg --format testdox -- -v -cover -race -timeout=20s ./..."
+# can't use race detector on windows without installing mingw toolchain.
+# https://go.dev/doc/articles/race_detector#Requirements
+run_windows = "gotestsum --format-hide-empty-pkg --format testdox -- -v -cover -timeout=20s ./..."
 
 [tasks."fmt:go"]
 run = "golangci-lint fmt"
 
 [tasks.release]
-alias = ["rel"]
 description = "Build the binary with compact size and better performance for release"
-outputs = ["bin/ado"]
-sources = ["*.go", "internal/**/*.*"]
-env = { CGO_ENABLED = "0" }
-# Use single quotes for flag values to avoid quote escaping issues on Windows.
-# Double quotes get mangled when mise passes commands through Windows shells.
-run = "go build -ldflags='-s -w' -gcflags='all=-l -B' -trimpath -o bin/ado ."
+env = { GOFLAGS = "-ldflags=-s -ldflags=-w -trimpath" }
+run = "go build -v -o {{env.ADO_EXE}} ."
+
