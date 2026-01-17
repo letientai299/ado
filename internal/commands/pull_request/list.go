@@ -32,16 +32,18 @@ type PR = models.GitPullRequest
 
 // listConfig holds configuration for the pr list command.
 // These values can be set in the config file under "pull-request.list".
-type listConfig struct {
-	DefaultOutput         string            `yaml:"default_output"`
-	CustomOutputTemplates map[string]string `yaml:"custom_output_templates"`
+type ListConfig struct {
+	// Default output format to use if not specified.
+	DefaultOutput string `yaml:"default_output" json:"default_output"`
+	// Custom output templates is a map of output format names to their templates.
+	CustomOutputTemplates map[string]string `yaml:"custom_output_templates" json:"custom_output_templates"`
 
 	output string // output format to use
 	mine   bool   // shows only your PRs
 	draft  bool   // whether to include draft PRs
 }
 
-func (l *listConfig) OnResolved(c *cobra.Command) error {
+func (l *ListConfig) OnResolved(c *cobra.Command) error {
 	// TODO (tai): doesn't work correctly, as the flag.Changed() isn't checked.
 	fs := c.Flags()
 	if !fs.Changed("output") {
@@ -51,7 +53,7 @@ func (l *listConfig) OnResolved(c *cobra.Command) error {
 }
 
 func listCmd() *cobra.Command {
-	opts := &listConfig{
+	opts := &ListConfig{
 		DefaultOutput:         outputSimple,
 		CustomOutputTemplates: make(map[string]string),
 	}
@@ -103,7 +105,7 @@ func listCmd() *cobra.Command {
 }
 
 type listProcessor struct {
-	opts    *listConfig
+	opts    *ListConfig
 	client  *rest.Client
 	cfg     *config.Config
 	baseURL string

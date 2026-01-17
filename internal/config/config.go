@@ -49,9 +49,22 @@ func WithDefault(ctx context.Context, cfg *Config) context.Context {
 }
 
 type Config struct {
-	Repository Repository   `yaml:"repository,omitempty" json:"repository,omitempty"`
-	Debug      bool         `yaml:"debug,omitempty"      json:"debug,omitempty"`
-	Theme      styles.Theme `yaml:"theme"                json:"theme"`
+	// Repository settings (auto-detected from git remote if not set)
+	Repository Repository `yaml:"repository,omitempty" json:"repository,omitempty"`
+	// Debug mode enables verbose logging
+	Debug bool `yaml:"debug,omitempty" json:"debug,omitempty"`
+	// Theme configuration. Colors can be specified in several formats (consult lipgloss for
+	// examples):
+	//
+	//  - Hex: e.g. "#ffffff" for true color supported terminal.
+	//  - ANSI 16: "red", "green", "yellow", ...
+	//  - ANSI 256: 0-255
+	//
+	// Use `include!` directive to load the theme from external files.
+	//   theme:
+	//     include!: "~/.config/ado/themes/tokyo-night.yaml"
+	// See https://github.com/letientai299/ado/tree/main/etc/themes for some provided themes.
+	Theme styles.Theme `yaml:"theme" json:"theme"`
 
 	// Tenant is used to generate Microsoft Entra token, could be auto-detected via az CLI.
 	// If the default tenant is not the one usable for ADO queries, users can set this value
@@ -94,7 +107,7 @@ func (c *Config) fetchToken() (string, error) {
 	return azcli.GetToken(c.Tenant)
 }
 
-func (c Config) SetLogLevel() {
+func (c *Config) SetLogLevel() {
 	if c.Debug {
 		log.SetLevel(log.DebugLevel)
 	} else {
@@ -103,9 +116,12 @@ func (c Config) SetLogLevel() {
 }
 
 type Repository struct {
-	Org     string `json:"org,omitempty"     yaml:"org,omitempty"`
+	// Azure DevOps organization name
+	Org string `json:"org,omitempty" yaml:"org,omitempty"`
+	// Azure DevOps project name
 	Project string `json:"project,omitempty" yaml:"project,omitempty"`
-	Name    string `json:"name,omitempty"    yaml:"name,omitempty"`
+	// Repository name
+	Name string `json:"name,omitempty" yaml:"name,omitempty"`
 }
 
 func (r Repository) WebURL() string {

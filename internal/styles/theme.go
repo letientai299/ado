@@ -4,6 +4,19 @@ import (
 	"github.com/charmbracelet/glamour/ansi"
 )
 
+// Theme configuration for the application.
+//
+// Colors can be specified in several formats (consult lipgloss for examples):
+//   - Hex: "#ffffff" or "#fff"
+//
+// - ANSI 16: "red", "green", "yellow", "blue", "magenta", "cyan", "white", "black" (and "bright"
+// variants)
+//   - ANSI 256: "21" (0-255)
+//
+// For shared themes, use the `include!` directive to load from external files:
+//
+//	theme:
+//	  include!: "~/.config/ado/themes/tokyo-night.yaml"
 type Theme struct {
 	Name      string `json:"name"       yaml:"name"`
 	TrueColor bool   `json:"true_color" yaml:"true_color"`
@@ -11,7 +24,6 @@ type Theme struct {
 }
 
 // Tokens contain the color code that the application will use to render outputs
-// Each field should be a
 type Tokens struct {
 	Warn    string `json:"warning" yaml:"warning"`
 	Error   string `json:"error"   yaml:"error"`

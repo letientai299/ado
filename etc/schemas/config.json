@@ -1,0 +1,252 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/letientai299/ado/internal/config/config",
+  "properties": {
+    "repository": {
+      "properties": {
+        "org": {
+          "type": "string",
+          "markdownDescription": "Azure DevOps organization name"
+        },
+        "project": {
+          "type": "string",
+          "markdownDescription": "Azure DevOps project name"
+        },
+        "name": {
+          "type": "string",
+          "markdownDescription": "Repository name"
+        },
+        "include!": {
+          "type": "string",
+          "markdownDescription": "Include configuration from another file"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "markdownDescription": "Repository settings (auto-detected from git remote if not set)"
+    },
+    "debug": {
+      "type": "boolean",
+      "markdownDescription": "Debug **mode** _enables_ `verbose` logging"
+    },
+    "theme": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "true_color": {
+          "type": "boolean"
+        },
+        "tokens": {
+          "properties": {
+            "warning": {
+              "type": "string"
+            },
+            "error": {
+              "type": "string"
+            },
+            "success": {
+              "type": "string"
+            },
+            "markdown": {
+              "properties": {
+                "text": {
+                  "type": "string"
+                },
+                "heading": {
+                  "type": "string"
+                },
+                "h1": {
+                  "type": "string"
+                },
+                "h1_background": {
+                  "type": "string"
+                },
+                "horizontal_rule": {
+                  "type": "string"
+                },
+                "link": {
+                  "type": "string"
+                },
+                "link_text": {
+                  "type": "string"
+                },
+                "image": {
+                  "type": "string"
+                },
+                "image_text": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "code_background": {
+                  "type": "string"
+                },
+                "code_block": {
+                  "type": "string"
+                },
+                "include!": {
+                  "type": "string",
+                  "markdownDescription": "Include configuration from another file"
+                }
+              },
+              "additionalProperties": false,
+              "type": "object"
+            },
+            "chroma": {
+              "properties": {
+                "text": {
+                  "type": "string"
+                },
+                "error": {
+                  "type": "string"
+                },
+                "error_background": {
+                  "type": "string"
+                },
+                "comment": {
+                  "type": "string"
+                },
+                "comment_preproc": {
+                  "type": "string"
+                },
+                "keyword": {
+                  "type": "string"
+                },
+                "keyword_reserved": {
+                  "type": "string"
+                },
+                "keyword_namespace": {
+                  "type": "string"
+                },
+                "keyword_type": {
+                  "type": "string"
+                },
+                "operator": {
+                  "type": "string"
+                },
+                "punctuation": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "name_builtin": {
+                  "type": "string"
+                },
+                "name_tag": {
+                  "type": "string"
+                },
+                "name_attribute": {
+                  "type": "string"
+                },
+                "name_class": {
+                  "type": "string"
+                },
+                "name_constant": {
+                  "type": "string"
+                },
+                "name_decorator": {
+                  "type": "string"
+                },
+                "function": {
+                  "type": "string"
+                },
+                "string": {
+                  "type": "string"
+                },
+                "literal_string_escape": {
+                  "type": "string"
+                },
+                "number": {
+                  "type": "string"
+                },
+                "generic_deleted": {
+                  "type": "string"
+                },
+                "generic_inserted": {
+                  "type": "string"
+                },
+                "generic_subheading": {
+                  "type": "string"
+                },
+                "background": {
+                  "type": "string"
+                },
+                "include!": {
+                  "type": "string",
+                  "markdownDescription": "Include configuration from another file"
+                }
+              },
+              "additionalProperties": false,
+              "type": "object"
+            },
+            "include!": {
+              "type": "string",
+              "markdownDescription": "Include configuration from another file"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object"
+        },
+        "include!": {
+          "type": "string",
+          "markdownDescription": "Include configuration from another file"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "markdownDescription": "Theme configuration. Colors can be specified in several formats (consult lipgloss for\nexamples):\n\n - Hex: e.g. \"#ffffff\" for true color supported terminal.\n - ANSI 16: \"red\", \"green\", \"yellow\", ...\n - ANSI 256: 0-255\n\nUse `include!` directive to load the theme from external files.\n  theme:\n    include!: \"~/.config/ado/themes/tokyo-night.yaml\"\nSee https://github.com/letientai299/ado/tree/main/etc/themes for some provided themes."
+    },
+    "tenant": {
+      "type": "string",
+      "markdownDescription": "Tenant is used to generate Microsoft Entra token, could be auto-detected via az CLI.\nIf the default tenant is not the one usable for ADO queries, users can set this value\nin the config file, or via envAdoTenant.\n\nIf token is already set via envAdoPat, the Tenant value is unused."
+    },
+    "pull-request": {
+      "properties": {
+        "list": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$id": "https://github.com/letientai299/ado/internal/commands/pull_request/list-config",
+          "properties": {
+            "default_output": {
+              "type": "string",
+              "markdownDescription": "Default output format to use if not specified."
+            },
+            "custom_output_templates": {
+              "properties": {
+                "include!": {
+                  "type": "string",
+                  "markdownDescription": "Include configuration from another file"
+                }
+              },
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object",
+              "markdownDescription": "Custom output templates is a map of output format names to their templates."
+            },
+            "include!": {
+              "type": "string",
+              "markdownDescription": "Include configuration from another file"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "markdownDescription": "listConfig holds configuration for the pr list command."
+        },
+        "include!": {
+          "type": "string",
+          "markdownDescription": "Include configuration from another file"
+        }
+      },
+      "type": "object"
+    },
+    "include!": {
+      "type": "string",
+      "markdownDescription": "Include configuration from another file"
+    }
+  },
+  "additionalProperties": false,
+  "type": "object"
+}
