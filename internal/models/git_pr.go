@@ -32,7 +32,7 @@ type GitPullRequest struct {
 	// Used internally.
 	CompletionQueueTime *time.Time `json:"completionQueueTime,omitempty"`
 	// The identity of the user who created the pull request.
-	CreatedBy *IdentityRef `json:"createdBy,omitempty"`
+	CreatedBy IdentityRef `json:"createdBy,omitempty"`
 	// The date when the pull request was created.
 	CreationDate *time.Time `json:"creationDate,omitempty"`
 	// The description of the pull request.

@@ -2,6 +2,7 @@ package styles
 
 import (
 	"os"
+	"strings"
 	"text/template"
 )
 
@@ -14,6 +15,7 @@ var TemplateFuncs = template.FuncMap{
 	"time":     Time,
 	"cmdStyle": Cmd,
 	"markdown": Markdown,
+	"join":     strings.Join,
 }
 
 func RenderTemplate(tpl string, v any, funcMaps ...template.FuncMap) error {

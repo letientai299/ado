@@ -19,12 +19,16 @@ type EnumFlag struct {
 }
 
 // NewEnumFlag creates an EnumFlag with the given default value and built-in allowed values.
-func NewEnumFlag(defValue string, vals ...string) *EnumFlag {
+func NewEnumFlag(vals ...string) *EnumFlag {
 	sort.Strings(vals)
 	return &EnumFlag{
-		value:  defValue,
 		values: vals,
 	}
+}
+
+func (e *EnumFlag) Default(v string) *EnumFlag {
+	e.value = v
+	return e
 }
 
 func (e *EnumFlag) String() string { return e.value }

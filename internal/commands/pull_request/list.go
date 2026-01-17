@@ -58,7 +58,7 @@ func (l *ListConfig) OnResolved(c *cobra.Command) error {
 		if flag != nil {
 			flag.DefValue = l.DefaultOutput
 		}
-		// Set the value if not explicitly changed by user
+		// Set the value if not explicitly changed by the user
 		if !c.Flags().Changed("output") {
 			_ = l.output.Set(l.DefaultOutput)
 		}
@@ -72,7 +72,8 @@ func listCmd() *cobra.Command {
 	opts := &ListConfig{
 		DefaultOutput:         outputSimple,
 		CustomOutputTemplates: make(map[string]string),
-		output:                util.NewEnumFlag(outputSimple, outputJSON, outputYAML),
+		output: util.NewEnumFlag(outputSimple, outputJSON, outputYAML).
+			Default(outputSimple),
 	}
 
 	config.Register(config.CommandConfig{
@@ -148,15 +149,18 @@ func (l listProcessor) toPR(m models.GitPullRequest) PR {
 		IsDraft:       m.IsDraft,
 	}
 
-	if m.CreatedBy != nil {
-		pr.CreatedBy = *m.CreatedBy
-	}
-
 	if m.CreationDate != nil {
-		pr.CreationDate = m.CreationDate.Format("2006-01-02 15:04:05")
+		pr.CreationDate = m.CreationDate.Format("2006-01-02")
 	}
 
 	pr.WebURL = l.webURL(pr)
+
+	approvers := foreach.Map(
+		slices.DeleteFunc(m.Reviewers, isApproved),
+		func(x models.IdentityRefWithVote) models.IdentityRef { return x.IdentityRef },
+	)
+	pr.Approvers = foreach.Map(approvers, toIdentity)
+	pr.CreatedBy = toIdentity(m.CreatedBy)
 	return pr
 }
 
