@@ -1,6 +1,6 @@
 {{- /*gotype:github.com/spf13/cobra.Command */ -}}
-{{- if gt (len .Aliases) 1 -}}
-{{- "Aliases:" | heading }} {{ range $i, $alias := .Aliases }}{{ if $i }}, {{ end }}{{ $alias | cmdStyle }}{{ end }}
+{{- if gt (len .Aliases) 1}}
+{{ "Aliases:" | heading }} {{ range $i, $alias := .Aliases }}{{ if $i }}, {{ end }}{{ $alias | cmdStyle }}{{ end }}
 {{- end }}
 
 {{- if .HasExample }}
