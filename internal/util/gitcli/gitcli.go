@@ -4,7 +4,7 @@ package gitcli
 import (
 	"os"
 
-	"github.com/letientai299/ado/internal/util/sh"
+	"github.com/go-git/go-git/v5"
 )
 
 // TryRoot finds the git repo root, or fallback to current working if fail
@@ -18,5 +18,22 @@ func TryRoot() string {
 }
 
 func Root() (string, error) {
-	return sh.Run("git rev-parse --show-toplevel")
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	repo, err := git.PlainOpenWithOptions(wd, &git.PlainOpenOptions{
+		DetectDotGit: true,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	wt, err := repo.Worktree()
+	if err != nil {
+		return "", err
+	}
+
+	return wt.Filesystem.Root(), nil
 }
