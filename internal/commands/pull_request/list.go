@@ -221,5 +221,5 @@ func (l listProcessor) renderTemplate(tpl string, all []PR) error {
 }
 
 func (l listProcessor) webURL(pr PR) string {
-	return l.baseURL + "/" + strconv.Itoa(pr.PullRequestId)
+	return l.baseURL + "/" + strconv.FormatInt(int64(pr.PullRequestId), 10)
 }

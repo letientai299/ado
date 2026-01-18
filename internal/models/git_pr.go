@@ -69,7 +69,7 @@ type GitPullRequest struct {
 	// The current status of the pull request merge.
 	MergeStatus PullRequestAsyncStatus `json:"mergeStatus,omitempty"`
 	// The ID of the pull request.
-	PullRequestId int `json:"pullRequestId,omitempty"`
+	PullRequestId int32 `json:"pullRequestId,omitempty"`
 	// Used internally.
 	RemoteUrl string `json:"remoteUrl,omitempty"`
 	// The repository containing the target branch of the pull request.

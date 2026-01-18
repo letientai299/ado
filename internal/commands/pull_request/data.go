@@ -11,7 +11,7 @@ type Identity struct {
 }
 
 type PR struct {
-	PullRequestId int        `yaml:"pull_request_id" json:"pull_request_id,omitempty"`
+	PullRequestId int32      `yaml:"pull_request_id" json:"pull_request_id,omitempty"`
 	Title         string     `yaml:"title"           json:"title,omitempty"`
 	Description   string     `yaml:"description"     json:"description,omitempty"`
 	IsDraft       bool       `yaml:"is_draft"        json:"is_draft,omitempty"`
