@@ -15,6 +15,9 @@ import (
 //go:embed view.tpl
 var viewTpl string
 
+//go:embed view.md
+var viewDoc string
+
 type ViewConfig struct {
 	filterConfig
 	browse bool
@@ -27,6 +30,7 @@ func viewCmd() *cobra.Command {
 		Use:     "view <id|text>",
 		Aliases: []string{"v"},
 		Short:   "View detail of a pull request",
+		Long:    viewDoc,
 		Args:    cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts.keywords = args

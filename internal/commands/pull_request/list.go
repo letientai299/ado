@@ -26,6 +26,9 @@ const (
 //go:embed list_simple.tpl
 var listSimpleTpl string
 
+//go:embed list.md
+var listDoc string
+
 // ListConfig holds configuration for the pr list command.
 // These values can be set in the config file under "pull-request.list".
 type ListConfig struct {
@@ -77,6 +80,7 @@ func listCmd() *cobra.Command {
 		Use:     "list",
 		Aliases: []string{"ls", "l"},
 		Short:   "List pull requests in the repo",
+		Long:    listDoc,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts.keywords = args
 			c, err := newCommon(cmd, opts)

@@ -17,7 +17,7 @@ func ptr[T any](v T) *T { return &v }
 const (
 	defaultListIndent = 0
 	defaultMargin     = 0
-	MaxLineLength     = 100
+	MaxLineLength     = 80
 )
 
 var (
