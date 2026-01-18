@@ -8,6 +8,7 @@ import (
 
 	"github.com/letientai299/ado/internal/models"
 	"github.com/letientai299/ado/internal/styles"
+	"github.com/letientai299/ado/internal/util/sh"
 	"github.com/spf13/cobra"
 )
 
@@ -15,7 +16,8 @@ import (
 var viewTpl string
 
 type ViewConfig struct {
-	filterConfig `yaml:",inline"`
+	filterConfig
+	browse bool
 }
 
 func viewCmd() *cobra.Command {
@@ -37,6 +39,7 @@ func viewCmd() *cobra.Command {
 		},
 	}
 	opts.RegisterFlags(cmd)
+	cmd.Flags().BoolVarP(&opts.browse, "browse", "b", false, "open PR in browser")
 	return cmd
 }
 
@@ -103,5 +106,9 @@ func (v viewProcessor) renderByID(id int32) error {
 
 func (v viewProcessor) renderOne(m models.GitPullRequest) error {
 	pr := v.lp.toPR(m)
+	if v.opts.browse {
+		sh.Browse(pr.WebURL)
+		return nil
+	}
 	return styles.RenderTemplate(viewTpl, pr)
 }

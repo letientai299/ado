@@ -233,7 +233,7 @@
           },
           "additionalProperties": false,
           "type": "object",
-          "markdownDescription": "listConfig holds configuration for the pr list command."
+          "markdownDescription": "ListConfig holds configuration for the pr list command."
         },
         "include!": {
           "type": "string",
