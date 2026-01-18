@@ -7,7 +7,7 @@ tokens:
   markdown:
     text: "#a9b1d6"
     heading: "#bb9af7"
-    h1: "#bb9af7"
+    h1: "#2ac3de"
     h1_background: ""
     horizontal_rule: "#565f89"
     link: "#7aa2f7"

@@ -75,6 +75,7 @@ func initMdRenderer() {
 }
 
 func Heading(s string) string       { return colorize(s, theme.Tokens.Markdown.Heading) }
+func H1(s string) string            { return colorize(s, theme.Tokens.Markdown.H1) }
 func Person(s string) string        { return colorize(s, theme.Tokens.Chroma.Name) }
 func Time(s string) string          { return colorize(s, theme.Tokens.Chroma.Number) }
 func Cmd(s string) string           { return colorize(s, theme.Tokens.Chroma.Function) }

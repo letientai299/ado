@@ -12,7 +12,7 @@ var TokyoNight = Theme{
 		Markdown: MarkdownTokens{
 			Text:           "#a9b1d6",
 			Heading:        "#bb9af7",
-			H1:             "#bb9af7",
+			H1:             "#2ac3de",
 			H1Background:   "",
 			HorizontalRule: "#565f89",
 			Link:           "#7aa2f7",

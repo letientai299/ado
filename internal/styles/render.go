@@ -11,11 +11,13 @@ var TemplateFuncs = template.FuncMap{
 	"error":     Error,
 	"success":   Success,
 	"heading":   Heading,
+	"h1":        H1,
 	"person":    Person,
 	"time":      Time,
 	"cmdStyle":  Cmd,
 	"markdown":  Markdown,
 	"join":      strings.Join,
+	"indent":    Indent,
 	"trimSpace": strings.TrimSpace,
 }
 
