@@ -7,15 +7,16 @@ import (
 )
 
 var TemplateFuncs = template.FuncMap{
-	"warn":     Warn,
-	"error":    Error,
-	"success":  Success,
-	"heading":  Heading,
-	"person":   Person,
-	"time":     Time,
-	"cmdStyle": Cmd,
-	"markdown": Markdown,
-	"join":     strings.Join,
+	"warn":      Warn,
+	"error":     Error,
+	"success":   Success,
+	"heading":   Heading,
+	"person":    Person,
+	"time":      Time,
+	"cmdStyle":  Cmd,
+	"markdown":  Markdown,
+	"join":      strings.Join,
+	"trimSpace": strings.TrimSpace,
 }
 
 func RenderTemplate(tpl string, v any, funcMaps ...template.FuncMap) error {

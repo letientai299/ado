@@ -1,44 +1,107 @@
 package pull_request
 
 import (
-	"context"
-	"net/url"
+	_ "embed"
+	"errors"
+	"fmt"
+	"strconv"
 
-	"github.com/charmbracelet/log"
-	"github.com/letientai299/ado/internal/config"
-	"github.com/letientai299/ado/internal/rest"
+	"github.com/letientai299/ado/internal/models"
 	"github.com/letientai299/ado/internal/styles"
 	"github.com/spf13/cobra"
 )
 
-func viewCmd() *cobra.Command {
-	c := &cobra.Command{
-		Use:     "view",
-		Aliases: []string{"view", "v"},
-		Short:   "View detail of a pull request",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return View(cmd.Context())
-		},
-	}
-	return c
+//go:embed view.tpl
+var viewTpl string
+
+type ViewConfig struct {
+	filterConfig `yaml:",inline"`
 }
 
-func View(ctx context.Context) error {
-	cfg := config.From(ctx)
-	token, err := cfg.Token()
+func viewCmd() *cobra.Command {
+	opts := &ViewConfig{}
+
+	cmd := &cobra.Command{
+		Use:     "view <id|text>",
+		Aliases: []string{"v"},
+		Short:   "View detail of a pull request",
+		Args:    cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			opts.keywords = args
+			c, err := newCommon(cmd, opts)
+			if err != nil {
+				return err
+			}
+
+			return newViewProcessor(c).process(args)
+		},
+	}
+	opts.RegisterFlags(cmd)
+	return cmd
+}
+
+func newViewProcessor(c *common[*ViewConfig]) *viewProcessor {
+	lp := listProcessor{
+		common: &common[*ListConfig]{
+			ctx:     c.ctx,
+			cfg:     c.cfg,
+			client:  c.client,
+			baseURL: c.baseURL,
+			opts: &ListConfig{
+				filterConfig: c.opts.filterConfig,
+			},
+		},
+	}
+
+	return &viewProcessor{common: c, lp: lp}
+}
+
+type viewProcessor struct {
+	*common[*ViewConfig]
+	lp listProcessor
+}
+
+func (v viewProcessor) process(args []string) error {
+	// 1. Try if the first arg is a PR ID
+	if len(args) == 1 {
+		if id, err := strconv.ParseInt(args[0], 10, 32); err == nil {
+			var m *models.GitPullRequest
+			m, err = v.client.Git().PRs(v.cfg.Repository).ByID(v.ctx, int32(id))
+			if err == nil {
+				return v.renderOne(*m)
+			}
+		}
+	}
+
+	// 2. Fallback to list/filter logic
+	prs, err := v.lp.find()
 	if err != nil {
 		return err
 	}
-	m, err := rest.New(token).
-		Git().
-		PRs(cfg.Repository).
-		ByID(ctx, 1329796)
+
+	switch len(prs) {
+	case 0:
+		return errors.New("no pull request found matching the criteria")
+	case 1:
+		return v.renderByID(int32(prs[0].PullRequestId))
+	default:
+		for _, pr := range prs {
+			fmt.Printf("%s\t%s\n", pr.Title, pr.WebURL)
+		}
+		return nil
+	}
+}
+
+func (v viewProcessor) renderByID(id int32) error {
+	m, err := v.client.Git().PRs(v.cfg.Repository).ByID(v.ctx, id)
 	if err != nil {
-		log.Error(err)
 		return err
 	}
-	baseURL, _ := url.JoinPath(cfg.Repository.WebURL(), "pullRequest")
-	lp := listProcessor{baseURL: baseURL}
-	pr := lp.toPR(*m)
-	return styles.DumpYAML(pr)
+
+	return v.renderOne(*m)
+}
+
+func (v viewProcessor) renderOne(m models.GitPullRequest) error {
+	pr := v.lp.toPR(m)
+	return styles.RenderTemplate(viewTpl, pr)
 }

@@ -1,9 +1,7 @@
 package pull_request
 
 import (
-	"context"
 	_ "embed"
-	"net/url"
 	"slices"
 	"strconv"
 	"strings"
@@ -12,7 +10,6 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/letientai299/ado/internal/config"
 	"github.com/letientai299/ado/internal/models"
-	"github.com/letientai299/ado/internal/rest"
 	"github.com/letientai299/ado/internal/rest/git_prs"
 	"github.com/letientai299/ado/internal/styles"
 	"github.com/letientai299/ado/internal/util"
@@ -37,12 +34,7 @@ type ListConfig struct {
 	// Custom output templates is a map of output format names to their templates.
 	CustomOutputTemplates map[string]string `yaml:"custom_output_templates" json:"custom_output_templates"`
 
-	/* filtering */
-	mine     bool     // shows only your PRs
-	draft    bool     // whether to include draft PRs
-	keywords []string // keywords to do filter PRs title and description
-
-	/* rendering */
+	filterConfig
 	output *util.EnumFlag // output format to use
 }
 
@@ -86,29 +78,17 @@ func listCmd() *cobra.Command {
 		Aliases: []string{"ls", "l"},
 		Short:   "List pull requests in the repo",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-			cfg := config.From(ctx)
-			token, err := cfg.Token()
+			opts.keywords = args
+			c, err := newCommon(cmd, opts)
 			if err != nil {
 				return err
 			}
-			client := rest.New(token)
-			baseURL, _ := url.JoinPath(cfg.Repository.WebURL(), "pullRequest")
-			opts.keywords = args
-			return listProcessor{
-				opts:    opts,
-				cfg:     cfg,
-				client:  client,
-				baseURL: baseURL,
-			}.process(ctx)
+			return listProcessor{c}.process()
 		},
 	}
 
+	opts.RegisterFlags(cmd)
 	flags := cmd.PersistentFlags()
-
-	// filter flags
-	flags.BoolVarP(&opts.mine, "mine", "m", false, "show only your PRs")
-	flags.BoolVar(&opts.draft, "draft", false, "include draft PRs")
 
 	// render flags
 	flags.VarP(opts.output, "output", "o", "output format")
@@ -121,24 +101,25 @@ func listCmd() *cobra.Command {
 }
 
 type listProcessor struct {
-	opts    *ListConfig
-	client  *rest.Client
-	cfg     *config.Config
-	baseURL string
+	*common[*ListConfig]
 }
 
-func (l listProcessor) process(ctx context.Context) error {
-	prs, err := l.query(ctx)
-	if err != nil {
-		return err
-	}
-
-	prs, err = l.filter(ctx, prs)
+func (l listProcessor) process() error {
+	prs, err := l.find()
 	if err != nil {
 		return err
 	}
 
 	return l.render(prs)
+}
+
+func (l listProcessor) find() ([]PR, error) {
+	prs, err := l.query()
+	if err != nil {
+		return nil, err
+	}
+
+	return l.filter(prs)
 }
 
 func (l listProcessor) toPR(m models.GitPullRequest) PR {
@@ -164,14 +145,14 @@ func (l listProcessor) toPR(m models.GitPullRequest) PR {
 	return pr
 }
 
-func (l listProcessor) query(ctx context.Context) ([]PR, error) {
+func (l listProcessor) query() ([]PR, error) {
 	criteria := &git_prs.SearchCriteria{
 		Status: util.Ptr(models.PullRequestStatusActive),
 	}
 
 	all, err := l.client.Git().
 		PRs(l.cfg.Repository).
-		List(ctx, git_prs.ListQuery{SearchCriteria: criteria})
+		List(l.ctx, git_prs.ListQuery{SearchCriteria: criteria})
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -180,10 +161,10 @@ func (l listProcessor) query(ctx context.Context) ([]PR, error) {
 	return foreach.Map(all, l.toPR), nil
 }
 
-func (l listProcessor) filter(ctx context.Context, all []PR) ([]PR, error) {
+func (l listProcessor) filter(all []PR) ([]PR, error) {
 	var id *string
 	if l.opts.mine {
-		identity, err := l.client.Identity(ctx, l.cfg.Repository.Org)
+		identity, err := l.client.Identity(l.ctx, l.cfg.Repository.Org)
 		if err != nil {
 			return nil, err
 		}
@@ -199,13 +180,16 @@ func (l listProcessor) filter(ctx context.Context, all []PR) ([]PR, error) {
 			return true
 		}
 
-		return !containsAll(pr, l.opts.keywords)
+		return !l.containsAll(pr, l.opts.keywords)
 	}), nil
 }
 
-func containsAll(pr PR, keywords []string) bool {
+func (l listProcessor) containsAll(pr PR, keywords []string) bool {
+	title := strings.ToLower(pr.Title)
+	desc := strings.ToLower(pr.Description)
 	for _, pattern := range keywords {
-		if !strings.Contains(pr.Title, pattern) && !strings.Contains(pr.Description, pattern) {
+		p := strings.ToLower(pattern)
+		if !strings.Contains(title, p) && !strings.Contains(desc, p) {
 			return false
 		}
 	}

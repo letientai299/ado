@@ -14,3 +14,4 @@
 - Use modern UNIX CLI (e.g., rg, fd, ...) when possiblee;.
 - Don't generate go test code unnecessarily.
 - Generated files and temporary scripts should go into `.ai.dump` to prevent accidental commits.
+- Use modern Golang features, e.g. generic, new std libs, ... when possible to keep code simple, concise. 
