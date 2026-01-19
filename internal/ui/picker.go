@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/log"
 	"github.com/letientai299/ado/internal/styles"
 	"github.com/letientai299/ado/internal/util"
 	"github.com/letientai299/ado/internal/util/fp"
@@ -29,68 +30,54 @@ type PickConfig[T any] struct {
 	ItemHeight  int
 }
 
-func (p *PickConfig[T]) validate() error {
-	if p.Render == nil {
+func (pc *PickConfig[T]) toListItem(t T) list.Item {
+	return pickItem[T]{
+		value:       t,
+		filterValue: pc.FilterValue(t),
+	}
+}
+
+func (pc *PickConfig[T]) validate() error {
+	if pc.Render == nil {
 		return errPickConfigNeedRender
 	}
 
-	if p.FilterValue == nil {
+	if pc.FilterValue == nil {
 		return errPickConfigNeedFilter
 	}
 
-	if p.ItemHeight <= 0 {
-		p.ItemHeight = 1
+	if pc.ItemHeight <= 0 {
+		pc.ItemHeight = 1
 	}
 
 	return nil
 }
 
-// Pick allows the user to pick an item from a list.
-//
-// It should support fuzzy search. User could start typing immediately when the list appears to
-// filter items.
-//
-// It supports these key bindings: ctrl-n or up for "next", ctrl-p or down for "prev", ctrl-c
-// cancel/quit, and enter for selection.
-//
-// The caller controls item style via the PickConfig.Render function.
-// Other UI components will use the color tokens from styles.GetTheme.
+// Pick allows the user to pick an item from a list, supports fuzzy search and kwyboard navigations.
 func Pick[T any](items []T, cfg PickConfig[T]) fp.Optional[T] {
 	if len(items) == 0 {
 		return fp.Nil[T]()
 	}
 
-	err := cfg.validate()
-	util.PanicIf(err)
-
-	// Convert items to list.Item
-	listItems := make([]list.Item, len(items))
-	for i, item := range items {
-		// FilterValue is guaranteed to be valid after validation
-		listItems[i] = pickItem[T]{
-			value:       item,
-			filterValue: cfg.FilterValue(item),
-		}
-	}
-
-	delegate := &pickDelegate[T]{
-		items: items,
-		cfg:   cfg,
-	}
-
-	model := pickerModel[T]{
-		list:   newList(listItems, delegate),
-		cfg:    cfg,
-		picked: fp.Nil[T](),
-	}
-
-	p := tea.NewProgram(model, tea.WithOutput(os.Stderr))
-	finalModel, err := p.Run()
+	util.PanicIf(cfg.validate())
+	model := newPickModel(items, cfg)
+	prog := tea.NewProgram(model, tea.WithOutput(os.Stderr))
+	finalModel, err := prog.Run()
 	if err != nil {
+		log.Error("fail to pick item", "err", err)
 		return fp.Nil[T]()
 	}
 
-	return finalModel.(pickerModel[T]).picked
+	return finalModel.(*pickerModel[T]).picked
+}
+
+func newPickModel[T any](items []T, cfg PickConfig[T]) *pickerModel[T] {
+	listItems := fp.Map(items, cfg.toListItem)
+	return &pickerModel[T]{
+		list:   newList(listItems, &pickDelegate[T]{cfg: cfg}),
+		cfg:    cfg,
+		picked: fp.Nil[T](),
+	}
 }
 
 func newList[T any](listItems []list.Item, delegate *pickDelegate[T]) list.Model {
@@ -98,6 +85,7 @@ func newList[T any](listItems []list.Item, delegate *pickDelegate[T]) list.Model
 	noMargin := func(s *lipgloss.Style) {
 		*s = s.Margin(0).PaddingTop(0).PaddingBottom(0).PaddingLeft(0)
 	}
+
 	for _, s := range []*lipgloss.Style{
 		&l.Styles.Title,
 		&l.Styles.FilterPrompt,
@@ -128,13 +116,12 @@ type pickItem[T any] struct {
 func (pi pickItem[T]) FilterValue() string { return pi.filterValue }
 
 type pickDelegate[T any] struct {
-	items []T
-	cfg   PickConfig[T]
+	cfg PickConfig[T]
 }
 
-func (pd pickDelegate[T]) Height() int                               { return pd.cfg.ItemHeight }
-func (pd pickDelegate[T]) Spacing() int                              { return 0 }
-func (pd pickDelegate[T]) Update(msg tea.Msg, m *list.Model) tea.Cmd { return nil }
+func (pd pickDelegate[T]) Height() int                             { return pd.cfg.ItemHeight }
+func (pd pickDelegate[T]) Spacing() int                            { return 0 }
+func (pd pickDelegate[T]) Update(_ tea.Msg, _ *list.Model) tea.Cmd { return nil }
 
 func (pd pickDelegate[T]) Render(w io.Writer, m list.Model, filteredIndex int, it list.Item) {
 	if m.Index() == filteredIndex {
@@ -149,14 +136,15 @@ func (pd pickDelegate[T]) Render(w io.Writer, m list.Model, filteredIndex int, i
 
 // pickerModel is the tea.Model for the picker
 type pickerModel[T any] struct {
-	list   list.Model
-	cfg    PickConfig[T]
-	picked fp.Optional[T]
+	list     list.Model
+	cfg      PickConfig[T]
+	picked   fp.Optional[T]
+	quitting bool
 }
 
-func (m pickerModel[T]) Init() tea.Cmd { return nil }
+func (m *pickerModel[T]) Init() tea.Cmd { return nil }
 
-func (m pickerModel[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *pickerModel[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -170,21 +158,19 @@ func (m pickerModel[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			i, ok := m.list.SelectedItem().(pickItem[T])
 			if ok {
 				m.picked = fp.Some(i.value)
+				m.quitting = true
 				return m, tea.Quit
 			}
 
 		case "ctrl+c":
+			m.quitting = true
 			return m, tea.Quit
 		}
 
 	case tea.WindowSizeMsg:
-		h := msg.Height
 		// extra lines for: filter, help
 		maxH := len(m.list.Items())*m.cfg.ItemHeight + 2
-		if h > maxH {
-			h = maxH
-		}
-		m.list.SetSize(msg.Width, h)
+		m.list.SetSize(msg.Width, min(msg.Height, maxH))
 	}
 
 	var cmd tea.Cmd
@@ -192,4 +178,9 @@ func (m pickerModel[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m pickerModel[T]) View() string { return m.list.View() }
+func (m *pickerModel[T]) View() string {
+	if m.quitting {
+		return ""
+	}
+	return m.list.View()
+}
