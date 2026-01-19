@@ -60,7 +60,7 @@ type Config struct {
 	//  - ANSI 16: "red", "green", "yellow", ...
 	//  - ANSI 256: 0-255
 	//
-	// Use `include!` directive to load the theme from external files.
+	// Use the ` include!` directive to load the theme from external files.
 	//   theme:
 	//     include!: "~/.config/ado/themes/tokyo-night.yaml"
 	// See https://github.com/letientai299/ado/tree/main/etc/themes for some provided themes.
@@ -70,13 +70,13 @@ type Config struct {
 	// If the default tenant is not the one usable for ADO queries, users can set this value
 	// in the config file, or via envAdoTenant.
 	//
-	// If token is already set via envAdoPat, the Tenant value is unused.
+	// If a token is already set via ADO_PAT env, the Tenant value is unused.
 	Tenant string `yaml:"tenant,omitempty" json:"tenant,omitempty"`
 
-	// token is used to authenticate to ADO, must not be logged.
+	// The token is used to authenticate to ADO, must not be logged.
 	// If envAdoPat is available, this will be set to its value.
 	// Otherwise, Token() will lazily generate a Microsoft Entra token via az CLI.
-	token     string `yaml:"-" json:"-"`
+	token     string
 	tokenOnce sync.Once
 
 	// cmd is bound to executing cobra.Command at runtime in Resolve.
@@ -130,7 +130,7 @@ func (r Repository) WebURL() string {
 
 func AddGlobalFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().BoolP(flagDebug, "d", false, "enable debug logging")
-	cmd.PersistentFlags().StringP(flagTenant, "t", "", "tenant to get access token")
+	cmd.PersistentFlags().StringP(flagTenant, "T", "", "tenant to get access token")
 }
 
 // Resolve load Config configs from these sources in this priority order:
