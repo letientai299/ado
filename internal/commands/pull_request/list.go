@@ -13,7 +13,7 @@ import (
 	"github.com/letientai299/ado/internal/rest/git_prs"
 	"github.com/letientai299/ado/internal/styles"
 	"github.com/letientai299/ado/internal/util"
-	"github.com/letientai299/ado/internal/util/foreach"
+	"github.com/letientai299/ado/internal/util/fp"
 	"github.com/spf13/cobra"
 )
 
@@ -140,11 +140,11 @@ func (l listProcessor) toPR(m models.GitPullRequest) PR {
 
 	pr.WebURL = l.webURL(pr)
 
-	approvers := foreach.Map(
+	approvers := fp.Map(
 		slices.DeleteFunc(m.Reviewers, isApproved),
 		func(x models.IdentityRefWithVote) models.IdentityRef { return x.IdentityRef },
 	)
-	pr.Approvers = foreach.Map(approvers, toIdentity)
+	pr.Approvers = fp.Map(approvers, toIdentity)
 	pr.CreatedBy = toIdentity(m.CreatedBy)
 	return pr
 }
@@ -162,7 +162,7 @@ func (l listProcessor) query() ([]PR, error) {
 		return nil, err
 	}
 
-	return foreach.Map(all, l.toPR), nil
+	return fp.Map(all, l.toPR), nil
 }
 
 func (l listProcessor) filter(all []PR) ([]PR, error) {
