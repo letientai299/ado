@@ -59,7 +59,7 @@ func execShell(shell string, args ...string) (stdout string, err error) {
 }
 
 // Browse uses system tools to open a URL in the default browser.
-func Browse(url string) {
+func Browse(url string) error {
 	var err error
 
 	switch runtime.GOOS {
@@ -74,6 +74,8 @@ func Browse(url string) {
 	}
 
 	if err != nil {
-		log.Fatal(err)
+		log.Error("fail to browse", "url", url, "err", err)
 	}
+
+	return err
 }
