@@ -27,6 +27,10 @@ var (
 	out            = termenv.DefaultOutput()
 )
 
+func GetTheme() Theme {
+	return theme
+}
+
 func Init(th Theme) {
 	if UseColor() {
 		theme = th

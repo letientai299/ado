@@ -90,7 +90,7 @@ func (v viewProcessor) process(args []string) error {
 	case 0:
 		return errors.New("no pull request found matching the criteria")
 	case 1:
-		return v.renderByID(int32(prs[0].PullRequestId))
+		return v.renderByID(prs[0].PullRequestId)
 	default:
 		for _, pr := range prs {
 			fmt.Printf("%s\t%s\n", pr.Title, pr.WebURL)
@@ -111,8 +111,8 @@ func (v viewProcessor) renderByID(id int32) error {
 func (v viewProcessor) renderOne(m models.GitPullRequest) error {
 	pr := v.lp.toPR(m)
 	if v.opts.browse {
-		sh.Browse(pr.WebURL)
-		return nil
+		fmt.Println(pr.WebURL)
+		return sh.Browse(pr.WebURL)
 	}
-	return styles.RenderTemplate(viewTpl, pr)
+	return styles.RenderOut(viewTpl, pr)
 }

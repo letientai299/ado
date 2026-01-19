@@ -1,6 +1,7 @@
 package styles
 
 import (
+	"io"
 	"os"
 	"strings"
 	"text/template"
@@ -21,7 +22,7 @@ var TemplateFuncs = template.FuncMap{
 	"trimSpace": strings.TrimSpace,
 }
 
-func RenderTemplate(tpl string, v any, funcMaps ...template.FuncMap) error {
+func Render(w io.Writer, tpl string, v any, funcMaps ...template.FuncMap) error {
 	t := template.New("output")
 	t.Funcs(TemplateFuncs)
 	for _, m := range funcMaps {
@@ -33,5 +34,9 @@ func RenderTemplate(tpl string, v any, funcMaps ...template.FuncMap) error {
 		return err
 	}
 
-	return t.Execute(os.Stdout, v)
+	return t.Execute(w, v)
+}
+
+func RenderOut(tpl string, v any, funcMaps ...template.FuncMap) error {
+	return Render(os.Stdout, tpl, v, funcMaps...)
 }

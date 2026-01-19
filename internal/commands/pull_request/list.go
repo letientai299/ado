@@ -219,7 +219,7 @@ func (l listProcessor) render(all []PR) error {
 }
 
 func (l listProcessor) renderTemplate(tpl string, all []PR) error {
-	return styles.RenderTemplate(tpl, all, template.FuncMap{
+	return styles.RenderOut(tpl, all, template.FuncMap{
 		"webURL": l.webURL,
 	})
 }
