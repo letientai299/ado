@@ -64,17 +64,7 @@ func (l *ListConfig) OnResolved(c *cobra.Command) error {
 }
 
 func listCmd() *cobra.Command {
-	opts := &ListConfig{
-		DefaultOutput:         outputSimple,
-		CustomOutputTemplates: make(map[string]string),
-		output: util.NewEnumFlag(outputSimple, outputJSON, outputYAML).
-			Default(outputSimple),
-	}
-
-	config.Register(config.CommandConfig{
-		Path:   "pull-request.list",
-		Target: opts,
-	})
+	opts := defaultListConfig()
 
 	cmd := &cobra.Command{
 		Use:     "list",
@@ -102,6 +92,22 @@ func listCmd() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func defaultListConfig() *ListConfig {
+	opts := &ListConfig{
+		DefaultOutput:         outputSimple,
+		CustomOutputTemplates: make(map[string]string),
+		output: util.NewEnumFlag(outputSimple, outputJSON, outputYAML).
+			Default(outputSimple),
+	}
+
+	config.Register(config.CommandConfig{
+		Path:   "pull-request.list",
+		Target: opts,
+	})
+
+	return opts
 }
 
 type listProcessor struct {
