@@ -1,6 +1,7 @@
-# `pr list` list PRs for the current repository
+# `pr list` show PRs for the current repo
 
-You can provide one or more keywords to filter pull requests by their title or
+This provides a quick way to review or export info of all open PRs. You can
+provide one or more keywords to filter pull requests by their title or
 description. The search is case-insensitive.
 
 ## Custom output formats
