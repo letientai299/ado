@@ -1,11 +1,22 @@
 package config_cmd
 
 import (
+	_ "embed"
 	"fmt"
 	"os"
 
+	"github.com/letientai299/ado/internal/util"
 	"github.com/spf13/cobra"
 )
+
+//go:embed config.md
+var configDoc string
+
+//go:embed config.editor.md
+var configEditorDoc string
+
+//go:embed config.theme.md
+var configThemeDoc string
 
 const configTemplate = `
 # ADO CLI Configuration
@@ -41,9 +52,13 @@ func Cmd() *cobra.Command {
 		Use:     "config",
 		Aliases: []string{"cfg"},
 		Short:   "Manage ADO configuration",
-		Long:    "Commands for managing ADO CLI configuration files and schemas.",
+		Long:    configDoc,
 	}
+
 	cmd.AddCommand(initCmd())
+
+	cmd.AddCommand(util.HelpTopic("editor", configEditorDoc))
+	cmd.AddCommand(util.HelpTopic("theme", configThemeDoc))
 	return cmd
 }
 

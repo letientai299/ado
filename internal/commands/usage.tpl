@@ -4,7 +4,6 @@
 {{- end }}
 
 {{- if .HasExample }}
-
 {{ "Examples:" | heading }}
 {{ .Example }}
 {{- end }}
@@ -30,8 +29,7 @@
       {{- end }}
     {{- end }}
 
-    {{- if not .AllChildCommandsHaveGroup }}
-
+    {{ if not .AllChildCommandsHaveGroup }}
 {{ "Additional Commands:" | heading }}
       {{- range $cmds }}
         {{- if (and (eq .GroupID "") (or .IsAvailableCommand (eq .Name "help"))) }}
@@ -44,16 +42,14 @@
 
 {{- renderFlags . -}}
 
-{{- if .HasHelpSubCommands }}
-
+{{ if .HasHelpSubCommands }}
 {{ "Additional help topics:" | heading }}
   {{- range .Commands }}
     {{- if .IsAdditionalHelpTopicCommand }}
   {{ rpad .CommandPath .CommandPathPadding | cmdStyle }} {{ .Short }}
     {{- end }}
   {{- end }}
-{{- end }}
-
-{{- if .HasAvailableSubCommands }}
+{{- end}}
+{{ if .HasAvailableSubCommands }}
 Use "{{ .CommandPath | cmdStyle }} [command] --help" for more information about a command.
 {{- end -}}
