@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/charmbracelet/glamour"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/log"
 	"github.com/charmbracelet/x/term"
 	"github.com/muesli/reflow/wordwrap"
@@ -40,8 +41,13 @@ func Init(th Theme) {
 }
 
 func prepare() {
-	if theme.TrueColor {
+	if !UseColor() {
+		out = termenv.NewOutput(os.Stdout, termenv.WithProfile(termenv.Ascii))
+		lipgloss.SetColorProfile(termenv.Ascii)
+	} else if theme.TrueColor {
 		out = termenv.NewOutput(os.Stdout, termenv.WithProfile(termenv.TrueColor))
+	} else {
+		out = termenv.DefaultOutput()
 	}
 
 	initYAMLPrinter(out)
@@ -58,8 +64,11 @@ func UseColor() bool {
 		return false
 	}
 
-	return v == "always" ||
-		(term.IsTerminal(os.Stdout.Fd()) && term.IsTerminal(os.Stderr.Fd()))
+	if v == "always" {
+		return true
+	}
+
+	return term.IsTerminal(os.Stdout.Fd()) && term.IsTerminal(os.Stderr.Fd())
 }
 
 // initMdRenderer lazily initializes the glamour markdown renderer.

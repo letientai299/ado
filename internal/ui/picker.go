@@ -53,7 +53,7 @@ func (pc *PickConfig[T]) validate() error {
 	return nil
 }
 
-// Pick allows the user to pick an item from a list, supports fuzzy search and kwyboard navigations.
+// Pick allows the user to pick an item from a list, supports fuzzy search and keyboard navigations.
 func Pick[T any](items []T, cfg PickConfig[T]) fp.Optional[T] {
 	if len(items) == 0 {
 		return fp.Nil[T]()
@@ -82,6 +82,7 @@ func newPickModel[T any](items []T, cfg PickConfig[T]) *pickerModel[T] {
 
 func newList[T any](listItems []list.Item, delegate *pickDelegate[T]) list.Model {
 	l := list.New(listItems, delegate, 0, 0)
+
 	noMargin := func(s *lipgloss.Style) {
 		*s = s.Margin(0).PaddingTop(0).PaddingBottom(0).PaddingLeft(0)
 	}
