@@ -197,11 +197,11 @@
       },
       "additionalProperties": false,
       "type": "object",
-      "markdownDescription": "Theme configuration. Colors can be specified in several formats (consult lipgloss for\nexamples):\n\n - Hex: e.g. \"#ffffff\" for true color supported terminal.\n - ANSI 16: \"red\", \"green\", \"yellow\", ...\n - ANSI 256: 0-255\n\nUse `include!` directive to load the theme from external files.\n  theme:\n    include!: \"~/.config/ado/themes/tokyo-night.yaml\"\nSee https://github.com/letientai299/ado/tree/main/etc/themes for some provided themes."
+      "markdownDescription": "Theme configuration. Colors can be specified in several formats (consult lipgloss for\nexamples):\n\n - Hex: e.g. \"#ffffff\" for true color supported terminal.\n - ANSI 16: \"red\", \"green\", \"yellow\", ...\n - ANSI 256: 0-255\n\nUse the ` include!` directive to load the theme from external files.\n  theme:\n    include!: \"~/.config/ado/themes/tokyo-night.yaml\"\nSee https://github.com/letientai299/ado/tree/main/etc/themes for some provided themes."
     },
     "tenant": {
       "type": "string",
-      "markdownDescription": "Tenant is used to generate Microsoft Entra token, could be auto-detected via az CLI.\nIf the default tenant is not the one usable for ADO queries, users can set this value\nin the config file, or via envAdoTenant.\n\nIf token is already set via envAdoPat, the Tenant value is unused."
+      "markdownDescription": "Tenant is used to generate Microsoft Entra token, could be auto-detected via az CLI.\nIf the default tenant is not the one usable for ADO queries, users can set this value\nin the config file, or via envAdoTenant.\n\nIf a token is already set via ADO_PAT env, the Tenant value is unused."
     },
     "pull-request": {
       "properties": {
