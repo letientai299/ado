@@ -35,7 +35,7 @@ func viewCmd() *cobra.Command {
 		Aliases: []string{"v"},
 		Short:   "View detail of a pull request",
 		Long:    viewDoc,
-		Args:    cobra.MinimumNArgs(1),
+		Args:    cobra.MinimumNArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts.keywords = args
 			c, err := newCommon(cmd, opts)
