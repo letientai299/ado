@@ -2,8 +2,9 @@
 - Always checking online official docs and related resources or up-to-date info.
 - When making code changes:
   - Conform to exciting coding style and conventions
-  - Use `mise build`, `mise test`, `mise lint` and other [mise tasks](https://mise.jdx.dev/tasks)
-    instead of manually running commands.
+  - Use `mise build`, `mise test`, `mise lint` and other
+    [mise tasks](https://mise.jdx.dev/tasks) instead of manually running
+    commands.
   - Always aim to make minimal code change
 - General coding styles
   - Prefer early-return-pattern over nested conditionals.
@@ -13,5 +14,7 @@
   - Ensure no lint issues. Don't use `//nolint`.
 - Use modern UNIX CLI (e.g., rg, fd, ...) when possiblee;.
 - Don't generate go test code unnecessarily.
-- Generated files and temporary scripts should go into `.ai.dump` to prevent accidental commits.
-- Use modern Golang features, e.g. generic, new std libs, ... when possible to keep code simple, concise. 
+- Generated files and temporary scripts should go into `.ai.dump` to prevent
+  accidental commits.
+- Use modern Golang features, e.g. generic, new std libs, ... when possible to
+  keep code simple, concise.
