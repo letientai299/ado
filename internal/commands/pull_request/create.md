@@ -51,7 +51,7 @@ pull-request:
       {{ .BranchName | trimLeft "tai/"  |replaceAll "/" "-" }}
     pr_desc_template: |
       {{range .Commits}}
-      - <details open="false"><summary>{{.Subject}}</summary>
+      - <details><summary>{{.Subject}}</summary>
           {{.Body}}
         </details>
       {{end}}

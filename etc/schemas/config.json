@@ -235,6 +235,37 @@
           "type": "object",
           "markdownDescription": "ListConfig holds configuration for the pr list command."
         },
+        "create": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$id": "https://github.com/letientai299/ado/internal/commands/pull_request/create-config",
+          "properties": {
+            "templates": {
+              "properties": {
+                "title": {
+                  "type": "string"
+                },
+                "desc": {
+                  "type": "string"
+                },
+                "include!": {
+                  "type": "string",
+                  "markdownDescription": "Load config from another file"
+                }
+              },
+              "additionalProperties": false,
+              "type": "object"
+            },
+            "target": {
+              "type": "string"
+            },
+            "include!": {
+              "type": "string",
+              "markdownDescription": "Load config from another file"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object"
+        },
         "include!": {
           "type": "string",
           "markdownDescription": "Load config from another file"
