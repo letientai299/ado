@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/letientai299/ado/internal/styles"
 	"github.com/letientai299/ado/internal/util/azcli"
+	"github.com/letientai299/ado/internal/util/gitcli"
 	"github.com/letientai299/ado/internal/util/sh"
 	"github.com/spf13/cobra"
 )
@@ -163,6 +164,12 @@ func Resolve(cmd *cobra.Command, _ []string) error {
 	}
 
 	styles.Init(cfg.Theme)
+	token, err := cfg.Token()
+	if err != nil {
+		return err
+	}
+
+	gitcli.SetToken(token)
 	return nil
 }
 

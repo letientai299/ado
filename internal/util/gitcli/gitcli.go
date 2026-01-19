@@ -1,9 +1,9 @@
 package gitcli
 
 import (
+	"errors"
 	"fmt"
 	"os"
-	"slices"
 	"strings"
 
 	"github.com/go-git/go-git/v5"
@@ -13,6 +13,8 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/letientai299/ado/internal/util"
 )
+
+const Origin = "origin"
 
 // Root finds the git repo root or fallback to current working if fail
 func Root() string {
@@ -42,13 +44,13 @@ func Open() (*git.Repository, error) {
 }
 
 // RemoteURL returns the first URL of the specified remote.
-func RemoteURL(remoteName string) (string, error) {
+func RemoteURL() (string, error) {
 	repo, err := Open()
 	if err != nil {
 		return "", err
 	}
 
-	remote, err := repo.Remote(remoteName)
+	remote, err := repo.Remote(Origin)
 	if err != nil {
 		return "", err
 	}
@@ -86,45 +88,85 @@ type Commit struct {
 	Body    string
 }
 
-// CommitsAhead returns the commits between target and source branch.
-func CommitsAhead(target, source string) ([]Commit, error) {
+type Divergence struct {
+	Target string
+	Source string
+	Ahead  []Commit
+	Behind []Commit
+}
+
+func (d Divergence) NoChanges() bool {
+	return len(d.Ahead) == 0 && len(d.Behind) == 0
+}
+
+func (d Divergence) IsBehind() bool {
+	return len(d.Behind) > 0 && len(d.Ahead) == 0
+}
+
+func (d Divergence) IsAhead() bool {
+	return len(d.Ahead) > 0 && len(d.Behind) == 0
+}
+
+func (d Divergence) IsDiverged() bool {
+	return len(d.Ahead) > 0 && len(d.Behind) > 0
+}
+
+// CompareRevision returns the divergence between target and source branch.
+func CompareRevision(target, source string) (Divergence, error) {
 	repo, err := Open()
 	if err != nil {
-		return nil, err
+		return Divergence{}, err
 	}
 
 	targetHash, err := repo.ResolveRevision(plumbing.Revision(target))
 	if err != nil {
-		return nil, fmt.Errorf("target branch %s not found: %w", target, err)
+		return Divergence{}, fmt.Errorf("target branch %s not found: %w", target, err)
 	}
 
 	sourceHash, err := repo.ResolveRevision(plumbing.Revision(source))
 	if err != nil {
-		return nil, fmt.Errorf("source branch %s not found: %w", source, err)
+		return Divergence{}, fmt.Errorf("source branch %s not found: %w", source, err)
 	}
 
 	sourceCommit, err := repo.CommitObject(*sourceHash)
 	if err != nil {
-		return nil, err
+		return Divergence{}, err
 	}
 
 	targetCommit, err := repo.CommitObject(*targetHash)
 	if err != nil {
-		return nil, err
+		return Divergence{}, err
 	}
 
 	bases, err := sourceCommit.MergeBase(targetCommit)
 	if err != nil {
-		return nil, err
+		return Divergence{}, err
 	}
 
-	stopAt := make(map[plumbing.Hash]struct{}, len(bases)+1)
+	baseHashes := make(map[plumbing.Hash]struct{}, len(bases))
 	for _, b := range bases {
-		stopAt[b.Hash] = struct{}{}
+		baseHashes[b.Hash] = struct{}{}
 	}
-	stopAt[*targetHash] = struct{}{}
 
-	iter, err := repo.Log(&git.LogOptions{From: *sourceHash})
+	ahead, err := collectCommits(repo, *sourceHash, baseHashes)
+	if err != nil {
+		return Divergence{}, err
+	}
+
+	behind, err := collectCommits(repo, *targetHash, baseHashes)
+	if err != nil {
+		return Divergence{}, err
+	}
+
+	return Divergence{Target: target, Source: source, Ahead: ahead, Behind: behind}, nil
+}
+
+func collectCommits(
+	repo *git.Repository,
+	from plumbing.Hash,
+	stopAt map[plumbing.Hash]struct{},
+) ([]Commit, error) {
+	iter, err := repo.Log(&git.LogOptions{From: from})
 	if err != nil {
 		return nil, err
 	}
@@ -143,61 +185,29 @@ func CommitsAhead(target, source string) ([]Commit, error) {
 		})
 		return nil
 	})
-	if err != nil {
-		return nil, err
-	}
 
-	return commits, nil
-}
-
-// Push pushes the branch to the specified remote and sets upstream tracking.
-func Push(remoteName, branch string) error {
-	repo, err := Open()
-	if err != nil {
-		return err
-	}
-
-	refSpec := config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", branch, branch))
-	if err = repo.Push(&git.PushOptions{
-		RemoteName: remoteName,
-		RefSpecs:   []config.RefSpec{refSpec},
-	}); err != nil {
-		return err
-	}
-
-	// Set upstream tracking (-u flag equivalent)
-	cfg, err := repo.Config()
-	if err != nil {
-		return err
-	}
-
-	cfg.Branches[branch] = &config.Branch{
-		Name:   branch,
-		Remote: remoteName,
-		Merge:  plumbing.ReferenceName("refs/heads/" + branch),
-	}
-	return repo.SetConfig(cfg)
+	return commits, err
 }
 
 // RemoteBranchExists checks if a branch exists on the specified remote.
-func RemoteBranchExists(remoteName, branch string) bool {
+func RemoteBranchExists(branch string) bool {
 	repo, err := Open()
 	if err != nil {
 		return false
 	}
 
-	remote, err := repo.Remote(remoteName)
+	remote, err := repo.Remote(Origin)
 	if err != nil {
 		return false
 	}
 
-	refs, err := remote.List(&git.ListOptions{})
-	if err != nil {
-		return false
-	}
-
-	branchRef := plumbing.ReferenceName("refs/heads/" + branch)
-	return slices.ContainsFunc(refs, func(ref *plumbing.Reference) bool {
-		return ref.Name() == branchRef
+	err = remote.Fetch(&git.FetchOptions{
+		Auth: auth,
+		RefSpecs: []config.RefSpec{
+			config.RefSpec(fmt.Sprintf("refs/heads/%[1]s:refs/remotes/%[2]s/%[1]s", branch, Origin)),
+		},
+		Depth: 1,
 	})
+
+	return err == nil || errors.Is(err, git.NoErrAlreadyUpToDate)
 }

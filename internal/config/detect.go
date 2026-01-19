@@ -22,7 +22,7 @@ func detectRepo(cfg *Config) error {
 		return nil // skip detecting since repo info is already set
 	}
 
-	gitOrigin, err := gitcli.RemoteURL("origin")
+	gitOrigin, err := gitcli.RemoteURL()
 	if err != nil {
 		log.Errorf("fail to get git origin url: %v", err)
 		return err
