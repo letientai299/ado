@@ -44,8 +44,8 @@ func (g GitPRs) ByID(ctx context.Context, prID int32) (*models.GitPullRequest, e
 		ctx,
 		g.client,
 		prURL,
-		_shared.BoolQ("includeWorkItemRefs"),
-		_shared.BoolQ("includeCommits"),
+		_shared.Bool("includeWorkItemRefs"),
+		_shared.Bool("includeCommits"),
 	)
 }
 
@@ -60,6 +60,15 @@ func (g GitPRs) List(
 		return nil, err
 	}
 	return list.Value, err
+}
+
+// Create call
+// https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-requests/create
+func (g GitPRs) Create(
+	ctx context.Context,
+	pr models.GitPullRequest,
+) (*models.GitPullRequest, error) {
+	return httpPost[models.GitPullRequest](ctx, g.client, g.baseUrl, pr)
 }
 
 type List[T any] struct {

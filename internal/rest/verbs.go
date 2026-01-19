@@ -12,19 +12,14 @@ import (
 	"github.com/letientai299/ado/internal/rest/_shared"
 )
 
-func httpGet[T any](
-	ctx context.Context,
-	c Client,
-	url string,
-	queries ..._shared.Querier,
-) (*T, error) {
-	var sb strings.Builder
-	sb.WriteString(url)
-	sb.WriteString("?api-version=")
-	sb.WriteString(apiVersion)
-	_shared.Queriers(queries).AppendTo(&sb)
-	url = sb.String()
+var apiVersionQuery = _shared.KV[string]{
+	Key:   "api-version",
+	Value: apiVersion,
+}
 
+func httpGet[T any](ctx context.Context, c Client, url string, qs ..._shared.Querier) (*T, error) {
+	qs = append(qs, apiVersionQuery)
+	url = appendQueries(url, qs...)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		log.Errorf("fail to create HTTP request: %v", err)
@@ -32,6 +27,39 @@ func httpGet[T any](
 	}
 
 	return call[T](c, req)
+}
+
+func httpPost[T any](ctx context.Context, c Client, url string, body any) (*T, error) {
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+
+	url = appendQueries(url, apiVersionQuery)
+	req, err := newRequest(ctx, http.MethodPost, url, strings.NewReader(string(jsonBody)))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	return call[T](c, req)
+}
+
+func appendQueries(url string, queries ..._shared.Querier) string {
+	var sb strings.Builder
+	sb.WriteString(url)
+	sb.WriteByte('?')
+	_shared.Queriers(queries).AppendTo(&sb)
+	return sb.String()
+}
+
+func newRequest(ctx context.Context, method, url string, body io.Reader) (*http.Request, error) {
+	var sb strings.Builder
+	sb.WriteString(url)
+	sb.WriteString("?api-version=")
+	sb.WriteString(apiVersion)
+	return http.NewRequestWithContext(ctx, method, sb.String(), body)
 }
 
 func call[T any](c Client, req *http.Request) (*T, error) {
