@@ -38,14 +38,7 @@ func (e Editor) Edit(original string) (string, error) {
 		return "", err
 	}
 
-	shell := "sh"
-	args := []string{"-c", e.cmd + ` "$1"`, "--", tmpFile.Name()}
-	if runtime.GOOS == "windows" {
-		shell = "pwsh"
-		args = []string{"-NoProfile", "-Command", e.cmd + " $args[0]", tmpFile.Name()}
-	}
-
-	if err := e.run(shell, args...); err != nil {
+	if err = Open(e.cmd, tmpFile.Name()); err != nil {
 		log.Errorf("fail to run editor: %v", err)
 		return "", err
 	}
@@ -59,10 +52,17 @@ func (e Editor) Edit(original string) (string, error) {
 	return string(updated), nil
 }
 
-func (e Editor) run(shell string, args ...string) error {
-	cmd := exec.Command(shell, args...)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
+func Open(cmd, filePath string) error {
+	shell := "sh"
+	args := []string{"-c", cmd + ` "$1"`, "--", filePath}
+	if runtime.GOOS == "windows" {
+		shell = "pwsh"
+		args = []string{"-NoProfile", "-Command", cmd + " $args[0]", filePath}
+	}
+
+	x := exec.Command(shell, args...)
+	x.Stdin = os.Stdin
+	x.Stdout = os.Stdout
+	x.Stderr = os.Stderr
+	return x.Run()
 }

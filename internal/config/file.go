@@ -24,6 +24,7 @@ func resolveConfigFile(cfg *Config) error {
 	}
 
 	log.Debugf("found config file %v", filePath)
+	cfg.filePath = filePath
 
 	data, err := loadYAMLWithIncludes(filePath, make(map[string]struct{}))
 	if err != nil {

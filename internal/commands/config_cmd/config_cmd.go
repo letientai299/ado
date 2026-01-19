@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/letientai299/ado/internal/config"
 	"github.com/letientai299/ado/internal/util"
+	"github.com/letientai299/ado/internal/util/editor"
 	"github.com/spf13/cobra"
 )
 
@@ -56,6 +58,7 @@ func Cmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(initCmd())
+	cmd.AddCommand(editCmd())
 
 	cmd.AddCommand(util.HelpTopic("editor", configEditorDoc))
 	cmd.AddCommand(util.HelpTopic("theme", configThemeDoc))
@@ -86,4 +89,21 @@ func initCmd() *cobra.Command {
 
 	cmd.Flags().BoolVarP(&force, "force", "f", false, "overwrite existing config file")
 	return cmd
+}
+
+func editCmd() *cobra.Command {
+	c := &cobra.Command{
+		Use:     "edit",
+		Aliases: []string{"e"},
+		Short:   "Edit the config file in the configured editor",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg := config.From(cmd.Context())
+			file := cfg.FilePath()
+			if file == "" {
+				return fmt.Errorf("config file not found")
+			}
+			return editor.Open(cfg.Editor, file)
+		},
+	}
+	return c
 }

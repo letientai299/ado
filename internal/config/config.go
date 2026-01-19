@@ -92,6 +92,9 @@ type Config struct {
 
 	// cmd is bound to executing cobra.Command at runtime in Resolve.
 	cmd *cobra.Command
+
+	// filePath is the resolved path to the config file, might be empty.
+	filePath string
 }
 
 // Token returns the authentication token, lazily fetching it via az CLI if needed.
@@ -125,6 +128,8 @@ func (c *Config) SetLogLevel() {
 		log.SetLevel(log.InfoLevel)
 	}
 }
+
+func (c *Config) FilePath() string { return c.filePath }
 
 type Repository struct {
 	// Azure DevOps organization name
