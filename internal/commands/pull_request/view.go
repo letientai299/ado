@@ -4,10 +4,14 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"io"
 	"strconv"
+	"strings"
 
 	"github.com/letientai299/ado/internal/models"
 	"github.com/letientai299/ado/internal/styles"
+	"github.com/letientai299/ado/internal/ui"
+	"github.com/letientai299/ado/internal/util"
 	"github.com/letientai299/ado/internal/util/sh"
 	"github.com/spf13/cobra"
 )
@@ -92,11 +96,26 @@ func (v viewProcessor) process(args []string) error {
 	case 1:
 		return v.renderByID(prs[0].PullRequestId)
 	default:
-		for _, pr := range prs {
-			fmt.Printf("%s\t%s\n", pr.Title, pr.WebURL)
-		}
-		return nil
+		return v.pick(prs)
 	}
+}
+
+const prPickTpl = `{{.Title}} ({{.CreatedBy.Name|person}}, {{.CreationDate|time}}{{if .IsDraft}}, {{warn "DRAFT"}}{{end}})`
+
+func (v viewProcessor) pick(prs []PR) error {
+	selected := ui.Pick(prs, ui.PickConfig[PR]{
+		Render: func(w io.Writer, pr PR, matches []int) {
+			pr.Title = styles.HighlightMatch(pr.Title, matches)
+			util.PanicIf(styles.Render(w, prPickTpl, pr))
+		},
+		FilterValue: func(pr PR) string { return strings.ToLower(pr.Title) },
+	})
+
+	if selected.IsSome() {
+		pr := selected.Get()
+		return v.renderByID(pr.PullRequestId)
+	}
+	return errors.New("no pull request selected")
 }
 
 func (v viewProcessor) renderByID(id int32) error {

@@ -40,3 +40,26 @@ func Render(w io.Writer, tpl string, v any, funcMaps ...template.FuncMap) error 
 func RenderOut(tpl string, v any, funcMaps ...template.FuncMap) error {
 	return Render(os.Stdout, tpl, v, funcMaps...)
 }
+
+func HighlightMatch(s string, matches []int) string {
+	if len(matches) == 0 {
+		return s
+	}
+
+	var b strings.Builder
+	runes := []rune(s)
+	matchSet := make(map[int]bool)
+	for _, m := range matches {
+		matchSet[m] = true
+	}
+
+	for i, r := range runes {
+		if matchSet[i] {
+			b.WriteString(Success(string(r)))
+		} else {
+			b.WriteRune(r)
+		}
+	}
+
+	return b.String()
+}
