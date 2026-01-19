@@ -87,7 +87,13 @@ func FlagStyle(s string) string     { return colorize(s, theme.Tokens.Chroma.Ope
 func FlagTypeStyle(s string) string { return colorize(s, theme.Tokens.Chroma.KeywordType) }
 func Warn(s string) string          { return colorize(s, theme.Tokens.Warn) }
 func Success(s string) string       { return colorize(s, theme.Tokens.Success) }
-func Error(s string) string         { return colorize(s, theme.Tokens.Error) }
+func Highlight(s string) string     { return underline(colorize(s, theme.Tokens.Success)) }
+
+func underline(s string) string {
+	return out.String(s).Underline().String()
+}
+
+func Error(s string) string { return colorize(s, theme.Tokens.Error) }
 
 func colorize(s, c string) string {
 	return out.String(s).Foreground(out.Color(c)).Bold().String()

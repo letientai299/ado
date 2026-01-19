@@ -11,6 +11,7 @@ var TemplateFuncs = template.FuncMap{
 	"warn":      Warn,
 	"error":     Error,
 	"success":   Success,
+	"highlight": Highlight,
 	"heading":   Heading,
 	"h1":        H1,
 	"person":    Person,
@@ -55,7 +56,7 @@ func HighlightMatch(s string, matches []int) string {
 
 	for i, r := range runes {
 		if matchSet[i] {
-			b.WriteString(Success(string(r)))
+			b.WriteString(Highlight(string(r)))
 		} else {
 			b.WriteRune(r)
 		}
