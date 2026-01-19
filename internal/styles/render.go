@@ -21,6 +21,7 @@ var TemplateFuncs = template.FuncMap{
 	"join":       strings.Join,
 	"indent":     Indent,
 	"trimSpace":  strings.TrimSpace,
+	"trimLeft":   strings.TrimLeft,
 	"replaceAll": strings.ReplaceAll,
 }
 
@@ -37,6 +38,12 @@ func Render(w io.Writer, tpl string, v any, funcMaps ...template.FuncMap) error 
 	}
 
 	return t.Execute(w, v)
+}
+
+func RenderS(tpl string, v any, funcMaps ...template.FuncMap) (string, error) {
+	var sb strings.Builder
+	err := Render(&sb, tpl, v, funcMaps...)
+	return sb.String(), err
 }
 
 func RenderOut(tpl string, v any, funcMaps ...template.FuncMap) error {
