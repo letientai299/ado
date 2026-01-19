@@ -8,19 +8,20 @@ import (
 )
 
 var TemplateFuncs = template.FuncMap{
-	"warn":      Warn,
-	"error":     Error,
-	"success":   Success,
-	"highlight": Highlight,
-	"heading":   Heading,
-	"h1":        H1,
-	"person":    Person,
-	"time":      Time,
-	"cmdStyle":  Cmd,
-	"markdown":  Markdown,
-	"join":      strings.Join,
-	"indent":    Indent,
-	"trimSpace": strings.TrimSpace,
+	"warn":       Warn,
+	"error":      Error,
+	"success":    Success,
+	"highlight":  Highlight,
+	"heading":    Heading,
+	"h1":         H1,
+	"person":     Person,
+	"time":       Time,
+	"cmdStyle":   Cmd,
+	"markdown":   Markdown,
+	"join":       strings.Join,
+	"indent":     Indent,
+	"trimSpace":  strings.TrimSpace,
+	"replaceAll": strings.ReplaceAll,
 }
 
 func Render(w io.Writer, tpl string, v any, funcMaps ...template.FuncMap) error {
