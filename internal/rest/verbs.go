@@ -36,7 +36,26 @@ func httpPost[T any](ctx context.Context, c Client, url string, body any) (*T, e
 	}
 
 	url = appendQueries(url, apiVersionQuery)
-	req, err := newRequest(ctx, http.MethodPost, url, strings.NewReader(string(jsonBody)))
+	var b io.Reader = strings.NewReader(string(jsonBody))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, b)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	return call[T](c, req)
+}
+
+func httpPatch[T any](ctx context.Context, c Client, url string, body any) (*T, error) {
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+
+	url = appendQueries(url, apiVersionQuery)
+	var b io.Reader = strings.NewReader(string(jsonBody))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, url, b)
 	if err != nil {
 		return nil, err
 	}
@@ -54,14 +73,6 @@ func appendQueries(url string, queries ..._shared.Querier) string {
 	return sb.String()
 }
 
-func newRequest(ctx context.Context, method, url string, body io.Reader) (*http.Request, error) {
-	var sb strings.Builder
-	sb.WriteString(url)
-	sb.WriteString("?api-version=")
-	sb.WriteString(apiVersion)
-	return http.NewRequestWithContext(ctx, method, sb.String(), body)
-}
-
 func call[T any](c Client, req *http.Request) (*T, error) {
 	log.Debugf("HTTP request: %s %s", req.Method, req.URL)
 
@@ -75,6 +86,8 @@ func call[T any](c Client, req *http.Request) (*T, error) {
 	defer func() { _ = resp.Body.Close() }()
 
 	if err = validateResponse(resp); err != nil {
+		all, _ := io.ReadAll(resp.Body)
+		log.Errorf("HTTP response: %s %s\n%s", resp.Status, resp.Request.URL.RequestURI(), all)
 		return nil, err
 	}
 
@@ -84,6 +97,7 @@ func call[T any](c Client, req *http.Request) (*T, error) {
 func validateResponse(resp *http.Response) error {
 	code := resp.StatusCode
 	uri := resp.Request.URL.RequestURI()
+
 	if code == 404 {
 		return ErrNotFound.WithURI(uri)
 	}

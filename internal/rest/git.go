@@ -71,6 +71,17 @@ func (g GitPRs) Create(
 	return httpPost[models.GitPullRequest](ctx, g.client, g.baseUrl, pr)
 }
 
+// Update call
+// https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-requests/update
+func (g GitPRs) Update(
+	ctx context.Context,
+	id int32,
+	pr models.GitPullRequest,
+) (*models.GitPullRequest, error) {
+	prURL, _ := url.JoinPath(g.baseUrl, strconv.FormatInt(int64(id), 10))
+	return httpPatch[models.GitPullRequest](ctx, g.client, prURL, pr)
+}
+
 type List[T any] struct {
 	Value []T `json:"value"`
 	Count int `json:"count"`

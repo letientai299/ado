@@ -18,14 +18,17 @@ type Bool string
 
 func (b Bool) AppendTo(w io.Writer) {
 	if b != "" {
-		_, _ = w.Write([]byte("&" + string(b) + "=true"))
+		_, _ = w.Write([]byte(string(b) + "=true"))
 	}
 }
 
 type Queriers []Querier
 
 func (qs Queriers) AppendTo(w io.Writer) {
-	for _, q := range qs {
+	for i, q := range qs {
+		if i > 0 {
+			_, _ = w.Write([]byte("&"))
+		}
 		q.AppendTo(w)
 	}
 }
@@ -36,6 +39,6 @@ type KV[T any] struct {
 }
 
 func (kv KV[T]) AppendTo(w io.Writer) {
-	_, _ = w.Write([]byte("&" + kv.Key + "="))
+	_, _ = w.Write([]byte(kv.Key + "="))
 	_, _ = fmt.Fprint(w, kv.Value)
 }
