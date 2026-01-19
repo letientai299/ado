@@ -203,6 +203,10 @@
       "type": "string",
       "markdownDescription": "Tenant is used to generate Microsoft Entra token, could be auto-detected via az CLI.\nIf the default tenant is not the one usable for ADO queries, users can set this value\nin the config file, or via envAdoTenant.\n\nIf a token is already set via ADO_PAT env, the Tenant value is unused."
     },
+    "editor": {
+      "type": "string",
+      "markdownDescription": "Editor specifies the command to use for editing PR descriptions and other interactive text.\nIf not set, falls back to the EDITOR environment variable, then common defaults.\n\nExamples:\n  - Terminal editors: vim, nano\n  - Vs Code: code --wait\n  - IntelliJ IDEA: idea --wait"
+    },
     "pull-request": {
       "properties": {
         "list": {

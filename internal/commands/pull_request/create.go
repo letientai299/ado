@@ -3,7 +3,6 @@ package pull_request
 import (
 	_ "embed"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/letientai299/ado/internal/config"
@@ -194,8 +193,8 @@ func (p *createProcessor) genPrInfo(branch string, commits []gitcli.Commit) (*pr
 func (p *createProcessor) editPrInfo(info *prInfo) (*prInfo, error) {
 	content := fmt.Sprintf("%s\n\n%s", info.title, info.desc)
 
-	// TODO (tai): add a global config for editor command, and guide for using Vscode, jetbrains, ...
-	ed := editor.New("PR_EDIT*.md", os.Getenv("EDITOR"))
+	// Use the configured editor from global config, which handles fallbacks properly
+	ed := editor.New("PR_EDIT*.md", p.cfg.Editor)
 
 	updatedContent, err := ed.Edit(content)
 	if err != nil {

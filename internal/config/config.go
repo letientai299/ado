@@ -26,6 +26,7 @@ const (
 	envAdoTenant = "ADO_TENANT"
 	envAdoDebug  = "ADO_DEBUG"
 	envAdoPat    = "ADO_PAT"
+	envEditor    = "EDITOR"
 )
 
 var configFileNames = []string{
@@ -73,6 +74,15 @@ type Config struct {
 	//
 	// If a token is already set via ADO_PAT env, the Tenant value is unused.
 	Tenant string `yaml:"tenant,omitempty" json:"tenant,omitempty"`
+
+	// Editor specifies the command to use for editing PR descriptions and other interactive text.
+	// If not set, falls back to the EDITOR environment variable, then common defaults.
+	//
+	// Examples:
+	//   - Terminal editors: vim, nano
+	//   - Vs Code: code --wait
+	//   - IntelliJ IDEA: idea --wait
+	Editor string `yaml:"editor,omitempty" json:"editor,omitempty"`
 
 	// The token is used to authenticate to ADO, must not be logged.
 	// If envAdoPat is available, this will be set to its value.
@@ -210,6 +220,10 @@ func resolveEnv(cfg *Config) error {
 
 	if v, ok := os.LookupEnv(envAdoPat); ok {
 		cfg.token = v
+	}
+
+	if v, ok := os.LookupEnv(envEditor); ok {
+		cfg.Editor = v
 	}
 
 	return nil
