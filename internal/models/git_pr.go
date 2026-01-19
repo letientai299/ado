@@ -32,7 +32,7 @@ type GitPullRequest struct {
 	// Used internally.
 	CompletionQueueTime *time.Time `json:"completionQueueTime,omitempty"`
 	// The identity of the user who created the pull request.
-	CreatedBy IdentityRef `json:"createdBy,omitempty"`
+	CreatedBy *IdentityRef `json:"createdBy,omitempty"`
 	// The date when the pull request was created.
 	CreationDate *time.Time `json:"creationDate,omitempty"`
 	// The description of the pull request.
@@ -75,11 +75,11 @@ type GitPullRequest struct {
 	// The repository containing the target branch of the pull request.
 	Repository *GitRepository `json:"repository,omitempty"`
 	// A list of reviewers on the pull request along with the state of their votes.
-	Reviewers []IdentityRefWithVote `json:"reviewers,omitempty"`
+	Reviewers []*IdentityRefWithVote `json:"reviewers,omitempty"`
 	// The name of the source branch of the pull request.
 	SourceRefName string `json:"sourceRefName,omitempty"`
 	// The status of the pull request.
-	Status PullRequestStatus `json:"status,omitempty"`
+	Status *PullRequestStatus `json:"status,omitempty"`
 	// If true, this pull request supports multiple iterations.
 	// Iteration support means individual pushes to the source branch of the pull
 	// request can be reviewed and comments left in one iteration will be tracked
@@ -92,7 +92,7 @@ type GitPullRequest struct {
 	// Used internally.
 	Url string `json:"url,omitempty"`
 	// Any work item references associated with this pull request.
-	WorkItemRefs []ResourceRef `json:"workItemRefs,omitempty"`
+	WorkItemRefs []*ResourceRef `json:"workItemRefs,omitempty"`
 }
 
 // GitPullRequestCompletionOptions represents preferences about how the pull request should be

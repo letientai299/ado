@@ -142,7 +142,7 @@ func (l listProcessor) toPR(m models.GitPullRequest) PR {
 
 	approvers := fp.Map(
 		slices.DeleteFunc(m.Reviewers, isApproved),
-		func(x models.IdentityRefWithVote) models.IdentityRef { return x.IdentityRef },
+		func(x *models.IdentityRefWithVote) *models.IdentityRef { return &x.IdentityRef },
 	)
 	pr.Approvers = fp.Map(approvers, toIdentity)
 	pr.CreatedBy = toIdentity(m.CreatedBy)
