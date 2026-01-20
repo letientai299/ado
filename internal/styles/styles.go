@@ -28,10 +28,6 @@ var (
 	out            = termenv.DefaultOutput()
 )
 
-func GetTheme() Theme {
-	return theme
-}
-
 func Init(th Theme) {
 	if UseColor() {
 		theme = th
@@ -41,12 +37,13 @@ func Init(th Theme) {
 }
 
 func prepare() {
-	if !UseColor() {
+	switch {
+	case !UseColor():
 		out = termenv.NewOutput(os.Stdout, termenv.WithProfile(termenv.Ascii))
 		lipgloss.SetColorProfile(termenv.Ascii)
-	} else if theme.TrueColor {
+	case theme.TrueColor:
 		out = termenv.NewOutput(os.Stdout, termenv.WithProfile(termenv.TrueColor))
-	} else {
+	default:
 		out = termenv.DefaultOutput()
 	}
 
@@ -119,8 +116,8 @@ func Wrap(s string) string {
 	return wordwrap.String(s, w)
 }
 
-// Markdown renders markdown with syntax highlighting.
-// The renderer is initialized lazily on first call.
+// Markdown renders content with syntax highlighting.
+// The renderer is initialized lazily on the first call.
 func Markdown(md string) string {
 	initMdRenderer()
 	s, err := mdRenderer.Render(md)

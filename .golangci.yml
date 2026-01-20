@@ -17,6 +17,7 @@ linters:
     - rowserrcheck
     - sqlclosecheck
     - wastedassign
+    - gocritic
 
     # Performance
     - makezero

@@ -60,7 +60,7 @@ func Open(cmd, filePath string) error {
 		args = []string{"-NoProfile", "-Command", cmd + " $args[0]", filePath}
 	}
 
-	x := exec.Command(shell, args...)
+	x := exec.Command(shell, args...) //nolint:gosec
 	x.Stdin = os.Stdin
 	x.Stdout = os.Stdout
 	x.Stderr = os.Stderr
