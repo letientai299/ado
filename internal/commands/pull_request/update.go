@@ -13,6 +13,7 @@ import (
 	"github.com/letientai299/ado/internal/ui"
 	"github.com/letientai299/ado/internal/util"
 	"github.com/letientai299/ado/internal/util/gitcli"
+	"github.com/letientai299/ado/internal/util/sh"
 	"github.com/spf13/cobra"
 )
 
@@ -23,13 +24,19 @@ type UpdateConfig struct {
 	filterConfig
 
 	currentBranch bool
+	browse        bool
 	edit          bool
 	execute       *util.EnumFlag[action]
 }
 
+func (c UpdateConfig) noExplicitEditFlags() bool {
+	return !c.edit && c.execute.Value() == ""
+}
+
 type updateData struct {
-	updated bool
-	model   *models.GitPullRequest
+	actionDone bool
+	modelDirty bool
+	model      *models.GitPullRequest
 }
 
 func updateCmd() *cobra.Command {
@@ -67,6 +74,7 @@ func updateCmd() *cobra.Command {
 		"only PRs of the current branch",
 	)
 	flags.BoolVarP(&opts.edit, "edit", "e", opts.edit, "edit title and description")
+	flags.BoolVarP(&opts.browse, "browse", "b", false, "open PR in browser")
 
 	flags.VarP(opts.execute, "execute", "x", "execute an action or modify the PR status")
 	opts.execute.RegisterCompletion(cmd, "execute")
@@ -101,11 +109,15 @@ func (u *updateProcessor) process(args []string) error {
 		return err
 	}
 
-	if !data.updated {
-		return u.inform("No update", pr)
+	if data.modelDirty {
+		return u.updateToADO(pr.PullRequestId, data.model)
 	}
 
-	return u.updateToADO(pr.PullRequestId, data.model)
+	if data.actionDone {
+		return u.inform("Done", pr)
+	}
+
+	return u.inform("No update", pr)
 }
 
 func (u *updateProcessor) findPR(args []string) (*models.GitPullRequest, error) {
@@ -156,8 +168,7 @@ func (u *updateProcessor) findByCurrentBranch() (*models.GitPullRequest, error) 
 
 func (u *updateProcessor) prepareUpdateData(pr *models.GitPullRequest) (*updateData, error) {
 	data := &updateData{
-		updated: false,
-		model:   &models.GitPullRequest{},
+		model: &models.GitPullRequest{},
 	}
 
 	if err := u.updateInfo(pr, data); err != nil {
@@ -165,14 +176,31 @@ func (u *updateProcessor) prepareUpdateData(pr *models.GitPullRequest) (*updateD
 	}
 
 	if act, ok := u.pickAction(pr); ok {
-		data.updated = data.updated || act.exec(pr, data.model)
+		prs := u.client.Git().PRs(u.cfg.Repository)
+		identity, err := u.client.Identity(u.ctx, u.cfg.Repository.Org)
+		if err != nil {
+			return nil, err
+		}
+
+		if act.hasVoted(u.ctx, prs, identity.Id, pr) {
+			log.Infof("Already voted %s, skipping", act.displayName())
+			data.actionDone = true
+			return data, nil
+		}
+
+		modelDirty, err := act.exec(u.ctx, prs, pr, data.model)
+		if err != nil {
+			return nil, err
+		}
+		data.actionDone = true
+		data.modelDirty = data.modelDirty || modelDirty
 	}
 
 	return data, nil
 }
 
 func (u *updateProcessor) updateInfo(m *models.GitPullRequest, data *updateData) error {
-	if !u.opts.edit && !ui.Confirm("Edit PR title and description?", false) {
+	if !u.opts.edit && !u.confirm("Edit PR title and description?") {
 		return nil
 	}
 
@@ -184,15 +212,23 @@ func (u *updateProcessor) updateInfo(m *models.GitPullRequest, data *updateData)
 
 	if newInfo.title != curInfo.title {
 		data.model.Title = newInfo.title
-		data.updated = true
+		data.modelDirty = true
 	}
 
 	if newInfo.desc != curInfo.desc {
 		data.model.Description = newInfo.desc
-		data.updated = true
+		data.modelDirty = true
 	}
 
 	return nil
+}
+
+func (u *updateProcessor) confirm(ask string) bool {
+	if !u.opts.noExplicitEditFlags() {
+		return false // don't ask for confirmation if users use any edit flags
+	}
+
+	return ui.Confirm(ask, false)
 }
 
 func (u *updateProcessor) updateToADO(id int32, data *models.GitPullRequest) error {
@@ -205,8 +241,12 @@ func (u *updateProcessor) updateToADO(id int32, data *models.GitPullRequest) err
 
 func (u *updateProcessor) inform(msg string, pr *models.GitPullRequest) error {
 	log.Infof("%s, #%d: %s", msg, pr.PullRequestId, styles.H1(pr.Title))
-	_, err := fmt.Println(webURL(u.baseURL, pr.PullRequestId))
-	return err
+	url := webURL(u.baseURL, pr.PullRequestId)
+	fmt.Println(url)
+	if u.opts.browse {
+		return sh.Browse(url)
+	}
+	return nil
 }
 
 func (u *updateProcessor) pickAction(cur *models.GitPullRequest) (action, bool) {
@@ -216,7 +256,7 @@ func (u *updateProcessor) pickAction(cur *models.GitPullRequest) (action, bool) 
 	}
 
 	usable := slices.DeleteFunc(allActions, func(a action) bool { return !a.applicable(cur) })
-	picked := ui.Pick[action](usable, ui.PickConfig[action]{
+	picked := ui.Pick(usable, ui.PickConfig[action]{
 		Title:       "Which action? (ctrl-c to cancel)",
 		Render:      func(w io.Writer, it action, _ []int) { _, _ = w.Write([]byte(it)) },
 		FilterValue: func(item action) string { return string(item) },

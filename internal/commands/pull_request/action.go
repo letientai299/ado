@@ -1,14 +1,31 @@
 package pull_request
 
 import (
+	"context"
+
 	"github.com/charmbracelet/log"
 	"github.com/letientai299/ado/internal/models"
+	"github.com/letientai299/ado/internal/rest"
 	"github.com/letientai299/ado/internal/util"
 )
 
 type action string
 
+const (
+	actionApprove    action = "approve"
+	actionReject     action = "reject"
+	actionResetVote  action = "resetVote"
+	actionComplete   action = "complete"
+	actionPublish    action = "publish"
+	actionDraft      action = "draft"
+	actionAbandon    action = "abandon"
+	actionReactivate action = "reactivate"
+)
+
 var allActions = []action{
+	actionApprove,
+	actionReject,
+	actionResetVote,
 	actionComplete,
 	actionPublish,
 	actionDraft,
@@ -18,6 +35,8 @@ var allActions = []action{
 
 func (a action) applicable(cur *models.GitPullRequest) bool {
 	switch a {
+	case actionApprove, actionReject, actionResetVote:
+		return cur.Status != nil && *cur.Status == models.PullRequestStatusActive
 	case actionDraft:
 		return !cur.IsDraft
 	case actionPublish:
@@ -32,10 +51,23 @@ func (a action) applicable(cur *models.GitPullRequest) bool {
 	return false
 }
 
-func (a action) exec(cur, next *models.GitPullRequest) bool {
+// exec performs the action. Returns true if the PR model was updated and needs
+// to be sent to ADO via the Update API.
+func (a action) exec(
+	ctx context.Context,
+	gitPRs rest.GitPRs,
+	cur, next *models.GitPullRequest,
+) (bool, error) {
 	if !a.applicable(cur) {
 		log.Warnf("Action '%s' is not applicable for current PR status", a)
-		return false
+		return false, nil
+	}
+
+	// Handle vote actions via the reviewers API
+	if vote, ok := a.voteValue(); ok {
+		log.Infof("%s PR", a.displayName())
+		_, err := gitPRs.Vote(ctx, cur.PullRequestId, vote)
+		return false, err
 	}
 
 	switch a {
@@ -61,20 +93,57 @@ func (a action) exec(cur, next *models.GitPullRequest) bool {
 
 	default:
 		log.Warnf("unsupported action: %s, ignoring", a)
+		return false, nil
+	}
+
+	return true, nil
+}
+
+// voteValue returns the vote value if this is a vote action.
+func (a action) voteValue() (models.PrVote, bool) {
+	switch a {
+	case actionApprove:
+		return models.VoteApproved, true
+	case actionReject:
+		return models.VoteRejected, true
+	case actionResetVote:
+		return models.VoteNone, true
+	}
+	return 0, false
+}
+
+func (a action) displayName() string {
+	switch a {
+	case actionApprove:
+		return "Approving"
+	case actionReject:
+		return "Rejecting"
+	case actionResetVote:
+		return "Resetting vote on"
+	}
+	return string(a)
+}
+
+func (a action) hasVoted(
+	ctx context.Context,
+	prs rest.GitPRs,
+	userID string,
+	pr *models.GitPullRequest,
+) bool {
+	vote, isVote := a.voteValue()
+	if !isVote {
 		return false
 	}
 
-	return true
+	reviewers, err := prs.Reviewers(ctx, pr.PullRequestId)
+	if err != nil {
+		return false
+	}
+
+	for _, r := range reviewers {
+		if r.Id == userID {
+			return models.PrVote(r.Vote) == vote
+		}
+	}
+	return false
 }
-
-const (
-	actionComplete   action = "complete"
-	actionPublish    action = "publish"
-	actionDraft      action = "draft" // change status to draft
-	actionAbandon    action = "abandon"
-	actionReactivate action = "reactivate"
-
-	// TODO (tai): implement these 2 actions.
-	// actionApprove action = "approve"
-	// actionReject  action = "reject"
-)

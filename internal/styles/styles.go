@@ -88,7 +88,7 @@ func Heading(s string) string       { return colorize(s, theme.Tokens.Markdown.H
 func H1(s string) string            { return colorize(s, theme.Tokens.Markdown.H1) }
 func Person(s string) string        { return colorize(s, theme.Tokens.Chroma.Name) }
 func Time(s string) string          { return colorize(s, theme.Tokens.Chroma.Number) }
-func Const(s string) string          { return colorize(s, theme.Tokens.Chroma.NameConstant) }
+func Const(s string) string         { return colorize(s, theme.Tokens.Chroma.NameConstant) }
 func Cmd(s string) string           { return colorize(s, theme.Tokens.Chroma.Function) }
 func FlagStyle(s string) string     { return colorize(s, theme.Tokens.Chroma.Operator) }
 func FlagTypeStyle(s string) string { return colorize(s, theme.Tokens.Chroma.KeywordType) }

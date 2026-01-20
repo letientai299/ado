@@ -15,13 +15,16 @@ PR's title and description.
 
 Use `-x/--execute` to execute one of the following actions on the PR.
 
+- `approve`: approve the PR
+- `reject`: reject the PR
+- `resetVote`: reset your vote on the PR
 - `complete`: mark PR as completed
 - `publish`: publish the draft PR
 - `draft`: mark PR as draft
 - `abandon`: abandon the PR
 - `reactivate`: reactivate an abandoned PR
 
-Action availability depends on the user's permissions.
+Action availability depends on the PR status and user's permissions.
 
 If `pr update` is run without any editing flags, it will iteractively ask for
 each possible action.

@@ -26,13 +26,14 @@ func (g Git) PRs(repo config.Repository) GitPRs {
 		"pullrequests",
 	)
 
-	return GitPRs{client: g.client, baseUrl: baseUrl}
+	return GitPRs{client: g.client, baseUrl: baseUrl, org: repo.Org}
 }
 
 // GitPRs is https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-requests
 type GitPRs struct {
 	client  Client
 	baseUrl string
+	org     string
 }
 
 // ByID call
@@ -80,6 +81,43 @@ func (g GitPRs) Update(
 ) (*models.GitPullRequest, error) {
 	prURL, _ := url.JoinPath(g.baseUrl, strconv.FormatInt(int64(id), 10))
 	return httpPatch[models.GitPullRequest](ctx, g.client, prURL, pr)
+}
+
+// Reviewers returns all reviewers for a PR, including those who voted optionally.
+// https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-request-reviewers/list
+func (g GitPRs) Reviewers(ctx context.Context, prID int32) ([]models.IdentityRefWithVote, error) {
+	reviewersURL, _ := url.JoinPath(
+		g.baseUrl,
+		strconv.FormatInt(int64(prID), 10),
+		"reviewers",
+	)
+	list, err := httpGet[List[models.IdentityRefWithVote]](ctx, g.client, reviewersURL)
+	if err != nil {
+		return nil, err
+	}
+	return list.Value, nil
+}
+
+// Vote sets the current user's vote on a PR.
+// https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-request-reviewers/create-pull-request-reviewer
+func (g GitPRs) Vote(
+	ctx context.Context,
+	prID int32,
+	vote models.PrVote,
+) (*models.IdentityRefWithVote, error) {
+	identity, err := g.client.Identity(ctx, g.org)
+	if err != nil {
+		return nil, err
+	}
+
+	reviewerURL, _ := url.JoinPath(
+		g.baseUrl,
+		strconv.FormatInt(int64(prID), 10),
+		"reviewers",
+		identity.Id,
+	)
+	body := map[string]int{"vote": int(vote)}
+	return httpPut[models.IdentityRefWithVote](ctx, g.client, reviewerURL, body)
 }
 
 type List[T any] struct {
