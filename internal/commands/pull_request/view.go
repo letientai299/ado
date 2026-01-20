@@ -53,17 +53,11 @@ func viewCmd() *cobra.Command {
 
 func newViewProcessor(c *common[*ViewConfig]) *viewProcessor {
 	lp := listProcessor{
-		common: &common[*ListConfig]{
-			ctx:     c.ctx,
-			cfg:     c.cfg,
-			client:  c.client,
-			baseURL: c.baseURL,
-			opts: &ListConfig{
-				filterConfig: c.opts.filterConfig,
-			},
-		},
+		common: copyCommon(c, func(b *common[*ListConfig]) *common[*ListConfig] {
+			b.opts = &ListConfig{filterConfig: c.opts.filterConfig}
+			return b
+		}),
 	}
-
 	return &viewProcessor{common: c, lp: lp}
 }
 
@@ -73,36 +67,54 @@ type viewProcessor struct {
 }
 
 func (v viewProcessor) process(args []string) error {
+	prId, err := v.findPrID(args)
+	if err != nil || prId == 0 {
+		return err
+	}
+
+	return v.renderByID(prId)
+}
+
+func (v viewProcessor) findPrID(args []string) (int32, error) {
 	// 1. Try if the first arg is a PR ID
 	if len(args) == 1 {
 		if id, err := strconv.ParseInt(args[0], 10, 32); err == nil {
 			var m *models.GitPullRequest
+			// TODO (tai): in case of valid ID, we call ADO twice, should add ctx-cache,
+			//  but be careful to not serving stale data in long running TUI
 			m, err = v.client.Git().PRs(v.cfg.Repository).ByID(v.ctx, int32(id))
 			if err == nil {
-				return v.renderOne(*m)
+				return m.PullRequestId, nil
 			}
+			// if error, treat the numeric arg as a keyword
 		}
 	}
 
 	// 2. Fallback to list/filter logic
 	prs, err := v.lp.find()
 	if err != nil {
-		return err
+		return 0, err
+	}
+	if len(prs) == 0 {
+		return 0, errors.New("no pull request found matching the criteria")
 	}
 
-	switch len(prs) {
-	case 0:
-		return errors.New("no pull request found matching the criteria")
-	case 1:
-		return v.renderByID(prs[0].PullRequestId)
-	default:
-		return v.pick(prs)
+	if len(prs) == 1 {
+		return prs[0].PullRequestId, nil
 	}
+
+	var prId int32
+	var ok bool
+	if prId, ok = pick(prs); ok {
+		return prId, nil
+	}
+
+	return 0, nil
 }
 
 const prPickTpl = `{{.Title}} ({{.CreatedBy.Name|person}}, {{.CreationDate|time}}{{if .IsDraft}}, {{warn "DRAFT"}}{{end}})`
 
-func (v viewProcessor) pick(prs []PR) error {
+func pick(prs []PR) (int32, bool) {
 	selected := ui.Pick(prs, ui.PickConfig[PR]{
 		Render: func(w io.Writer, pr PR, matches []int) {
 			pr.Title = styles.HighlightMatch(pr.Title, matches)
@@ -111,14 +123,16 @@ func (v viewProcessor) pick(prs []PR) error {
 		FilterValue: func(pr PR) string { return strings.ToLower(pr.Title) },
 	})
 
-	if selected.IsSome() {
-		pr := selected.Get()
-		return v.renderByID(pr.PullRequestId)
+	if selected.IsNil() {
+		return 0, false
 	}
-	return errors.New("no pull request selected")
+
+	return selected.Get().PullRequestId, true
 }
 
 func (v viewProcessor) renderByID(id int32) error {
+	// use this ByID API to fetch full PR details.
+	// The List API returns only max 400 chars for PR description.
 	m, err := v.client.Git().PRs(v.cfg.Repository).ByID(v.ctx, id)
 	if err != nil {
 		return err

@@ -1,3 +1,5 @@
-{{.Title | h1 }}
+{{- .Title | h1 }}
+{{if gt (len .Description) 0 -}}
 {{.Description | trimSpace | markdown -}}
-{{"PR Link:" | heading}} {{.WebURL}}
+{{- end}}
+{{- "PR Link:" | heading}} {{.WebURL}}

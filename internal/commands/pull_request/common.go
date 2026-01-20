@@ -36,6 +36,16 @@ func newCommon[T any](cmd *cobra.Command, opts T) (*common[T], error) {
 	}, nil
 }
 
+func copyCommon[A, B any](a *common[A], mod func(*common[B]) *common[B]) *common[B] {
+	b := &common[B]{
+		ctx:     a.ctx,
+		cfg:     a.cfg,
+		client:  a.client,
+		baseURL: a.baseURL,
+	}
+	return mod(b)
+}
+
 type filterConfig struct {
 	mine     bool
 	draft    bool
