@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/charmbracelet/log"
 	"github.com/letientai299/ado/internal/util/fp"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -89,11 +90,14 @@ func (e *EnumFlag[T]) Value() T {
 }
 
 // RegisterCompletion registers shell completion for this flag with cobra.
-func (e *EnumFlag[T]) RegisterCompletion(cmd *cobra.Command, flagName string) error {
-	return cmd.RegisterFlagCompletionFunc(
+func (e *EnumFlag[T]) RegisterCompletion(cmd *cobra.Command, flagName string) {
+	err := cmd.RegisterFlagCompletionFunc(
 		flagName,
 		func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
 			return e.valueStrings, cobra.ShellCompDirectiveNoFileComp
 		},
 	)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

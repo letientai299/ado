@@ -47,13 +47,13 @@ func copyCommon[A, B any](a *common[A], mod func(*common[B]) *common[B]) *common
 }
 
 type filterConfig struct {
-	mine     bool
-	draft    bool
+	mine     bool // find my PRs
+	draft    bool // find draft PRs
 	keywords []string
 }
 
 func (f *filterConfig) RegisterFlags(cmd *cobra.Command) {
 	flags := cmd.PersistentFlags()
 	flags.BoolVarP(&f.mine, "mine", "m", false, "show only your PRs")
-	flags.BoolVar(&f.draft, "draft", false, "include draft PRs")
+	flags.BoolVarP(&f.draft, "draft", "d", false, "include draft PRs")
 }

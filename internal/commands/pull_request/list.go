@@ -84,11 +84,7 @@ func listCmd() *cobra.Command {
 
 	// render flags
 	flags.VarP(opts.output, "output", "o", "output format")
-
-	if err := opts.output.RegisterCompletion(cmd, "output"); err != nil {
-		log.Error("failed to register output flag completion: " + err.Error())
-	}
-
+	opts.output.RegisterCompletion(cmd, "output")
 	return cmd
 }
 
