@@ -125,8 +125,8 @@ func chooseLocation(dotConfigDir, gitRoot string) (string, error) {
 	}
 
 	choice := ui.Pick(options, ui.PickConfig[string]{
-		Title: "Where to put the config file?",
-		Render:      func(w io.Writer, it string, matches []int) { _, _ = fmt.Fprintf(w, it) },
+		Title:       "Where to put the config file?",
+		Render:      func(w io.Writer, it string, _ []int) { _, _ = fmt.Fprint(w, it) },
 		FilterValue: func(item string) string { return item },
 	})
 
