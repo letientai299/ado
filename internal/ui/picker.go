@@ -25,6 +25,7 @@ const (
 )
 
 type PickConfig[T any] struct {
+	Title       string
 	Render      func(w io.Writer, it T, matches []int)
 	FilterValue func(item T) string
 	ItemHeight  int
@@ -102,7 +103,11 @@ func newList[T any](listItems []list.Item, delegate *pickDelegate[T]) list.Model
 		noMargin(s)
 	}
 
-	l.SetShowTitle(false)
+	if delegate.cfg.Title != "" {
+		l.Title = delegate.cfg.Title
+	} else {
+		l.SetShowTitle(false)
+	}
 	l.SetShowPagination(false)
 	l.SetShowStatusBar(false)
 	return l
@@ -141,9 +146,18 @@ type pickerModel[T any] struct {
 	cfg      PickConfig[T]
 	picked   fp.Optional[T]
 	quitting bool
+
+	maxHeight int // lazy computed
 }
 
-func (m *pickerModel[T]) Init() tea.Cmd { return nil }
+func (m *pickerModel[T]) Init() tea.Cmd {
+	// extra lines for: filter, help
+	m.maxHeight = len(m.list.Items())*m.cfg.ItemHeight + 2
+	if m.cfg.Title != "" {
+		m.maxHeight += 1
+	}
+	return nil
+}
 
 func (m *pickerModel[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -169,9 +183,7 @@ func (m *pickerModel[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.WindowSizeMsg:
-		// extra lines for: filter, help
-		maxH := len(m.list.Items())*m.cfg.ItemHeight + 2
-		m.list.SetSize(msg.Width, min(msg.Height, maxH))
+		m.list.SetSize(msg.Width, min(msg.Height, m.maxHeight))
 	}
 
 	var cmd tea.Cmd

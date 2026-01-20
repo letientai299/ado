@@ -14,7 +14,7 @@ func Confirm(message string, defaultValue bool) bool {
 	} else {
 		choices = " [y/" + styles.Success("N") + "]"
 	}
-	fmt.Printf("%s%s: ", styles.Warn("? "), message+choices)
+	fmt.Printf("%s%s: ", styles.Warn("! "), message+choices)
 	var input string
 	_, _ = fmt.Scanln(&input)
 	input = strings.ToLower(strings.TrimSpace(input))
