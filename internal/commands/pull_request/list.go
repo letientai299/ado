@@ -37,7 +37,7 @@ type ListConfig struct {
 	CustomOutputTemplates map[string]string `yaml:"custom_output_templates" json:"custom_output_templates"`
 
 	filterConfig `yaml:"-"`
-	output       *util.EnumFlag `yaml:"-"` // output format to use
+	output       *util.EnumFlag[string] `yaml:"-"` // output format to use
 }
 
 func (l *ListConfig) OnResolved(c *cobra.Command) error {
