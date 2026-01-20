@@ -30,24 +30,18 @@ func httpGet[T any](ctx context.Context, c Client, url string, qs ..._shared.Que
 }
 
 func httpPost[T any](ctx context.Context, c Client, url string, body any) (*T, error) {
-	jsonBody, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-
-	url = appendQueries(url, apiVersionQuery)
-	var b io.Reader = strings.NewReader(string(jsonBody))
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, b)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-
-	return call[T](c, req)
+	return httpX[T](ctx, c, http.MethodPost, url, body)
 }
 
 func httpPatch[T any](ctx context.Context, c Client, url string, body any) (*T, error) {
+	return httpX[T](ctx, c, http.MethodPatch, url, body)
+}
+
+func httpPut[T any](ctx context.Context, c Client, url string, body any) (*T, error) {
+	return httpX[T](ctx, c, http.MethodPut, url, body)
+}
+
+func httpX[T any](ctx context.Context, c Client, method, url string, body any) (*T, error) {
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
@@ -55,13 +49,12 @@ func httpPatch[T any](ctx context.Context, c Client, url string, body any) (*T, 
 
 	url = appendQueries(url, apiVersionQuery)
 	var b io.Reader = strings.NewReader(string(jsonBody))
-	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, url, b)
+	req, err := http.NewRequestWithContext(ctx, method, url, b)
 	if err != nil {
 		return nil, err
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-
 	return call[T](c, req)
 }
 
