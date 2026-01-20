@@ -50,7 +50,7 @@ func DumpYAML(v any) error {
 
 	// Tokenize and colorize
 	tokens := lexer.Tokenize(string(bs))
-	_, err = fmt.Print(yamlPrinter.PrintTokens(tokens))
+	_, err = fmt.Println(yamlPrinter.PrintTokens(tokens))
 	return err
 }
 

@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/goccy/go-json"
 	"github.com/letientai299/ado/internal/rest/_shared"
+	"github.com/letientai299/ado/internal/styles"
 )
 
 var apiVersionQuery = _shared.KV[string]{
@@ -79,12 +80,30 @@ func call[T any](c Client, req *http.Request) (*T, error) {
 	defer func() { _ = resp.Body.Close() }()
 
 	if err = validateResponse(resp); err != nil {
-		all, _ := io.ReadAll(resp.Body)
-		log.Errorf("HTTP response: %s %s\n%s", resp.Status, resp.Request.URL.RequestURI(), all)
+		logErrResponse(resp)
 		return nil, err
 	}
 
 	return decode[T](resp.Body)
+}
+
+func logErrResponse(resp *http.Response) {
+	all, _ := io.ReadAll(resp.Body)
+	log.Errorf("HTTP response: %s %s", resp.Status, resp.Request.URL.RequestURI())
+
+	contentType := resp.Header.Get("content-type")
+	if !strings.HasPrefix(contentType, "application/json") {
+		log.Error("response body", "body", string(all))
+		return
+	}
+
+	var m map[string]any
+	if err := json.Unmarshal(all, &m); err != nil {
+		log.Warn("failed to unmarshal JSON response", "err", err, "body", string(all))
+		return
+	}
+
+	_ = styles.DumpYAML(m)
 }
 
 func validateResponse(resp *http.Response) error {
