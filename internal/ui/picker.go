@@ -84,6 +84,8 @@ func newPickModel[T any](items []T, cfg PickConfig[T]) *pickerModel[T] {
 func newList[T any](listItems []list.Item, delegate *pickDelegate[T]) list.Model {
 	l := list.New(listItems, delegate, 0, 0)
 
+	l.Styles.Title = l.Styles.Title.UnsetForeground().UnsetBackground()
+
 	noMargin := func(s *lipgloss.Style) {
 		*s = s.Margin(0).PaddingTop(0).PaddingBottom(0).PaddingLeft(0)
 	}
