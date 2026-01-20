@@ -60,6 +60,7 @@ func encodeYAML(v any) ([]byte, error) {
 		yaml.Indent(2),
 		yaml.OmitEmpty(),
 		yaml.OmitZero(),
+		yaml.UseLiteralStyleIfMultiline(true),
 	)
 	return bs, err
 }

@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/letientai299/ado/internal/config"
+	"github.com/letientai299/ado/internal/styles"
 	"github.com/letientai299/ado/internal/util"
 	"github.com/letientai299/ado/internal/util/editor"
 	"github.com/spf13/cobra"
@@ -56,7 +57,7 @@ func Cmd() *cobra.Command {
 		Short:   "Manage ADO configuration",
 		Long:    configDoc,
 	}
-
+	cmd.AddCommand(dumpCmd())
 	cmd.AddCommand(initCmd())
 	cmd.AddCommand(editCmd())
 
@@ -105,5 +106,36 @@ func editCmd() *cobra.Command {
 			return editor.Open(cfg.Editor, file)
 		},
 	}
+	return c
+}
+
+func dumpCmd() *cobra.Command {
+	type complete struct {
+		*config.Config `yaml:",inline"`
+		// CommandConfigs map[string]any `yaml:",inline" json:","`
+		CommandConfigs map[string]any `yaml:",inline"`
+	}
+
+	c := &cobra.Command{
+		Use:     "dump",
+		Aliases: []string{"d"},
+		Short:   "Dump the resolved config",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg := config.From(cmd.Context())
+			registry := config.Registry()
+			m := make(map[string]any, len(registry))
+			for k, v := range registry {
+				m[k] = v.Target
+			}
+
+			all := complete{
+				Config:         cfg,
+				CommandConfigs: m,
+			}
+
+			return styles.DumpYAML(all)
+		},
+	}
+
 	return c
 }

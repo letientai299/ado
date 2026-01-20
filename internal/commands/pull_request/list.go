@@ -37,8 +37,8 @@ type ListConfig struct {
 	// Custom output templates is a map of output format names to their templates.
 	CustomOutputTemplates map[string]string `yaml:"custom_output_templates" json:"custom_output_templates"`
 
-	filterConfig
-	output *util.EnumFlag // output format to use
+	filterConfig `yaml:"-"`
+	output       *util.EnumFlag `yaml:"-"` // output format to use
 }
 
 func (l *ListConfig) OnResolved(c *cobra.Command) error {
