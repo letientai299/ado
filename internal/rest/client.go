@@ -30,6 +30,14 @@ func (c Client) Git() Git {
 	return Git{client: c}
 }
 
+func (c Client) Pipelines() Pipelines {
+	return Pipelines{client: c}
+}
+
+func (c Client) Builds() Builds {
+	return Builds{client: c}
+}
+
 func (c Client) Identity(ctx context.Context, org string) (*models.Identity, error) {
 	api, err := url.JoinPath(adoHost, org, "_apis/connectionData")
 	if err != nil {

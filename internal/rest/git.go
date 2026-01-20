@@ -16,6 +16,19 @@ type Git struct {
 	client Client
 }
 
+// RepoInfo retrieves repository information including ID.
+// https://learn.microsoft.com/en-us/rest/api/azure/devops/git/repositories/get-repository
+func (g Git) RepoInfo(ctx context.Context, repo config.Repository) (*models.GitRepository, error) {
+	repoURL, _ := url.JoinPath(
+		adoHost,
+		repo.Org,
+		repo.Project,
+		"_apis/git/repositories",
+		repo.Name,
+	)
+	return httpGet[models.GitRepository](ctx, g.client, repoURL)
+}
+
 func (g Git) PRs(repo config.Repository) GitPRs {
 	baseUrl, _ := url.JoinPath(
 		adoHost,
