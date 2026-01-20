@@ -460,14 +460,14 @@ func writeSchemaAsYAML(sb *strings.Builder, s *jsonschema.Schema, indent int, pa
 		}
 
 		// Write the key and value (single # comment)
-		if isMapType(prop) {
-			// Map types get a multi-line example
+		switch {
+		case isMapType(prop):
 			_, _ = fmt.Fprintf(sb, "#%s%s:\n", indentStr, key)
 			_, _ = fmt.Fprintf(sb, "#%s  example_key: example_value\n", indentStr)
-		} else if prop.Type == "object" && prop.Properties != nil && prop.Properties.Len() > 1 {
+		case prop.Type == "object" && prop.Properties != nil && prop.Properties.Len() > 1:
 			_, _ = fmt.Fprintf(sb, "#%s%s:\n", indentStr, key)
 			writeSchemaAsYAML(sb, prop, indent+1, currentPath)
-		} else {
+		default:
 			_, _ = fmt.Fprintf(sb, "#%s%s: %s\n", indentStr, key, getDefaultValue(prop))
 		}
 
