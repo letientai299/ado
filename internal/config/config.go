@@ -147,7 +147,7 @@ func (r Repository) WebURL() string {
 }
 
 func AddGlobalFlags(cmd *cobra.Command) {
-	cmd.PersistentFlags().BoolP(flagDebug, "d", false, "enable debug logging")
+	cmd.PersistentFlags().BoolP(flagDebug, "D", false, "enable debug logging")
 	cmd.PersistentFlags().StringP(flagTenant, "T", "", "tenant to get access token")
 }
 

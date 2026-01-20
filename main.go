@@ -48,6 +48,6 @@ func chooseStyle(useColor bool) styles.Theme {
 func isDebugEnabled() bool {
 	return os.Getenv("ADO_DEBUG") != "" ||
 		slices.ContainsFunc(os.Args, func(s string) bool {
-			return s == "-d" || s == "--debug"
+			return s == "-D" || s == "--debug"
 		})
 }
