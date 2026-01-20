@@ -82,6 +82,8 @@ type Config struct {
 	//   - Terminal editors: vim, nano
 	//   - Vs Code: code --wait
 	//   - IntelliJ IDEA: idea --wait
+	//
+	// See `ado help config editor`
 	Editor string `yaml:"editor,omitempty" json:"editor,omitempty"`
 
 	// The token is used to authenticate to ADO, must not be logged.

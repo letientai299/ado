@@ -9,7 +9,7 @@ prettier = "latest"
 
 [env]
 CGO_ENABLED = "0"
-ADO_EXE="bin/ado"  # allow overriding to bin/ado.exe on windows
+ADO_EXE = "bin/ado" # allow overriding to bin/ado.exe on Windows
 _.file = ".env"
 
 [tasks.build]
@@ -42,5 +42,7 @@ run = "golangci-lint fmt"
 [tasks.release]
 description = "Build the binary with compact size and better performance for release"
 env = { GOFLAGS = "-ldflags=-s -ldflags=-w -trimpath" }
-run = "go build -v -o {{env.ADO_EXE}} ."
-
+run = [
+  "go generate ./...",                # ensure generated files are up to date
+  "go build -v -o {{env.ADO_EXE}} .",
+]

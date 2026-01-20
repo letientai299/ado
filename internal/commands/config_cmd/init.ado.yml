@@ -1,0 +1,50 @@
+# ADO CLI Configuration file. See `ado help config`.
+## Debug mode enables verbose logging
+#debug: 
+
+## Editor specifies the command to use for editing PR descriptions and other interactive text.
+## If not set, falls back to the EDITOR environment variable, then common defaults.
+##
+## Examples:
+## - Terminal editors: vim, nano
+## - Vs Code: code --wait
+## - IntelliJ IDEA: idea --wait
+##
+## See `ado help config editor`
+#editor: ""
+
+## Repository settings (auto-detected from git remote if not set)
+#repository:
+#  # Repository name
+#  name: ""
+#  # Azure DevOps organization name
+#  org: ""
+#  # Azure DevOps project name
+#  project: ""
+
+## Tenant is used to generate Microsoft Entra token, could be auto-detected via az CLI.
+## If the default tenant is not the one usable for ADO queries, users can set this value
+## in the config file, or via envAdoTenant.
+##
+## If a token is already set via ADO_PAT env, the Tenant value is unused.
+#tenant: ""
+
+## Use include! to load theme from external files.
+## See https://github.com/letientai299/ado/tree/main/etc/themes for available themes.
+## See also 'ado help config theme'
+#theme:
+#  include!: path/to/some_theme.yml
+
+#pull-request:
+#  create:
+#    target: "main"
+#    templates:
+#      desc: "{{range .Commits}}- {{.Subject}}\n{{end}}"
+#      title: "{{replaceAll .BranchName \"/\" \"-\"}}"
+#  # ListConfig holds configuration for the pr list command.
+#  list:
+#    # Custom output templates is a map of output format names to their templates.
+#    custom_output_templates:
+#      example_key: example_value
+#    # Default output format to use if not specified.
+#    default_output: "simple"

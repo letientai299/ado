@@ -2,6 +2,7 @@ package config_cmd
 
 import (
 	_ "embed"
+	"errors"
 	"fmt"
 	"os"
 
@@ -21,33 +22,9 @@ var configEditorDoc string
 //go:embed config.theme.md
 var configThemeDoc string
 
-const configTemplate = `
-# ADO CLI Configuration
-# See: etc/schemas/config.json for full schema documentation
-
-# Debug mode enables verbose logging
-# debug: false
-
-# Azure tenant ID (auto-detected from az CLI if not set)
-# tenant: ""
-
-# Repository settings (auto-detected from git remote if not set)
-# repository:
-#   org: ""
-#   project: ""
-#   name: ""
-
-# Theme configuration
-# theme:
-#   name: tokyo-night
-#   true_color: true
-
-# Command-specific configuration (optional)
-# pull-request:
-#   list:
-#     default_output: simple
-#     custom_output_templates: {}
-`
+//go:generate go run ../../../cmd/schema_gen
+//go:embed init.ado.yml
+var initAdoYAML string
 
 // Cmd returns the config command group
 func Cmd() *cobra.Command {
@@ -79,7 +56,7 @@ func initCmd() *cobra.Command {
 				return fmt.Errorf("config file already exists at %s, use --force to overwrite", configPath)
 			}
 
-			if err := os.WriteFile(configPath, []byte(configTemplate), 0o600); err != nil {
+			if err := os.WriteFile(configPath, []byte(initAdoYAML), 0o600); err != nil {
 				return fmt.Errorf("writing config file: %w", err)
 			}
 
@@ -101,7 +78,7 @@ func editCmd() *cobra.Command {
 			cfg := config.From(cmd.Context())
 			file := cfg.FilePath()
 			if file == "" {
-				return fmt.Errorf("config file not found")
+				return errors.New("config file not found")
 			}
 			return editor.Open(cfg.Editor, file)
 		},
