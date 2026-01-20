@@ -99,6 +99,11 @@ func underline(s string) string {
 	return out.String(s).Underline().String()
 }
 
+// Faint returns the string with faint/dim styling.
+func Faint(s string) string {
+	return out.String(s).Faint().String()
+}
+
 func Error(s string) string { return colorize(s, theme.Tokens.Error) }
 
 func colorize(s, c string) string {

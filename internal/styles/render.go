@@ -8,6 +8,7 @@ import (
 )
 
 var TemplateFuncs = template.FuncMap{
+	"faint":      Faint,
 	"warn":       Warn,
 	"error":      Error,
 	"success":    Success,
