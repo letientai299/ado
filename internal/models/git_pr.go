@@ -40,9 +40,9 @@ type GitPullRequest struct {
 	// If this is a PR from a fork, this will contain information about its source.
 	ForkSource *GitForkRef `json:"forkSource,omitempty"`
 	// Multiple merge bases warning
-	HasMultipleMergeBases bool `json:"hasMultipleMergeBases,omitempty"`
+	HasMultipleMergeBases bool `json:"hasMultipleMergeBases"`
 	// Draft / WIP pull request.
-	IsDraft bool `json:"isDraft,omitempty"`
+	IsDraft bool `json:"isDraft"`
 	// The labels associated with the pull request.
 	Labels []WebApiTagDefinition `json:"labels,omitempty"`
 	// The commit of the most recent pull request merge.
@@ -84,7 +84,7 @@ type GitPullRequest struct {
 	// Iteration support means individual pushes to the source branch of the pull
 	// request can be reviewed and comments left in one iteration will be tracked
 	// across future iterations.
-	SupportsIterations bool `json:"supportsIterations,omitempty"`
+	SupportsIterations bool `json:"supportsIterations"`
 	// The name of the target branch of the pull request.
 	TargetRefName string `json:"targetRefName,omitempty"`
 	// The title of the pull request.
@@ -105,12 +105,12 @@ type GitPullRequestCompletionOptions struct {
 	AutoCompleteIgnoreConfigIds []int `json:"autoCompleteIgnoreConfigIds,omitempty"`
 	// If true, policies will be explicitly bypassed while the pull request is
 	// completed.
-	BypassPolicy bool `json:"bypassPolicy,omitempty"`
+	BypassPolicy bool `json:"bypassPolicy"`
 	// If policies are bypassed, this reason is stored as to why bypass was used.
 	BypassReason string `json:"bypassReason,omitempty"`
 	// If true, the source branch of the pull request will be deleted after
 	// completion.
-	DeleteSourceBranch bool `json:"deleteSourceBranch,omitempty"`
+	DeleteSourceBranch bool `json:"deleteSourceBranch"`
 	// If set, this will be used as the commit message of the merge commit.
 	MergeCommitMessage string `json:"mergeCommitMessage,omitempty"`
 	// Specify the strategy used to merge the pull request during completion.
@@ -128,14 +128,14 @@ type GitPullRequestCompletionOptions struct {
 	// If MergeStrategy is set to any value, the SquashMerge value will be ignored.
 	// If MergeStrategy is not set, the merge strategy will be no-fast-forward if
 	// this flag is false, or squash if true.
-	SquashMerge bool `json:"squashMerge,omitempty"`
+	SquashMerge bool `json:"squashMerge"`
 	// If true, we will attempt to transition any work items linked to the pull
 	// request into the next logical state (i.e.
 	// Active -> Resolved)
-	TransitionWorkItems bool `json:"transitionWorkItems,omitempty"`
+	TransitionWorkItems bool `json:"transitionWorkItems"`
 	// If true, the current completion attempt was triggered via auto-complete.
 	// Used internally.
-	TriggeredByAutoComplete bool `json:"triggeredByAutoComplete,omitempty"`
+	TriggeredByAutoComplete bool `json:"triggeredByAutoComplete"`
 }
 
 // GitPullRequestMergeOptions represents the options which are used when a pull request merge is
@@ -144,8 +144,8 @@ type GitPullRequestCompletionOptions struct {
 type GitPullRequestMergeOptions struct {
 	// If true, conflict resolutions applied during the merge will be put in
 	// separate commits to preserve authorship info for git blame, etc.
-	ConflictAuthorshipCommits  bool `json:"conflictAuthorshipCommits,omitempty"`
-	DetectRenameFalsePositives bool `json:"detectRenameFalsePositives,omitempty"`
+	ConflictAuthorshipCommits  bool `json:"conflictAuthorshipCommits"`
+	DetectRenameFalsePositives bool `json:"detectRenameFalsePositives"`
 	// If true, rename detection will not be performed during the merge.
-	DisableRenames bool `json:"disableRenames,omitempty"`
+	DisableRenames bool `json:"disableRenames"`
 }
