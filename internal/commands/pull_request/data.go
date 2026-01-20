@@ -1,6 +1,12 @@
 package pull_request
 
-import "github.com/letientai299/ado/internal/models"
+import (
+	"slices"
+	"strconv"
+
+	"github.com/letientai299/ado/internal/models"
+	"github.com/letientai299/ado/internal/util/fp"
+)
 
 type Vote string
 
@@ -33,5 +39,34 @@ func toIdentity(a *models.IdentityRef) Identity {
 		Id:    a.Id,
 		Name:  a.DisplayName,
 		Email: a.UniqueName,
+	}
+}
+
+func webURL(baseURL string, pr PR) string {
+	return baseURL + "/" + strconv.FormatInt(int64(pr.PullRequestId), 10)
+}
+
+func converter(baseURL string) func(m models.GitPullRequest) PR {
+	return func(m models.GitPullRequest) PR {
+		pr := PR{
+			PullRequestId: m.PullRequestId,
+			Title:         m.Title,
+			Description:   m.Description,
+			IsDraft:       m.IsDraft,
+		}
+
+		if m.CreationDate != nil {
+			pr.CreationDate = m.CreationDate.Format("2006-01-02")
+		}
+
+		pr.WebURL = webURL(baseURL, pr)
+
+		approvers := fp.Map(
+			slices.DeleteFunc(m.Reviewers, isApproved),
+			func(x *models.IdentityRefWithVote) *models.IdentityRef { return &x.IdentityRef },
+		)
+		pr.Approvers = fp.Map(approvers, toIdentity)
+		pr.CreatedBy = toIdentity(m.CreatedBy)
+		return pr
 	}
 }

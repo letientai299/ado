@@ -52,12 +52,10 @@ func viewCmd() *cobra.Command {
 }
 
 func newViewProcessor(c *common[*ViewConfig]) *viewProcessor {
-	lp := listProcessor{
-		common: copyCommon(c, func(b *common[*ListConfig]) *common[*ListConfig] {
-			b.opts = &ListConfig{filterConfig: c.opts.filterConfig}
-			return b
-		}),
-	}
+	lp := newListProcessor(copyCommon(c, func(b *common[*ListConfig]) *common[*ListConfig] {
+		b.opts = &ListConfig{filterConfig: c.opts.filterConfig}
+		return b
+	}))
 	return &viewProcessor{common: c, lp: lp}
 }
 
@@ -103,10 +101,8 @@ func (v viewProcessor) findPrID(args []string) (int32, error) {
 		return prs[0].PullRequestId, nil
 	}
 
-	var prId int32
-	var ok bool
-	if prId, ok = pick(prs); ok {
-		return prId, nil
+	if pr, ok := pick(prs); ok {
+		return pr.PullRequestId, nil
 	}
 
 	return 0, nil
@@ -114,7 +110,7 @@ func (v viewProcessor) findPrID(args []string) (int32, error) {
 
 const prPickTpl = `{{.Title}} ({{.CreatedBy.Name|person}}, {{.CreationDate|time}}{{if .IsDraft}}, {{warn "DRAFT"}}{{end}})`
 
-func pick(prs []PR) (int32, bool) {
+func pick(prs []PR) (PR, bool) {
 	selected := ui.Pick(prs, ui.PickConfig[PR]{
 		Render: func(w io.Writer, pr PR, matches []int) {
 			pr.Title = styles.HighlightMatch(pr.Title, matches)
@@ -124,10 +120,10 @@ func pick(prs []PR) (int32, bool) {
 	})
 
 	if selected.IsNil() {
-		return 0, false
+		return PR{}, false
 	}
 
-	return selected.Get().PullRequestId, true
+	return selected.Get(), true
 }
 
 func (v viewProcessor) renderByID(id int32) error {
@@ -142,7 +138,7 @@ func (v viewProcessor) renderByID(id int32) error {
 }
 
 func (v viewProcessor) renderOne(m models.GitPullRequest) error {
-	pr := v.lp.toPR(m)
+	pr := converter(v.baseURL)(m)
 	if v.opts.browse {
 		fmt.Println(pr.WebURL)
 		return sh.Browse(pr.WebURL)

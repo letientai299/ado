@@ -3,7 +3,6 @@ package pull_request
 import (
 	_ "embed"
 	"slices"
-	"strconv"
 	"strings"
 	"text/template"
 
@@ -77,7 +76,7 @@ func listCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return listProcessor{c}.process()
+			return newListProcessor(c).process()
 		},
 	}
 
@@ -92,6 +91,10 @@ func listCmd() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func newListProcessor(c *common[*ListConfig]) listProcessor {
+	return listProcessor{c}
 }
 
 func defaultListConfig() *ListConfig {
@@ -132,29 +135,6 @@ func (l listProcessor) find() ([]PR, error) {
 	return l.filter(prs)
 }
 
-func (l listProcessor) toPR(m models.GitPullRequest) PR {
-	pr := PR{
-		PullRequestId: m.PullRequestId,
-		Title:         m.Title,
-		Description:   m.Description,
-		IsDraft:       m.IsDraft,
-	}
-
-	if m.CreationDate != nil {
-		pr.CreationDate = m.CreationDate.Format("2006-01-02")
-	}
-
-	pr.WebURL = l.webURL(pr)
-
-	approvers := fp.Map(
-		slices.DeleteFunc(m.Reviewers, isApproved),
-		func(x *models.IdentityRefWithVote) *models.IdentityRef { return &x.IdentityRef },
-	)
-	pr.Approvers = fp.Map(approvers, toIdentity)
-	pr.CreatedBy = toIdentity(m.CreatedBy)
-	return pr
-}
-
 func (l listProcessor) query() ([]PR, error) {
 	criteria := &git_prs.SearchCriteria{
 		Status: util.Ptr(models.PullRequestStatusActive),
@@ -168,7 +148,7 @@ func (l listProcessor) query() ([]PR, error) {
 		return nil, err
 	}
 
-	return fp.Map(all, l.toPR), nil
+	return fp.Map(all, converter(l.baseURL)), nil
 }
 
 func (l listProcessor) filter(all []PR) ([]PR, error) {
@@ -226,10 +206,6 @@ func (l listProcessor) render(all []PR) error {
 
 func (l listProcessor) renderTemplate(tpl string, all []PR) error {
 	return styles.RenderOut(tpl, all, template.FuncMap{
-		"webURL": l.webURL,
+		"webURL": func(pr PR) { webURL(l.baseURL, pr) },
 	})
-}
-
-func (l listProcessor) webURL(pr PR) string {
-	return l.baseURL + "/" + strconv.FormatInt(int64(pr.PullRequestId), 10)
 }
