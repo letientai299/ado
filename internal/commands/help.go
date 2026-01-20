@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/letientai299/ado/internal/styles"
+	"github.com/letientai299/ado/internal/util/fp"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -100,6 +101,12 @@ func formatFlag(f *pflag.Flag, nameMax, typeMax int) string {
 	if f.DefValue != "" && f.DefValue != "false" && f.DefValue != "0" && f.DefValue != "[]" &&
 		f.DefValue != "\"\"" && f.DefValue != "<nil>" {
 		usage += fmt.Sprintf(" (default %q)", f.DefValue)
+	} else if fType == "enum" {
+		type x interface {
+			ValueStrings() []string
+		}
+		vals := f.Value.(x).ValueStrings()
+		usage += "Values: " + strings.Join(fp.Map(vals, styles.Const), ", ")
 	}
 
 	// Calculate prefixes for alignment
@@ -130,7 +137,7 @@ func formatFlag(f *pflag.Flag, nameMax, typeMax int) string {
 	if fullFlagLen+len(usage)+1 <= styles.MaxLineLength {
 		return fmt.Sprintf("%s %s", fullFlag, usage)
 	}
-	return fmt.Sprintf("%s\n%s", fullFlag, styles.Indent(4, styles.Wrap(usage)))
+	return fmt.Sprintf("%s\n%s", fullFlag, styles.Indent(8, styles.Wrap(usage)))
 }
 
 type flagMaxLen struct {

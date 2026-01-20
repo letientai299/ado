@@ -36,6 +36,10 @@ func (e *EnumFlag[T]) Optional() *EnumFlag[T] {
 	return e
 }
 
+func (e *EnumFlag[T]) ValueStrings() []string {
+	return e.valueStrings
+}
+
 func (e *EnumFlag[T]) String() string { return string(e.value) }
 
 func (e *EnumFlag[T]) Set(s string) error {
@@ -62,7 +66,7 @@ func (e *EnumFlag[T]) Validate() error {
 }
 
 func (e *EnumFlag[T]) Type() string {
-	return strings.Join(e.valueStrings, "|")
+	return "enum"
 }
 
 // AddAllowed adds additional allowed values (for runtime extension from config).
