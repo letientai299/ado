@@ -181,6 +181,10 @@ func Resolve(cmd *cobra.Command, _ []string) error {
 	}
 
 	styles.Init(cfg.Theme)
+	if noNeedToken(cmd) {
+		return nil
+	}
+
 	token, err := cfg.Token()
 	if err != nil {
 		return err
@@ -188,6 +192,11 @@ func Resolve(cmd *cobra.Command, _ []string) error {
 
 	gitcli.SetToken(token)
 	return nil
+}
+
+func noNeedToken(cmd *cobra.Command) bool {
+	return cmd.IsAdditionalHelpTopicCommand() || !cmd.Runnable() ||
+		strings.Contains(cmd.CommandPath(), "config")
 }
 
 func flagsResolver(cmd *cobra.Command) func(cfg *Config) error {

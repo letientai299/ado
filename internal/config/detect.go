@@ -24,13 +24,13 @@ func detectRepo(cfg *Config) error {
 
 	gitOrigin, err := gitcli.RemoteURL()
 	if err != nil {
-		log.Errorf("fail to get git origin url: %v", err)
-		return err
+		log.Debugf("fail to get git origin url: %v", err)
+		return nil
 	}
 
 	org, project, repo, err := parseRepoInfo(gitOrigin)
 	if err != nil {
-		log.Errorf("fail to parse git origin url for ADO repo info: %v", err)
+		log.Debugf("not in an ADO repo: %v", err)
 		return err
 	}
 

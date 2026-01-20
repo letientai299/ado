@@ -14,7 +14,7 @@ const includeDirective = "include!"
 
 // resolveConfigFile finds the YAML config file and loads it with include support.
 func resolveConfigFile(cfg *Config) error {
-	filePath, err := findConfigFile()
+	filePath, err := FindConfigFile()
 	if err != nil {
 		return err
 	}
@@ -142,9 +142,9 @@ func processIncludes(data map[string]any, baseDir string, visited map[string]str
 	return nil
 }
 
-// findConfigFile looks for .ado.y(a)ml or `.config/ado.y(a)ml` in the
+// FindConfigFile looks for .ado.y(a)ml or `.config/ado.y(a)ml` in the
 // working dir, then continue the search up to the git root dir.
-func findConfigFile() (string, error) {
+func FindConfigFile() (string, error) {
 	wd, _ := os.Getwd()
 	gitRoot := gitcli.Root()
 
