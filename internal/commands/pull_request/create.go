@@ -11,7 +11,6 @@ import (
 	"github.com/letientai299/ado/internal/styles"
 	"github.com/letientai299/ado/internal/ui"
 	"github.com/letientai299/ado/internal/util"
-	"github.com/letientai299/ado/internal/util/editor"
 	"github.com/letientai299/ado/internal/util/gitcli"
 	"github.com/letientai299/ado/internal/util/sh"
 	"github.com/spf13/cobra"
@@ -133,7 +132,7 @@ func (p *createProcessor) createNew(source, target string) error {
 	}
 
 	if !p.opts.yes {
-		info, err = p.editPrInfo(info)
+		info, err = editPrInfo(info, p.cfg.Editor)
 		if err != nil {
 			return err
 		}
@@ -153,11 +152,6 @@ func (p *createProcessor) createNew(source, target string) error {
 	}
 
 	return p.postProcess(created)
-}
-
-type prInfo struct {
-	title string
-	desc  string
 }
 
 func (p *createProcessor) genPrInfo(branch string, commits []gitcli.Commit) (*prInfo, error) {
@@ -190,27 +184,6 @@ func (p *createProcessor) genPrInfo(branch string, commits []gitcli.Commit) (*pr
 	}, nil
 }
 
-func (p *createProcessor) editPrInfo(info *prInfo) (*prInfo, error) {
-	content := fmt.Sprintf("%s\n\n%s", info.title, info.desc)
-
-	// Use the configured editor from global config, which handles fallbacks properly
-	ed := editor.New("PR_EDIT*.md", p.cfg.Editor)
-
-	updatedContent, err := ed.Edit(content)
-	if err != nil {
-		return nil, err
-	}
-
-	parts := strings.SplitN(updatedContent, "\n\n", 2)
-	newTitle := strings.TrimSpace(parts[0])
-	newDesc := ""
-	if len(parts) > 1 {
-		newDesc = strings.TrimSpace(parts[1])
-	}
-
-	return &prInfo{title: newTitle, desc: newDesc}, nil
-}
-
 func (p *createProcessor) confirmFn(ask string) bool {
 	if p.opts.yes {
 		return true
@@ -222,7 +195,7 @@ func (p *createProcessor) updateExistingPrInfo(pr models.GitPullRequest) error {
 	var err error
 	info := &prInfo{title: pr.Title, desc: pr.Description}
 
-	info, err = p.editPrInfo(info)
+	info, err = editPrInfo(info, p.cfg.Editor)
 	if err != nil {
 		return fmt.Errorf("failed to edit PR info: %w", err)
 	}

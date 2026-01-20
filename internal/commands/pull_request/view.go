@@ -108,19 +108,19 @@ func (v viewProcessor) findPrID(args []string) (int32, error) {
 	return 0, nil
 }
 
-const prPickTpl = `{{.Title}} ({{.CreatedBy.Name|person}}, {{.CreationDate|time}}{{if .IsDraft}}, {{warn "DRAFT"}}{{end}})`
+const prPickTpl = `{{.Title}} ({{.CreatedBy.DisplayName|person}}, {{.CreationDate.Format "2016-01-16" | time }}{{if .IsDraft}}, {{warn "DRAFT"}}{{end}})`
 
-func pick(prs []PR) (PR, bool) {
-	selected := ui.Pick(prs, ui.PickConfig[PR]{
-		Render: func(w io.Writer, pr PR, matches []int) {
+func pick(prs []models.GitPullRequest) (models.GitPullRequest, bool) {
+	selected := ui.Pick(prs, ui.PickConfig[models.GitPullRequest]{
+		Render: func(w io.Writer, pr models.GitPullRequest, matches []int) {
 			pr.Title = styles.HighlightMatch(pr.Title, matches)
 			util.PanicIf(styles.Render(w, prPickTpl, pr))
 		},
-		FilterValue: func(pr PR) string { return strings.ToLower(pr.Title) },
+		FilterValue: func(pr models.GitPullRequest) string { return strings.ToLower(pr.Title) },
 	})
 
 	if selected.IsNil() {
-		return PR{}, false
+		return models.GitPullRequest{}, false
 	}
 
 	return selected.Get(), true

@@ -1,10 +1,13 @@
 package pull_request
 
 import (
+	"fmt"
 	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/letientai299/ado/internal/models"
+	"github.com/letientai299/ado/internal/util/editor"
 	"github.com/letientai299/ado/internal/util/fp"
 )
 
@@ -42,8 +45,8 @@ func toIdentity(a *models.IdentityRef) Identity {
 	}
 }
 
-func webURL(baseURL string, pr PR) string {
-	return baseURL + "/" + strconv.FormatInt(int64(pr.PullRequestId), 10)
+func webURL(baseURL string, id int32) string {
+	return baseURL + "/" + strconv.FormatInt(int64(id), 10)
 }
 
 func converter(baseURL string) func(m models.GitPullRequest) PR {
@@ -59,7 +62,7 @@ func converter(baseURL string) func(m models.GitPullRequest) PR {
 			pr.CreationDate = m.CreationDate.Format("2006-01-02")
 		}
 
-		pr.WebURL = webURL(baseURL, pr)
+		pr.WebURL = webURL(baseURL, pr.PullRequestId)
 
 		approvers := fp.Map(
 			slices.DeleteFunc(m.Reviewers, isApproved),
@@ -69,4 +72,30 @@ func converter(baseURL string) func(m models.GitPullRequest) PR {
 		pr.CreatedBy = toIdentity(m.CreatedBy)
 		return pr
 	}
+}
+
+func editPrInfo(info *prInfo, editorCmd string) (*prInfo, error) {
+	content := fmt.Sprintf("%s\n\n%s", info.title, info.desc)
+
+	// Use the configured editor from global config, which handles fallbacks properly
+	ed := editor.New("PR_EDIT*.md", editorCmd)
+
+	updatedContent, err := ed.Edit(content)
+	if err != nil {
+		return nil, err
+	}
+
+	parts := strings.SplitN(updatedContent, "\n\n", 2)
+	newTitle := strings.TrimSpace(parts[0])
+	newDesc := ""
+	if len(parts) > 1 {
+		newDesc = strings.TrimSpace(parts[1])
+	}
+
+	return &prInfo{title: newTitle, desc: newDesc}, nil
+}
+
+type prInfo struct {
+	title string
+	desc  string
 }

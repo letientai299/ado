@@ -4,7 +4,6 @@ import (
 	_ "embed"
 	"slices"
 	"strings"
-	"text/template"
 
 	"github.com/charmbracelet/log"
 	"github.com/letientai299/ado/internal/config"
@@ -126,7 +125,7 @@ func (l listProcessor) process() error {
 	return l.render(prs)
 }
 
-func (l listProcessor) find() ([]PR, error) {
+func (l listProcessor) find() ([]models.GitPullRequest, error) {
 	prs, err := l.query()
 	if err != nil {
 		return nil, err
@@ -135,7 +134,7 @@ func (l listProcessor) find() ([]PR, error) {
 	return l.filter(prs)
 }
 
-func (l listProcessor) query() ([]PR, error) {
+func (l listProcessor) query() ([]models.GitPullRequest, error) {
 	criteria := &git_prs.SearchCriteria{
 		Status: util.Ptr(models.PullRequestStatusActive),
 	}
@@ -148,10 +147,10 @@ func (l listProcessor) query() ([]PR, error) {
 		return nil, err
 	}
 
-	return fp.Map(all, converter(l.baseURL)), nil
+	return all, nil
 }
 
-func (l listProcessor) filter(all []PR) ([]PR, error) {
+func (l listProcessor) filter(all []models.GitPullRequest) ([]models.GitPullRequest, error) {
 	var id *string
 	if l.opts.mine {
 		identity, err := l.client.Identity(l.ctx, l.cfg.Repository.Org)
@@ -161,20 +160,20 @@ func (l listProcessor) filter(all []PR) ([]PR, error) {
 		id = &identity.Id
 	}
 
-	return slices.DeleteFunc(all, func(pr PR) bool {
-		if !l.opts.draft && pr.IsDraft {
+	return slices.DeleteFunc(all, func(m models.GitPullRequest) bool {
+		if !l.opts.draft && m.IsDraft {
 			return true
 		}
 
-		if id != nil && pr.CreatedBy.Id != *id {
+		if id != nil && m.CreatedBy.Id != *id {
 			return true
 		}
 
-		return !l.containsAll(pr, l.opts.keywords)
+		return !l.containsAll(m, l.opts.keywords)
 	}), nil
 }
 
-func (l listProcessor) containsAll(pr PR, keywords []string) bool {
+func (l listProcessor) containsAll(pr models.GitPullRequest, keywords []string) bool {
 	title := strings.ToLower(pr.Title)
 	desc := strings.ToLower(pr.Description)
 	for _, pattern := range keywords {
@@ -186,7 +185,10 @@ func (l listProcessor) containsAll(pr PR, keywords []string) bool {
 	return true
 }
 
-func (l listProcessor) render(all []PR) error {
+func (l listProcessor) render(all []models.GitPullRequest) error {
+	prs := fp.Map(all, converter(l.baseURL))
+	log.Debug("found pull requests", "count", len(prs))
+
 	output := strings.ToLower(l.opts.output.Value())
 	switch output {
 	case outputYAML:
@@ -194,10 +196,10 @@ func (l listProcessor) render(all []PR) error {
 	case outputJSON:
 		return styles.DumpJSON(all)
 	case outputSimple:
-		return l.renderTemplate(listSimpleTpl, all)
+		return l.renderTemplate(listSimpleTpl, prs)
 	default:
 		if tpl, ok := l.opts.CustomOutputTemplates[output]; ok {
-			return l.renderTemplate(tpl, all)
+			return l.renderTemplate(tpl, prs)
 		}
 	}
 
@@ -205,7 +207,5 @@ func (l listProcessor) render(all []PR) error {
 }
 
 func (l listProcessor) renderTemplate(tpl string, all []PR) error {
-	return styles.RenderOut(tpl, all, template.FuncMap{
-		"webURL": func(pr PR) { webURL(l.baseURL, pr) },
-	})
+	return styles.RenderOut(tpl, all)
 }
