@@ -462,6 +462,7 @@ func writeSchemaAsYAML(sb *strings.Builder, s *jsonschema.Schema, indent int, pa
 		// Write the key and value (single # comment)
 		switch {
 		case isMapType(prop):
+			// Map types get a multi-line example
 			_, _ = fmt.Fprintf(sb, "#%s%s:\n", indentStr, key)
 			_, _ = fmt.Fprintf(sb, "#%s  example_key: example_value\n", indentStr)
 		case prop.Type == "object" && prop.Properties != nil && prop.Properties.Len() > 1:
