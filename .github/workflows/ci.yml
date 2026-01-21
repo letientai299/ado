@@ -62,7 +62,7 @@ jobs:
 
       - name: Generate code (native arch)
         shell: bash
-        run: go generate ./...
+        run: mise run generate
 
       - name: Build release binary
         shell: bash
@@ -70,7 +70,7 @@ jobs:
           CGO_ENABLED: "0"
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
-        run: go build -v -ldflags="-s -w" -trimpath -o bin/ado .
+        run: mise run release
 
       - name: Rename binary
         shell: bash

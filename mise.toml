@@ -39,10 +39,11 @@ run_windows = "gotestsum --format-hide-empty-pkg --format testdox -- -v -cover -
 [tasks."fmt:go"]
 run = "golangci-lint fmt"
 
+[tasks.generate]
+description = "Generate code (must be run with native architecture before cross-compilation)"
+run = "go generate ./..."
+
 [tasks.release]
 description = "Build the binary with compact size and better performance for release"
 env = { GOFLAGS = "-ldflags=-s -ldflags=-w -trimpath" }
-run = [
-  "go generate ./...",                # ensure generated files are up to date
-  "go build -v -o {{env.ADO_EXE}} .",
-]
+run = "go build -v -o {{env.ADO_EXE}} ."
