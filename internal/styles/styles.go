@@ -2,14 +2,12 @@ package styles
 
 import (
 	"os"
-	"strings"
 	"sync"
 
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/log"
 	"github.com/charmbracelet/x/term"
-	"github.com/muesli/reflow/wordwrap"
 	"github.com/muesli/termenv"
 )
 
@@ -105,17 +103,6 @@ func Highlight(s string) string     { return underline(colorize(s, theme.Tokens.
 func Faint(s string) string         { return out.String(s).Faint().String() }
 func Error(s string) string         { return colorize(s, theme.Tokens.Error) }
 
-func Wrap(s string) string {
-	w, _, err := term.GetSize(os.Stdout.Fd())
-	if err != nil || w <= 0 {
-		w = MaxLineLength
-	}
-	if w > MaxLineLength {
-		w = MaxLineLength
-	}
-	return wordwrap.String(s, w)
-}
-
 // Markdown renders content with syntax highlighting.
 // The renderer is initialized lazily on the first call.
 func Markdown(md string) string {
@@ -125,10 +112,4 @@ func Markdown(md string) string {
 		log.Fatal(err)
 	}
 	return s
-}
-
-// Indent add indentation of n spaces to every line in the string
-func Indent(n int, s string) string {
-	padding := strings.Repeat(" ", n)
-	return padding + strings.ReplaceAll(s, "\n", "\n"+padding)
 }

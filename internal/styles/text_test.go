@@ -1,8 +1,10 @@
-package ui
+package styles
 
 import (
 	"bytes"
 	"testing"
+
+	"github.com/letientai299/ado/internal/ui"
 )
 
 func TestIndentWriter(t *testing.T) {
@@ -50,7 +52,7 @@ func TestIndentWriter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := &bytes.Buffer{}
-			iw := NewIndentWriter(buf, tt.indent)
+			iw := ui.NewIndentWriter(buf, tt.indent)
 			_, err := iw.Write([]byte(tt.input))
 			if err != nil {
 				t.Errorf("unexpected error: %v", err)
