@@ -55,3 +55,14 @@
 #      example_key: example_value
 #    # Default output format to use if not specified.
 #    default_output: "simple"
+
+#workitem:
+#  # ListConfig holds configuration for the workitem list command.
+#  list:
+#    # Custom output templates is a map of output format names to their templates.
+#    custom_output_templates:
+#      example_key: example_value
+#    # Default output format to use if not specified.
+#    default_output: "simple"
+#    # Maximum number of work items to return.
+#    top: 0
