@@ -211,6 +211,44 @@
       "type": "string",
       "markdownDescription": "Load config from another file"
     },
+    "pipeline": {
+      "properties": {
+        "include!": {
+          "type": "string",
+          "markdownDescription": "Load config from another file"
+        },
+        "list": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$id": "https://github.com/letientai299/ado/internal/commands/pipeline/list-config",
+          "properties": {
+            "custom_output_templates": {
+              "properties": {
+                "include!": {
+                  "type": "string",
+                  "markdownDescription": "Load config from another file"
+                }
+              },
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "default_output": {
+              "type": "string",
+              "default": "simple"
+            },
+            "include!": {
+              "type": "string",
+              "markdownDescription": "Load config from another file"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "markdownDescription": "ListConfig holds configuration for the pipeline list command."
+        }
+      },
+      "type": "object"
+    },
     "pull-request": {
       "properties": {
         "create": {
