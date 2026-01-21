@@ -36,10 +36,10 @@ run = "golangci-lint run --fix ./..."
 [tasks.test]
 alias = ["t"]
 env = { CGO_ENABLED = "1" }
-run = "gotestsum --format-hide-empty-pkg --format testdox -- -v -cover -race -timeout=20s ./..."
-# can't use race detector on windows without installing mingw toolchain.
+run = "gotestsum --format-hide-empty-pkg --format pkgname -- -v -p 12 -cover -race -timeout=20s ./..."
+# can't use race detector on Windows without installing mingw toolchain.
 # https://go.dev/doc/articles/race_detector#Requirements
-run_windows = "gotestsum --format-hide-empty-pkg --format testdox -- -v -cover -timeout=20s ./..."
+run_windows = "gotestsum --format-hide-empty-pkg --format pkgname -- -v -p 12 -cover -timeout=20s ./..."
 
 [tasks."fmt:go"]
 run = "golangci-lint fmt"
