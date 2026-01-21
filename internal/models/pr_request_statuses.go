@@ -1,20 +1,30 @@
 package models
 
-// PullRequestStatus represents the status of the pull request.
-// https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-requests/get-pull-requests-by-project
+// PullRequestStatus represents the lifecycle state of a pull request.
+// Pull requests transition through these states from creation to completion.
+//
+// See:
+// https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-requests/get#pullrequeststatus
 type PullRequestStatus string
 
-//goland:noinspection GoCommentStart,GoUnusedConst
 const (
-	// Status isn't set.
-	// Default state.
+	// PullRequestStatusNotSet indicates the status has not been set.
+	// This is the default/uninitialized state.
 	PullRequestStatusNotSet PullRequestStatus = "notSet"
-	// Pull request is active.
+
+	// PullRequestStatusActive indicates the pull request is open and active.
+	// Active PRs are awaiting review, approval, or completion.
 	PullRequestStatusActive PullRequestStatus = "active"
-	// Pull request is abandoned.
+
+	// PullRequestStatusAbandoned indicates the pull request was abandoned.
+	// Abandoned PRs are closed without merging and cannot be completed.
 	PullRequestStatusAbandoned PullRequestStatus = "abandoned"
-	// Pull request is completed.
+
+	// PullRequestStatusCompleted indicates the pull request was completed.
+	// Completed PRs have been successfully merged into the target branch.
 	PullRequestStatusCompleted PullRequestStatus = "completed"
-	// Used in pull request search criteria to include all statuses.
+
+	// PullRequestStatusAll is used in search criteria to match all statuses.
+	// This is not a valid PR state, only used for filtering.
 	PullRequestStatusAll PullRequestStatus = "all"
 )

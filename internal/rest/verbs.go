@@ -13,11 +13,14 @@ import (
 	"github.com/letientai299/ado/internal/styles"
 )
 
+// apiVersionQuery is the query parameter added to all API requests.
 var apiVersionQuery = _shared.KV[string]{
 	Key:   "api-version",
 	Value: apiVersion,
 }
 
+// httpGet performs an HTTP GET request and decodes the JSON response.
+// Query parameters are appended using the provided Querier implementations.
 func httpGet[T any](ctx context.Context, c Client, url string, qs ..._shared.Querier) (*T, error) {
 	qs = append(qs, apiVersionQuery)
 	url = appendQueries(url, qs...)
@@ -30,18 +33,22 @@ func httpGet[T any](ctx context.Context, c Client, url string, qs ..._shared.Que
 	return call[T](c, req)
 }
 
+// httpPost performs an HTTP POST request with a JSON body.
 func httpPost[T any](ctx context.Context, c Client, url string, body any) (*T, error) {
 	return httpX[T](ctx, c, http.MethodPost, url, body)
 }
 
+// httpPatch performs an HTTP PATCH request with a JSON body.
 func httpPatch[T any](ctx context.Context, c Client, url string, body any) (*T, error) {
 	return httpX[T](ctx, c, http.MethodPatch, url, body)
 }
 
+// httpPut performs an HTTP PUT request with a JSON body.
 func httpPut[T any](ctx context.Context, c Client, url string, body any) (*T, error) {
 	return httpX[T](ctx, c, http.MethodPut, url, body)
 }
 
+// httpX is a helper that performs HTTP requests with JSON body for POST, PUT, PATCH.
 func httpX[T any](ctx context.Context, c Client, method, url string, body any) (*T, error) {
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
@@ -59,6 +66,8 @@ func httpX[T any](ctx context.Context, c Client, method, url string, body any) (
 	return call[T](c, req)
 }
 
+// appendQueries appends query parameters to a URL.
+// The first parameter is converted from & to ? to start the query string.
 func appendQueries(url string, queries ..._shared.Querier) string {
 	var sb strings.Builder
 	sb.WriteString(url)
@@ -67,6 +76,8 @@ func appendQueries(url string, queries ..._shared.Querier) string {
 	return strings.Replace(s, "&", "?", 1)
 }
 
+// call executes an HTTP request and decodes the JSON response.
+// Handles authentication, error responses, and response decoding.
 func call[T any](c Client, req *http.Request) (*T, error) {
 	log.Debugf("HTTP request: %s %s", req.Method, req.URL)
 
@@ -87,6 +98,7 @@ func call[T any](c Client, req *http.Request) (*T, error) {
 	return decode[T](resp.Body)
 }
 
+// logErrResponse logs details of an error response for debugging.
 func logErrResponse(resp *http.Response) {
 	all, _ := io.ReadAll(resp.Body)
 	log.Errorf("HTTP response: %s %s", resp.Status, resp.Request.URL.RequestURI())
@@ -106,6 +118,7 @@ func logErrResponse(resp *http.Response) {
 	_ = styles.DumpYAML(m)
 }
 
+// validateResponse checks the HTTP response status and returns an appropriate error.
 func validateResponse(resp *http.Response) error {
 	code := resp.StatusCode
 	uri := resp.Request.URL.RequestURI()
@@ -133,6 +146,7 @@ func validateResponse(resp *http.Response) error {
 	return nil
 }
 
+// decode unmarshals JSON from the response body into the specified type.
 func decode[T any](body io.ReadCloser) (*T, error) {
 	t := new(T)
 

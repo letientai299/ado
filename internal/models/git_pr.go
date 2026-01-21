@@ -3,149 +3,195 @@ package models
 import "time"
 
 // GitPullRequest represents all the data associated with a pull request.
-// https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-requests/get-pull-requests-by-project
+// Pull requests let your team review code and give feedback on changes before
+// merging into the main branch.
+//
+// See:
+// https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-requests/get#gitpullrequest
 type GitPullRequest struct {
-	// Links to other related objects.
+	// Links contains REST reference links for related resources.
 	Links *ReferenceLinks `json:"_links,omitempty"`
-	// A string which uniquely identifies this pull request.
-	// To generate an artifact ID for a pull request, use this template:
-	// vstfs:///Git/PullRequestId/{projectId}/{repositoryId}/{pullRequestId}
+
+	// ArtifactId uniquely identifies this pull request as an artifact.
+	// Format: vstfs:///Git/PullRequestId/{projectId}/{repositoryId}/{pullRequestId}
 	ArtifactId string `json:"artifactId,omitempty"`
-	// If set, auto-complete is enabled for this pull request, and this is the
-	// identity that enabled it.
+
+	// AutoCompleteSetBy is the identity that enabled auto-complete for this PR.
+	// If set, the PR will automatically complete when all policies pass.
 	AutoCompleteSetBy *IdentityRef `json:"autoCompleteSetBy,omitempty"`
-	// The user who closed the pull request.
+
+	// ClosedBy is the identity that closed the pull request.
 	ClosedBy *IdentityRef `json:"closedBy,omitempty"`
-	// The date when the pull request was closed (completed, abandoned, or merged
-	// externally).
+
+	// ClosedDate is when the pull request was closed.
+	// This is set when the PR is completed, abandoned, or merged externally.
 	ClosedDate *time.Time `json:"closedDate,omitempty"`
-	// The code review ID of the pull request.
-	// Used internally.
+
+	// CodeReviewId is the internal code review identifier.
+	// Used internally by Azure DevOps.
 	CodeReviewId int `json:"codeReviewId,omitempty"`
-	// The commits contained in the pull request.
+
+	// Commits contains the commits included in this pull request.
+	// Only populated when includeCommits is true in the request.
 	Commits []GitCommitRef `json:"commits,omitempty"`
-	// Options which affect how the pull request will be merged when it is
-	// completed.
+
+	// CompletionOptions specifies how the PR will be merged when completed.
 	CompletionOptions *GitPullRequestCompletionOptions `json:"completionOptions,omitempty"`
-	// The most recent date at which the pull request entered the queue to be
-	// completed.
-	// Used internally.
+
+	// CompletionQueueTime is when the PR entered the completion queue.
+	// Used internally by Azure DevOps.
 	CompletionQueueTime *time.Time `json:"completionQueueTime,omitempty"`
-	// The identity of the user who created the pull request.
+
+	// CreatedBy is the identity that created this pull request.
 	CreatedBy *IdentityRef `json:"createdBy,omitempty"`
-	// The date when the pull request was created.
+
+	// CreationDate is when this pull request was created.
 	CreationDate *time.Time `json:"creationDate,omitempty"`
-	// The description of the pull request.
+
+	// Description is the detailed description of the pull request.
+	// Supports markdown formatting.
 	Description string `json:"description,omitempty"`
-	// If this is a PR from a fork, this will contain information about its source.
+
+	// ForkSource contains information about the fork source if this PR
+	// is from a forked repository.
 	ForkSource *GitForkRef `json:"forkSource,omitempty"`
-	// Multiple merge bases warning
+
+	// HasMultipleMergeBases indicates if there are multiple merge bases.
+	// This can occur in complex branching scenarios and may require attention.
 	HasMultipleMergeBases bool `json:"hasMultipleMergeBases"`
-	// Draft / WIP pull request.
+
+	// IsDraft indicates if this is a draft/work-in-progress pull request.
+	// Draft PRs cannot be completed until marked as ready for review.
 	IsDraft bool `json:"isDraft"`
-	// The labels associated with the pull request.
+
+	// Labels contains the labels/tags associated with this pull request.
 	Labels []WebApiTagDefinition `json:"labels,omitempty"`
-	// The commit of the most recent pull request merge.
-	// If empty, the most recent merge is in progress or was unsuccessful.
+
+	// LastMergeCommit is the commit from the most recent successful merge.
+	// Empty if the most recent merge is in progress or failed.
 	LastMergeCommit *GitCommitRef `json:"lastMergeCommit,omitempty"`
-	// The commit at the head of the source branch at the time of the last pull
-	// request merge.
+
+	// LastMergeSourceCommit is the source branch HEAD at the time of the last merge.
 	LastMergeSourceCommit *GitCommitRef `json:"lastMergeSourceCommit,omitempty"`
-	// The commit at the head of the target branch at the time of the last pull
-	// request merge.
+
+	// LastMergeTargetCommit is the target branch HEAD at the time of the last merge.
 	LastMergeTargetCommit *GitCommitRef `json:"lastMergeTargetCommit,omitempty"`
-	// If set, the pull request merge failed for this reason.
+
+	// MergeFailureMessage contains the error message if the merge failed.
 	MergeFailureMessage string `json:"mergeFailureMessage,omitempty"`
-	// The type of failure (if any) of the pull request merge.
+
+	// MergeFailureType indicates the type of merge failure.
 	MergeFailureType PullRequestMergeFailureType `json:"mergeFailureType,omitempty"`
-	// The ID of the job used to run the pull request merge.
-	// Used internally.
+
+	// MergeId is the internal identifier for the merge job.
+	// Used internally by Azure DevOps.
 	MergeId string `json:"mergeId,omitempty"`
-	// Options used when the pull request merge runs.
-	// These are separate from completion options since completion happens only once
-	// and a new merge will run every time the source branch of the pull request
-	// changes.
+
+	// MergeOptions specifies options for the merge operation.
+	// These are separate from completion options and apply to each merge attempt.
 	MergeOptions *GitPullRequestMergeOptions `json:"mergeOptions,omitempty"`
-	// The current status of the pull request merge.
+
+	// MergeStatus indicates the current status of the pull request merge.
 	MergeStatus PullRequestAsyncStatus `json:"mergeStatus,omitempty"`
-	// The ID of the pull request.
+
+	// PullRequestId is the unique identifier of this pull request.
 	PullRequestId int32 `json:"pullRequestId,omitempty"`
-	// Used internally.
+
+	// RemoteUrl is the internal remote URL.
+	// Used internally by Azure DevOps.
 	RemoteUrl string `json:"remoteUrl,omitempty"`
-	// The repository containing the target branch of the pull request.
+
+	// Repository is the repository containing the target branch.
 	Repository *GitRepository `json:"repository,omitempty"`
-	// A list of reviewers on the pull request along with the state of their votes.
+
+	// Reviewers contains all reviewers and their votes on this PR.
 	Reviewers []*IdentityRefWithVote `json:"reviewers,omitempty"`
-	// The name of the source branch of the pull request.
+
+	// SourceRefName is the full name of the source branch.
+	// Format: refs/heads/{branch-name}
 	SourceRefName string `json:"sourceRefName,omitempty"`
-	// The status of the pull request.
+
+	// Status indicates the current state of the pull request.
 	Status *PullRequestStatus `json:"status,omitempty"`
-	// If true, this pull request supports multiple iterations.
-	// Iteration support means individual pushes to the source branch of the pull
-	// request can be reviewed and comments left in one iteration will be tracked
-	// across future iterations.
+
+	// SupportsIterations indicates if this PR supports multiple iterations.
+	// When true, each push to the source branch creates a new iteration,
+	// allowing reviewers to track changes between iterations.
 	SupportsIterations bool `json:"supportsIterations"`
-	// The name of the target branch of the pull request.
+
+	// TargetRefName is the full name of the target branch.
+	// Format: refs/heads/{branch-name}
 	TargetRefName string `json:"targetRefName,omitempty"`
-	// The title of the pull request.
+
+	// Title is the title/subject of the pull request.
 	Title string `json:"title,omitempty"`
-	// Used internally.
+
+	// Url is the REST API URL of this pull request.
 	Url string `json:"url,omitempty"`
-	// Any work item references associated with this pull request.
+
+	// WorkItemRefs contains references to linked work items.
 	WorkItemRefs []*ResourceRef `json:"workItemRefs,omitempty"`
 }
 
-// GitPullRequestCompletionOptions represents preferences about how the pull request should be
-// completed.
-// https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-requests/get-pull-requests-by-project
+// GitPullRequestCompletionOptions specifies how a pull request should be completed.
+// These options control the merge behavior and post-completion actions.
+//
+// See:
+// https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-requests/update#gitpullrequestcompletionoptions
 type GitPullRequestCompletionOptions struct {
-	// List of any policy configuration ID's which auto-complete should not wait for.
-	// Only applies to optional policies (isBlocking == false).
-	// Auto-complete always waits for required policies (isBlocking == true).
+	// AutoCompleteIgnoreConfigIds lists policy configuration IDs that auto-complete
+	// should not wait for. Only applies to optional (non-blocking) policies.
 	AutoCompleteIgnoreConfigIds []int `json:"autoCompleteIgnoreConfigIds,omitempty"`
-	// If true, policies will be explicitly bypassed while the pull request is
-	// completed.
+
+	// BypassPolicy bypasses all branch policies when completing the PR.
+	// Requires elevated permissions and records the bypass reason.
 	BypassPolicy bool `json:"bypassPolicy"`
-	// If policies are bypassed, this reason is stored as to why bypass was used.
+
+	// BypassReason explains why policies were bypassed.
+	// Required when BypassPolicy is true.
 	BypassReason string `json:"bypassReason,omitempty"`
-	// If true, the source branch of the pull request will be deleted after
-	// completion.
+
+	// DeleteSourceBranch deletes the source branch after PR completion.
 	DeleteSourceBranch bool `json:"deleteSourceBranch"`
-	// If set, this will be used as the commit message of the merge commit.
+
+	// MergeCommitMessage is the custom message for the merge commit.
+	// If not specified, a default message is generated.
 	MergeCommitMessage string `json:"mergeCommitMessage,omitempty"`
-	// Specify the strategy used to merge the pull request during completion.
-	// If MergeStrategy is not set to any value, a no-FF merge will be created if
-	// SquashMerge == false.
-	// If MergeStrategy is not set to any value, the pull request commits will be
-	// squashed if SquashMerge == true.
-	// The SquashMerge property is deprecated.
-	// It is recommended that you explicitly set MergeStrategy in all cases.
-	// If an explicit value is provided for MergeStrategy, the SquashMerge property
-	// will be ignored.
+
+	// MergeStrategy specifies how to merge the PR.
+	// Options: noFastForward (default), squash, rebase, rebaseMerge.
+	// This supersedes the deprecated SquashMerge field.
 	MergeStrategy GitPullRequestMergeStrategy `json:"mergeStrategy,omitempty"`
-	// SquashMerge is deprecated.
-	// You should explicitly set the value of MergeStrategy.
-	// If MergeStrategy is set to any value, the SquashMerge value will be ignored.
-	// If MergeStrategy is not set, the merge strategy will be no-fast-forward if
-	// this flag is false, or squash if true.
+
+	// SquashMerge is deprecated. Use MergeStrategy instead.
+	// When MergeStrategy is not set: false = no-fast-forward, true = squash.
+	// When MergeStrategy is set, this field is ignored.
 	SquashMerge bool `json:"squashMerge"`
-	// If true, we will attempt to transition any work items linked to the pull
-	// request into the next logical state (i.e.
-	// Active -> Resolved)
+
+	// TransitionWorkItems automatically transitions linked work items
+	// to the next logical state (e.g., Active -> Resolved) upon completion.
 	TransitionWorkItems bool `json:"transitionWorkItems"`
-	// If true, the current completion attempt was triggered via auto-complete.
-	// Used internally.
+
+	// TriggeredByAutoComplete indicates if this completion was triggered
+	// by auto-complete. Used internally by Azure DevOps.
 	TriggeredByAutoComplete bool `json:"triggeredByAutoComplete"`
 }
 
-// GitPullRequestMergeOptions represents the options which are used when a pull request merge is
-// created.
-// https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-requests/get-pull-requests-by-project
+// GitPullRequestMergeOptions specifies options for the merge operation.
+// These options apply each time a merge is attempted, not just at completion.
+//
+// See:
+// https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-requests/update#gitpullrequestmergeoptions
 type GitPullRequestMergeOptions struct {
-	// If true, conflict resolutions applied during the merge will be put in
-	// separate commits to preserve authorship info for git blame, etc.
-	ConflictAuthorshipCommits  bool `json:"conflictAuthorshipCommits"`
+	// ConflictAuthorshipCommits puts conflict resolutions in separate commits
+	// to preserve authorship information for git blame.
+	ConflictAuthorshipCommits bool `json:"conflictAuthorshipCommits"`
+
+	// DetectRenameFalsePositives enables detection of false positive renames
+	// during the merge operation.
 	DetectRenameFalsePositives bool `json:"detectRenameFalsePositives"`
-	// If true, rename detection will not be performed during the merge.
+
+	// DisableRenames disables rename detection during the merge.
+	// This can speed up merges for repositories with many files.
 	DisableRenames bool `json:"disableRenames"`
 }

@@ -9,43 +9,53 @@ import (
 	"github.com/letientai299/ado/internal/rest/_shared"
 )
 
+// SearchCriteria defines filtering options for listing pull requests.
+// All fields are optional; only set fields will be included in the query.
+//
+// See:
+// https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-requests/get-pull-requests#gitpullrequestsearchcriteria
 type SearchCriteria struct {
-	// If set, search for pull requests that were created by this identity. Uuid.
+	// CreatorId filters pull requests created by this identity (GUID).
 	CreatorId *string
 
-	// If specified, filters pull requests that created/closed before this date based on the
-	// queryTimeRangeType specified.
+	// MaxTime filters pull requests created/closed before this date.
+	// The date field used depends on QueryTimeRangeType.
 	MaxTime *time.Time
 
-	// If specified, filters pull requests that created/closed after this date based on the
-	// queryTimeRangeType specified.
+	// MinTime filters pull requests created/closed after this date.
+	// The date field used depends on QueryTimeRangeType.
 	MinTime *time.Time
 
-	// The type of time range which should be used for minTime and maxTime. Defaults to Created if
-	// unset.
+	// QueryTimeRangeType specifies which date field to use for MinTime/MaxTime.
+	// Defaults to "created" if not set.
 	QueryTimeRangeType *models.PullRequestTimeRangeType
 
-	// If set, search for pull requests whose target branch is in this repository. Uuid.
+	// RepositoryId filters pull requests targeting this repository (GUID).
 	RepositoryId *string
 
-	// If set, search for pull requests that have this identity as a reviewer. Uuid.
+	// ReviewerId filters pull requests where this identity is a reviewer (GUID).
 	ReviewerId *string
 
-	// If set, search for pull requests from this branch.
+	// SourceRefName filters pull requests from this source branch.
+	// Use full ref format: "refs/heads/branch-name".
 	SourceRefName *string
 
-	// If set, search for pull requests whose source branch is in this repository. Uuid.
+	// SourceRepositoryId filters pull requests from this source repository (GUID).
+	// Used for cross-repository or fork pull requests.
 	SourceRepositoryId *string
 
-	// If set, search for pull requests that are in this state. Defaults to Active if unset.
+	// Status filters pull requests by their lifecycle state.
+	// Defaults to "active" if not set.
 	Status *models.PullRequestStatus
 
-	// If set, search for pull requests into this branch.
+	// TargetRefName filters pull requests targeting this branch.
+	// Use full ref format: "refs/heads/branch-name".
 	TargetRefName *string
 }
 
 var _ _shared.Querier = (*SearchCriteria)(nil)
 
+// AppendTo writes the search criteria as query parameters to the writer.
 func (s *SearchCriteria) AppendTo(w io.Writer) {
 	if s == nil {
 		return
@@ -73,7 +83,11 @@ func (s *SearchCriteria) AppendTo(w io.Writer) {
 	if s.QueryTimeRangeType != nil {
 		_, _ = w.Write([]byte("&"))
 		_, _ = w.Write(
-			[]byte("searchCriteria.queryTimeRangeType=" + url.QueryEscape(string(*s.QueryTimeRangeType))),
+			[]byte(
+				"searchCriteria.queryTimeRangeType=" + url.QueryEscape(
+					string(*s.QueryTimeRangeType),
+				),
+			),
 		)
 	}
 
