@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/letientai299/ado/internal/models"
+	"github.com/letientai299/ado/internal/ui"
 	"github.com/letientai299/ado/internal/util/editor"
 	"github.com/letientai299/ado/internal/util/fp"
 )
@@ -188,16 +189,16 @@ func buildStatusFromEvaluation(
 	// Set icon and status text based on status
 	switch eval.Status {
 	case models.PolicyEvaluationStatusApproved:
-		bs.Icon = "✓"
+		bs.Icon = ui.IconSuccess
 		bs.StatusText = "passes"
 	case models.PolicyEvaluationStatusRejected:
-		bs.Icon = "✗"
+		bs.Icon = ui.IconFailure
 		bs.StatusText = "fails"
 	case models.PolicyEvaluationStatusQueued, models.PolicyEvaluationStatusRunning:
-		bs.Icon = "⏳"
+		bs.Icon = ui.IconPending
 		bs.StatusText = "pending"
 	case models.PolicyEvaluationStatusBroken:
-		bs.Icon = "⚠"
+		bs.Icon = ui.IconWarning
 		bs.StatusText = "error"
 	default:
 		bs.Icon = "?"

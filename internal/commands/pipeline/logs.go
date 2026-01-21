@@ -276,7 +276,7 @@ func formatBuildLine1(b models.Build) string {
 		// Fallback to branch info
 		info = formatBranch(b.SourceBranch)
 	}
-	return fmt.Sprintf("#%s • %s", b.BuildNumber, info)
+	return fmt.Sprintf("#%s %s %s", b.BuildNumber, ui.IconBullet, info)
 }
 
 func firstLine(s string) string {
@@ -357,34 +357,34 @@ func formatStagesViz(stages []models.TimelineRecord) string {
 func stageIcon(result models.TaskResult, state models.TimelineRecordState) string {
 	switch result {
 	case models.TaskResultSucceeded:
-		return styles.Success("☑")
+		return styles.Success(ui.IconChecked)
 	case models.TaskResultFailed:
-		return styles.Error("☒")
+		return styles.Error(ui.IconCrossed)
 	case models.TaskResultCanceled, models.TaskResultSkipped:
-		return styles.Warn("☐")
+		return styles.Warn(ui.IconUnchecked)
 	case models.TaskResultSucceededWithIssues:
-		return styles.Warn("☑")
+		return styles.Warn(ui.IconChecked)
 	default:
 		// Check state for in-progress or pending
 		if state == models.TimelineRecordStateInProgress {
-			return "▶"
+			return ui.IconRunning
 		}
-		return "☐"
+		return ui.IconUnchecked
 	}
 }
 
 func resultIcon(result models.TaskResult) string {
 	switch result {
 	case models.TaskResultSucceeded:
-		return styles.Success("✓")
+		return styles.Success(ui.IconSuccess)
 	case models.TaskResultFailed:
-		return styles.Error("✗")
+		return styles.Error(ui.IconFailure)
 	case models.TaskResultCanceled:
-		return styles.Warn("○")
+		return styles.Warn(ui.IconWaiting)
 	case models.TaskResultSucceededWithIssues:
-		return styles.Warn("◐")
+		return styles.Warn(ui.IconPartial)
 	default:
-		return styles.Time("●")
+		return styles.Time(ui.IconFull)
 	}
 }
 

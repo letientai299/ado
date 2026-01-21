@@ -5,6 +5,7 @@ import (
 	"os/exec"
 
 	"github.com/charmbracelet/log"
+	"github.com/letientai299/ado/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +29,7 @@ func doctorCheck() error {
 			log.Error(displayName + " is not installed or not in PATH")
 			return fmt.Errorf("%s not found: %w", name, err)
 		}
-		log.Info(fmt.Sprintf("✓ %s is installed", displayName))
+		log.Info(fmt.Sprintf("%s %s is installed", ui.IconSuccess, displayName))
 		return nil
 	}
 
@@ -36,7 +37,7 @@ func doctorCheck() error {
 		return err
 	}
 
-	log.Info("✓ Azure CLI is available")
+	log.Info(ui.IconSuccess + " Azure CLI is available")
 	log.Info("All checks passed!")
 	return nil
 }
