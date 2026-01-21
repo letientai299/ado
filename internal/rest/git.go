@@ -119,7 +119,7 @@ func (g GitPRs) Update(
 	return httpPatch[models.GitPullRequest](ctx, g.client, prURL, pr)
 }
 
-// Reviewers returns all reviewers for a pull request, including their votes.
+// Reviewers return all reviewers for a pull request, including their votes.
 //
 // See:
 // https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-request-reviewers/list
@@ -166,7 +166,7 @@ func (g GitPRs) Vote(
 	return httpPut[models.IdentityRefWithVote](ctx, g.client, reviewerURL, body)
 }
 
-// Statuses returns all statuses posted to a pull request.
+// Statuses return all statuses posted to a pull request.
 // Statuses are typically posted by CI/CD systems to indicate build/test results.
 //
 // See:
@@ -190,6 +190,6 @@ type List[T any] struct {
 	// Value contains the list of items.
 	Value []T `json:"value"`
 
-	// Count is the number of items in the current page.
+	// Count is the number of items on the current page.
 	Count int `json:"count"`
 }
