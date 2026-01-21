@@ -1,6 +1,7 @@
 package styles
 
 import (
+	"bytes"
 	"io"
 	"os"
 	"strings"
@@ -18,12 +19,19 @@ func Indent(n int, s string) string {
 }
 
 func IndentTo(w io.Writer, n int, s string) {
+	if s == "" {
+		return
+	}
+
 	padding := strings.Repeat(" ", n)
-	_, err := w.Write([]byte(padding))
+	iw := &indentWriter{w: w, indent: []byte(padding), atBOL: true}
+	_, err := iw.Write([]byte(s))
 	util.PanicIf(err)
 
-	_, err = w.Write([]byte(strings.ReplaceAll(s, "\n", "\n"+padding)))
-	util.PanicIf(err)
+	if iw.atBOL {
+		_, err = w.Write(iw.indent)
+		util.PanicIf(err)
+	}
 }
 
 func Wrap(s string) string {
@@ -42,32 +50,51 @@ var _ io.Writer = &indentWriter{}
 // indentWriter add indent to written content for every newline.
 type indentWriter struct {
 	w      io.Writer
-	indent string
+	indent []byte
 	atBOL  bool // at beginning of line
 }
 
 func NewIndentWriter(w io.Writer, indent string) io.Writer {
-	return &indentWriter{w: w, indent: indent}
+	return &indentWriter{w: w, indent: []byte(indent)}
 }
 
 func (iw *indentWriter) Write(bs []byte) (n int, err error) {
-	for _, b := range bs {
-		if iw.atBOL && b != '\n' {
-			_, err = iw.w.Write([]byte(iw.indent))
-			if err != nil {
+	for len(bs) > 0 {
+		if iw.atBOL {
+			if bs[0] == '\n' {
+				// Multiple newlines: write the \n and stay at BOL
+				nn, err := iw.w.Write(bs[:1])
+				n += nn
+				if err != nil {
+					return n, err
+				}
+				bs = bs[1:]
+				continue
+			}
+
+			if _, err := iw.w.Write(iw.indent); err != nil {
 				return n, err
 			}
 			iw.atBOL = false
 		}
 
-		_, err = iw.w.Write([]byte{b})
+		idx := bytes.IndexByte(bs, '\n')
+		if idx == -1 {
+			nn, err := iw.w.Write(bs)
+			n += nn
+			if err != nil {
+				return n, err
+			}
+			return n, nil
+		}
+
+		nn, err := iw.w.Write(bs[:idx+1])
+		n += nn
 		if err != nil {
 			return n, err
 		}
-		n++
-		if b == '\n' {
-			iw.atBOL = true
-		}
+		iw.atBOL = true
+		bs = bs[idx+1:]
 	}
 
 	return n, nil
