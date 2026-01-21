@@ -1,0 +1,152 @@
+package rest
+
+import (
+	"context"
+	"net/url"
+	"strconv"
+	"strings"
+
+	"github.com/letientai299/ado/internal/config"
+	"github.com/letientai299/ado/internal/models"
+	"github.com/letientai299/ado/internal/rest/_shared"
+)
+
+const pathWorkItems = "workitems"
+
+// WorkItems provides access to the Azure DevOps Work Item Tracking REST API.
+// https://learn.microsoft.com/en-us/rest/api/azure/devops/wit/work-items
+type WorkItems struct {
+	client  Client
+	org     string
+	project string
+	baseURL string
+}
+
+// WorkItems returns a WorkItems client scoped to the given repository's org and project.
+// https://learn.microsoft.com/en-us/rest/api/azure/devops/wit/work-items
+func (c Client) WorkItems(repo config.Repository) WorkItems {
+	baseURL, _ := url.JoinPath(adoHost, repo.Org, repo.Project, "_apis/wit")
+	return WorkItems{
+		client:  c,
+		org:     repo.Org,
+		project: repo.Project,
+		baseURL: baseURL,
+	}
+}
+
+// ByID fetches a single work item by its ID.
+// Use expand parameter to include additional data like relations.
+// https://learn.microsoft.com/en-us/rest/api/azure/devops/wit/work-items/get-work-item
+func (w WorkItems) ByID(
+	ctx context.Context,
+	id int,
+	expand models.WorkItemExpand,
+) (*models.WorkItem, error) {
+	wiURL, _ := url.JoinPath(w.baseURL, pathWorkItems, strconv.Itoa(id))
+
+	var qs []_shared.Querier
+	if expand != "" && expand != models.WorkItemExpandNone {
+		qs = append(qs, _shared.KV[string]{Key: "$expand", Value: string(expand)})
+	}
+
+	return httpGet[models.WorkItem](ctx, w.client, wiURL, qs...)
+}
+
+// List fetches multiple work items by their IDs.
+// This is typically used after a WIQL query which only returns IDs.
+// Maximum 200 IDs per request.
+// https://learn.microsoft.com/en-us/rest/api/azure/devops/wit/work-items/list
+func (w WorkItems) List(
+	ctx context.Context,
+	ids []int,
+	expand models.WorkItemExpand,
+) ([]models.WorkItem, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
+	wiURL, _ := url.JoinPath(w.baseURL, pathWorkItems)
+
+	// Convert IDs to comma-separated string
+	idStrs := make([]string, len(ids))
+	for i, id := range ids {
+		idStrs[i] = strconv.Itoa(id)
+	}
+
+	qs := []_shared.Querier{
+		_shared.KV[string]{Key: "ids", Value: strings.Join(idStrs, ",")},
+	}
+
+	if expand != "" && expand != models.WorkItemExpandNone {
+		qs = append(qs, _shared.KV[string]{Key: "$expand", Value: string(expand)})
+	}
+
+	list, err := httpGet[List[models.WorkItem]](ctx, w.client, wiURL, qs...)
+	if err != nil {
+		return nil, err
+	}
+
+	return list.Value, nil
+}
+
+// WIQL provides access to the Work Item Query Language API.
+// https://learn.microsoft.com/en-us/rest/api/azure/devops/wit/wiql
+type WIQL struct {
+	client  Client
+	org     string
+	project string
+	baseURL string
+}
+
+// WIQL returns a WIQL client scoped to the given repository's org and project.
+// https://learn.microsoft.com/en-us/rest/api/azure/devops/wit/wiql
+func (c Client) WIQL(repo config.Repository) WIQL {
+	baseURL, _ := url.JoinPath(adoHost, repo.Org, repo.Project, "_apis/wit/wiql")
+	return WIQL{
+		client:  c,
+		org:     repo.Org,
+		project: repo.Project,
+		baseURL: baseURL,
+	}
+}
+
+// WIQLQuery represents the request body for a WIQL query.
+type WIQLQuery struct {
+	// The WIQL query string.
+	// Example: SELECT [System.Id], [System.Title] FROM WorkItems WHERE [System.State] = 'Active'
+	// https://learn.microsoft.com/en-us/azure/devops/boards/queries/wiql-syntax
+	Query string `json:"query"`
+}
+
+// Query executes a WIQL query and returns the matching work item references.
+// Note: WIQL queries only return work item IDs and URLs. Use WorkItems.List()
+// to fetch full work item details.
+//
+// The top parameter limits the number of results (max 20000, default 200).
+// Set top to 0 to use the server default.
+//
+// Example WIQL:
+//
+//	SELECT [System.Id], [System.Title], [System.State]
+//	FROM WorkItems
+//	WHERE [System.WorkItemType] = 'Task'
+//	  AND [System.State] <> 'Closed'
+//	  AND [System.AssignedTo] = @Me
+//	ORDER BY [System.ChangedDate] DESC
+//
+// https://learn.microsoft.com/en-us/rest/api/azure/devops/wit/wiql/query-by-wiql
+func (w WIQL) Query(ctx context.Context, query string, top int) (*models.WIQLResult, error) {
+	body := WIQLQuery{Query: query}
+
+	var qs []_shared.Querier
+	if top > 0 {
+		qs = append(qs, _shared.KV[int]{Key: "$top", Value: top})
+	}
+
+	wiqlURL := w.baseURL
+	if len(qs) > 0 {
+		wiqlURL = _shared.AppendQueries(wiqlURL, qs...)
+	}
+
+	return httpPost[models.WIQLResult](ctx, w.client, wiqlURL, body)
+}

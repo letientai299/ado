@@ -8,6 +8,7 @@ import (
 	"github.com/letientai299/ado/internal/commands/config_cmd"
 	"github.com/letientai299/ado/internal/commands/pipeline"
 	"github.com/letientai299/ado/internal/commands/pull_request"
+	"github.com/letientai299/ado/internal/commands/workitem"
 	"github.com/letientai299/ado/internal/config"
 	"github.com/spf13/cobra"
 )
@@ -41,6 +42,7 @@ func Root() *cobra.Command {
 	root.AddCommand(
 		pull_request.Cmd(),
 		pipeline.Cmd(),
+		workitem.Cmd(),
 		config_cmd.Cmd(),
 		Version(),
 	)
