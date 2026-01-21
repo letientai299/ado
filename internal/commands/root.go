@@ -42,7 +42,6 @@ func Root() *cobra.Command {
 		pull_request.Cmd(),
 		pipeline.Cmd(),
 		config_cmd.Cmd(),
-		Doctor(),
 		Version(),
 	)
 
