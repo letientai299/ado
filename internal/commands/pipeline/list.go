@@ -5,10 +5,11 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/charmbracelet/log"
 	"github.com/letientai299/ado/internal/config"
+	"github.com/letientai299/ado/internal/models"
 	"github.com/letientai299/ado/internal/styles"
 	"github.com/letientai299/ado/internal/util"
+	"github.com/letientai299/ado/internal/util/fp"
 	"github.com/spf13/cobra"
 )
 
@@ -30,7 +31,7 @@ type ListConfig struct {
 	CustomOutputTemplates map[string]string `yaml:"custom_output_templates" json:"custom_output_templates"`
 
 	filterConfig `yaml:"-"`
-	output       *util.EnumFlag `yaml:"-"`
+	output       *util.EnumFlag[string] `yaml:"-"`
 }
 
 func (l *ListConfig) OnResolved(c *cobra.Command) error {
@@ -71,11 +72,7 @@ func listCmd() *cobra.Command {
 
 	flags := cmd.PersistentFlags()
 	flags.VarP(opts.output, "output", "o", "output format")
-
-	if err := opts.output.RegisterCompletion(cmd, "output"); err != nil {
-		log.Error("failed to register output flag completion: " + err.Error())
-	}
-
+	opts.output.RegisterCompletion(cmd, "output")
 	return cmd
 }
 
@@ -109,7 +106,10 @@ func (l listProcessor) process() error {
 	return l.render(pipelines)
 }
 
-func (l listProcessor) render(all []Pipeline) error {
+func (l listProcessor) render(raw []models.BuildDefinition) error {
+	all := fp.Map(raw, func(i models.BuildDefinition) Pipeline {
+		return toPipeline(i, l.baseURL)
+	})
 	output := strings.ToLower(l.opts.output.Value())
 	switch output {
 	case outputYAML:

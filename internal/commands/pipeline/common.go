@@ -3,11 +3,15 @@ package pipeline
 import (
 	"context"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/letientai299/ado/internal/config"
 	"github.com/letientai299/ado/internal/models"
 	"github.com/letientai299/ado/internal/rest"
+	"github.com/letientai299/ado/internal/styles"
+	"github.com/letientai299/ado/internal/ui"
+	"github.com/letientai299/ado/internal/util"
 	"github.com/letientai299/ado/internal/util/fp"
 	"github.com/spf13/cobra"
 )
@@ -67,28 +71,24 @@ func (f *filterConfig) Keywords() []string {
 }
 
 // list fetches all pipelines from the API and converts them to Pipeline structs.
-func (c *common[T]) list() ([]Pipeline, error) {
-	all, err := c.client.Pipelines().
+func (c *common[T]) list() ([]models.BuildDefinition, error) {
+	return c.client.Pipelines().
 		Definitions(c.cfg.Repository).
-		List(c.ctx, rest.ListOptions{RepositoryID: c.repoID})
-	if err != nil {
-		return nil, err
-	}
-
-	return fp.Map(all, func(m models.BuildDefinition) Pipeline {
-		return toPipeline(m, c.baseURL)
-	}), nil
+		List(c.ctx, rest.ListOptions{
+			RepositoryID:         c.repoID,
+			IncludeAllProperties: true,
+		})
 }
 
 // filter returns pipelines matching all keywords.
-func (c *common[T]) filter(all []Pipeline) []Pipeline {
+func (c *common[T]) filter(all []models.BuildDefinition) []models.BuildDefinition {
 	keywords := c.opts.Keywords()
-	if len(keywords) == 0 {
-		return all
-	}
-
-	var result []Pipeline
+	var result []models.BuildDefinition
 	for _, p := range all {
+		if p.QueueStatus == models.DefinitionQueueStatusDisabled {
+			continue
+		}
+
 		if c.containsAll(p, keywords) {
 			result = append(result, p)
 		}
@@ -97,7 +97,7 @@ func (c *common[T]) filter(all []Pipeline) []Pipeline {
 }
 
 // containsAll checks if a pipeline's name or path contains all keywords.
-func (c *common[T]) containsAll(p Pipeline, keywords []string) bool {
+func (c *common[T]) containsAll(p models.BuildDefinition, keywords []string) bool {
 	name := strings.ToLower(p.Name)
 	path := strings.ToLower(p.Path)
 	for _, pattern := range keywords {
@@ -107,4 +107,17 @@ func (c *common[T]) containsAll(p Pipeline, keywords []string) bool {
 		}
 	}
 	return true
+}
+
+const pipelinePickTpl = `{{.Name}} {{if .Process}}({{.Process.YamlFilename | const}}){{end}}`
+
+func pick(pipelines []models.BuildDefinition) fp.Optional[models.BuildDefinition] {
+	selected := ui.Pick(pipelines, ui.PickConfig[models.BuildDefinition]{
+		Render: func(w io.Writer, p models.BuildDefinition, matches []int) {
+			p.Name = styles.HighlightMatch(p.Name, matches)
+			util.PanicIf(styles.Render(w, pipelinePickTpl, p))
+		},
+		FilterValue: func(p models.BuildDefinition) string { return strings.ToLower(p.Name) },
+	})
+	return selected
 }

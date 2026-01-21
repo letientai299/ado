@@ -1,11 +1,7 @@
-{{- /* gotype: []github.com/letientai299/ado/internal/commands/pipeline.Pipeline */ -}}
 {{- range $p := .}}
-- {{ $p.Name | h1 }}
+- {{ $p.Name | h1 }} {{- if or (eq $p.QueueStatus "disabled") (eq $p.QueueStatus "paused") }} ({{printf "%s" $p.QueueStatus|warn}}){{- end }}
   {{- if $p.YamlFilename }}
   YAML: {{ $p.YamlFilename }}
   {{- end }}
   {{ $p.WebURL }}
-  {{- if eq $p.QueueStatus "disabled" }}
-  Status: {{ warn "disabled" }}
-  {{- end }}
-{{end -}}
+{{- end}}

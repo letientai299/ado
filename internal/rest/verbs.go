@@ -62,9 +62,9 @@ func httpX[T any](ctx context.Context, c Client, method, url string, body any) (
 func appendQueries(url string, queries ..._shared.Querier) string {
 	var sb strings.Builder
 	sb.WriteString(url)
-	sb.WriteByte('?')
 	_shared.Queriers(queries).AppendTo(&sb)
-	return sb.String()
+	s := sb.String()
+	return strings.Replace(s, "&", "?", 1)
 }
 
 func call[T any](c Client, req *http.Request) (*T, error) {

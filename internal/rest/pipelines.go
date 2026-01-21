@@ -2,15 +2,15 @@ package rest
 
 import (
 	"context"
+	"io"
 	"net/url"
 	"strconv"
 
 	"github.com/letientai299/ado/internal/config"
 	"github.com/letientai299/ado/internal/models"
-	"github.com/letientai299/ado/internal/rest/_shared"
 )
 
-// Pipelines provides access to Azure DevOps Build/Pipeline APIs.
+// Pipelines provide access to Azure DevOps Build/Pipeline APIs.
 //
 // This client wraps the Build Definitions REST API, which manages pipeline
 // definitions (also known as build definitions) in Azure DevOps. Pipeline
@@ -22,7 +22,7 @@ type Pipelines struct {
 	client Client
 }
 
-// Definitions returns a [PipelineDefinitions] client scoped to the given repository.
+// Definitions return a [PipelineDefinitions] client scoped to the given repository.
 // The returned client can be used to list and retrieve pipeline definitions
 // associated with the specified repository.
 func (p Pipelines) Definitions(repo config.Repository) PipelineDefinitions {
@@ -60,8 +60,6 @@ type PipelineDefinitions struct {
 //
 // The API supports additional query parameters not exposed in [ListOptions]:
 //   - builtAfter/notBuiltAfter: filter by build date
-//   - includeAllProperties: return full definitions instead of shallow refs
-//   - includeLatestBuilds: include latest build info
 //   - definitionIds: retrieve specific definitions by ID
 //   - queryOrder: control result ordering
 //   - continuationToken: for paginating large result sets
@@ -71,26 +69,7 @@ func (pd PipelineDefinitions) List(
 	ctx context.Context,
 	opts ListOptions,
 ) ([]models.BuildDefinition, error) {
-	qs := []_shared.Querier{}
-
-	if opts.Name != "" {
-		qs = append(qs, _shared.KV[string]{Key: "name", Value: opts.Name})
-	}
-
-	if opts.Path != "" {
-		qs = append(qs, _shared.KV[string]{Key: "path", Value: opts.Path})
-	}
-
-	if opts.RepositoryID != "" {
-		qs = append(qs, _shared.KV[string]{Key: "repositoryId", Value: opts.RepositoryID})
-		qs = append(qs, _shared.KV[string]{Key: "repositoryType", Value: "TfsGit"})
-	}
-
-	if opts.Top > 0 {
-		qs = append(qs, _shared.KV[int]{Key: "$top", Value: opts.Top})
-	}
-
-	list, err := httpGet[List[models.BuildDefinition]](ctx, pd.client, pd.baseURL, qs...)
+	list, err := httpGet[List[models.BuildDefinition]](ctx, pd.client, pd.baseURL, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +78,7 @@ func (pd PipelineDefinitions) List(
 
 // ByID retrieves a single pipeline definition by its numeric ID.
 //
-// The returned [models.BuildDefinition] contains the complete definition including:
+// The returned [models.BuildDefinition] contains the complete definition including
 //   - Repository information and YAML file path
 //   - Build process configuration
 //   - Triggers, variables, and retention policies
@@ -128,7 +107,7 @@ type ListOptions struct {
 	Name string
 
 	// Path filters definitions under this folder path.
-	// Use backslash as separator (e.g., "\\folder\\subfolder").
+	// Use backslash as a separator (e.g., "\\folder\\subfolder").
 	// Empty string or "\\" returns definitions at the root.
 	Path string
 
@@ -140,4 +119,34 @@ type ListOptions struct {
 	// Top limits the maximum number of definitions returned.
 	// When zero, the API default limit applies.
 	Top int
+
+	IncludeAllProperties bool
+	IncludeLatestBuilds  bool
+}
+
+func (l ListOptions) AppendTo(w io.Writer) {
+	if l.Name != "" {
+		_, _ = w.Write([]byte("&name=" + url.QueryEscape(l.Name)))
+	}
+	if l.Path != "" {
+		_, _ = w.Write([]byte("&path=" + url.QueryEscape(l.Path)))
+	}
+	if l.RepositoryID != "" {
+		_, _ = w.Write([]byte("&repositoryId=" + url.QueryEscape(l.RepositoryID)))
+
+		// TODO (tai): check the repo for its type
+		_, _ = w.Write([]byte("&repositoryType=TfsGit"))
+	}
+
+	if l.Top > 0 {
+		_, _ = w.Write([]byte("&$top=" + strconv.Itoa(l.Top)))
+	}
+
+	if l.IncludeAllProperties {
+		_, _ = w.Write([]byte("&includeAllProperties=true"))
+	}
+
+	if l.IncludeLatestBuilds {
+		_, _ = w.Write([]byte("&includeLatestBuilds=true"))
+	}
 }

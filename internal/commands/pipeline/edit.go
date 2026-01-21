@@ -4,16 +4,12 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/letientai299/ado/internal/models"
-	"github.com/letientai299/ado/internal/styles"
-	"github.com/letientai299/ado/internal/ui"
-	"github.com/letientai299/ado/internal/util"
 	"github.com/letientai299/ado/internal/util/editor"
 	"github.com/spf13/cobra"
 )
@@ -80,20 +76,12 @@ func (e editProcessor) process(args []string) error {
 	case 1:
 		return e.editByID(pipelines[0].Id)
 	default:
-		return e.pick(pipelines)
+		return e.pickEdit(pipelines)
 	}
 }
 
-func (e editProcessor) pick(pipelines []Pipeline) error {
-	selected := ui.Pick(pipelines, ui.PickConfig[Pipeline]{
-		Title: "Select a pipeline to edit",
-		Render: func(w io.Writer, p Pipeline, matches []int) {
-			p.Name = styles.HighlightMatch(p.Name, matches)
-			util.PanicIf(styles.Render(w, pipelinePickTpl, p))
-		},
-		FilterValue: func(p Pipeline) string { return strings.ToLower(p.Name) },
-	})
-
+func (e editProcessor) pickEdit(pipelines []models.BuildDefinition) error {
+	selected := pick(pipelines)
 	if selected.IsSome() {
 		p := selected.Get()
 		return e.editByID(p.Id)
@@ -129,7 +117,7 @@ func (e editProcessor) editOne(m models.BuildDefinition) error {
 	// Try to find the file relative to the current directory
 	fullPath := filepath.Join(cwd, yamlPath)
 
-	// Check if file exists
+	// Check if the file exists
 	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
 		return fmt.Errorf("YAML file not found: %s", yamlPath)
 	}

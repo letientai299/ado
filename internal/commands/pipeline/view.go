@@ -4,14 +4,9 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
-	"io"
 	"strconv"
-	"strings"
 
 	"github.com/letientai299/ado/internal/models"
-	"github.com/letientai299/ado/internal/styles"
-	"github.com/letientai299/ado/internal/ui"
-	"github.com/letientai299/ado/internal/util"
 	"github.com/letientai299/ado/internal/util/sh"
 	"github.com/spf13/cobra"
 )
@@ -78,22 +73,12 @@ func (v viewProcessor) process(args []string) error {
 	case 1:
 		return v.openByID(pipelines[0].Id)
 	default:
-		return v.pick(pipelines)
+		return v.pickView(pipelines)
 	}
 }
 
-const pipelinePickTpl = `{{.Name | h1}}{{if .YamlFilename}} ({{.YamlFilename}}){{end}}{{if eq .QueueStatus "disabled"}} {{warn "disabled"}}{{end}}`
-
-func (v viewProcessor) pick(pipelines []Pipeline) error {
-	selected := ui.Pick(pipelines, ui.PickConfig[Pipeline]{
-		Title: "Select a pipeline",
-		Render: func(w io.Writer, p Pipeline, matches []int) {
-			p.Name = styles.HighlightMatch(p.Name, matches)
-			util.PanicIf(styles.Render(w, pipelinePickTpl, p))
-		},
-		FilterValue: func(p Pipeline) string { return strings.ToLower(p.Name) },
-	})
-
+func (v viewProcessor) pickView(pipelines []models.BuildDefinition) error {
+	selected := pick(pipelines)
 	if selected.IsSome() {
 		p := selected.Get()
 		return v.openByID(p.Id)
