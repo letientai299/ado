@@ -281,6 +281,29 @@ func TestAppendQueries(t *testing.T) {
 			queries:  []Querier{KV[string]{Key: "key", Value: "value"}},
 			expected: "?key=value",
 		},
+		{
+			name:     "url already has query params",
+			url:      "https://example.com/api?existing=param",
+			queries:  []Querier{KV[string]{Key: "new", Value: "value"}},
+			expected: "https://example.com/api?existing=param&new=value",
+		},
+		{
+			name: "url already has query params with multiple new queries",
+			url:  "https://dev.azure.com/org/_apis/wit/wiql?$top=50",
+			queries: []Querier{
+				KV[string]{Key: "api-version", Value: "7.1"},
+			},
+			expected: "https://dev.azure.com/org/_apis/wit/wiql?$top=50&api-version=7.1",
+		},
+		{
+			name: "url with query params and multiple additions",
+			url:  "https://example.com/api?a=1",
+			queries: []Querier{
+				KV[string]{Key: "b", Value: "2"},
+				KV[string]{Key: "c", Value: "3"},
+			},
+			expected: "https://example.com/api?a=1&b=2&c=3",
+		},
 	}
 
 	for _, tt := range tests {

@@ -9,6 +9,7 @@ import (
 
 // AppendQueries appends query parameters to a URL.
 // The first parameter uses ? to start the query string, subsequent use &.
+// If the URL already has query parameters (contains ?), all new params use &.
 func AppendQueries(url string, queries ...Querier) string {
 	if len(queries) == 0 {
 		return url
@@ -18,7 +19,9 @@ func AppendQueries(url string, queries ...Querier) string {
 	sb.Grow(len(url) + len(queries)*32) // estimate ~32 bytes per query param
 	sb.WriteString(url)
 
-	w := &queryWriter{sb: &sb, first: true}
+	// Check if URL already has query params
+	hasQuery := strings.Contains(url, "?")
+	w := &queryWriter{sb: &sb, first: !hasQuery}
 	for _, q := range queries {
 		q.AppendTo(w)
 	}
