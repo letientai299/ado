@@ -31,7 +31,8 @@ jobs:
   release:
     name: Release (${{ matrix.goos }}-${{ matrix.goarch }})
     needs: check
-    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    # Temporarily disabled to test the fix on PR
+    # if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -59,13 +60,17 @@ jobs:
           key: go-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
           restore-keys: go-${{ runner.os }}-
 
+      - name: Generate code (native arch)
+        shell: bash
+        run: go generate ./...
+
       - name: Build release binary
         shell: bash
         env:
           CGO_ENABLED: "0"
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
-        run: mise run release
+        run: go build -v -ldflags="-s -w" -trimpath -o bin/ado .
 
       - name: Rename binary
         shell: bash
@@ -80,7 +85,9 @@ jobs:
   publish:
     name: Publish Release
     needs: release
-    if: startsWith(github.ref, 'refs/tags/v')
+    # Temporarily disabled to test the fix on PR
+    # if: startsWith(github.ref, 'refs/tags/v')
+    if: false  # Keep disabled as we don't want to actually publish from PR
     runs-on: ubuntu-latest
     permissions:
       contents: write
