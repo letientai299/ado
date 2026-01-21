@@ -139,6 +139,9 @@ func (pd pickDelegate[T]) Render(w io.Writer, m list.Model, filteredIndex int, i
 	}
 
 	pi := it.(pickItem[T])
+	if pd.cfg.ItemHeight > 1 {
+		w = NewIndentWriter(w, "  ")
+	}
 	pd.cfg.Render(w, pi.value, m.MatchesForItem(filteredIndex))
 }
 
