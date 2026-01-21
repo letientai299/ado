@@ -75,7 +75,7 @@ func TestRegistry_Get(t *testing.T) {
 	endpoint := &Endpoint{Path: "test.endpoint"}
 	r.register("test.endpoint", endpoint)
 
-	// Should find registered endpoint
+	// Should find a registered endpoint
 	if got := r.Get("test.endpoint"); got != endpoint {
 		t.Errorf("Get(test.endpoint) did not return expected endpoint")
 	}

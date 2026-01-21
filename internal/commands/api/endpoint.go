@@ -325,8 +325,16 @@ func (e *Endpoint) Invoke(ctx context.Context, args map[string]string) (any, err
 
 	// Check for error in last return value
 	errIdx := len(results) - 1
-	if !results[errIdx].IsNil() {
-		return nil, results[errIdx].Interface().(error)
+	errVal := results[errIdx]
+	// Only call IsNil on nilable types (interface, pointer, func, map, slice, chan)
+	kind := errVal.Kind()
+	isNilable := kind == reflect.Interface || kind == reflect.Ptr ||
+		kind == reflect.Func || kind == reflect.Map ||
+		kind == reflect.Slice || kind == reflect.Chan
+	if isNilable && !errVal.IsNil() {
+		if err, ok := errVal.Interface().(error); ok {
+			return nil, err
+		}
 	}
 
 	// Return the result if there is one
@@ -465,10 +473,6 @@ func (e *Endpoint) buildStruct(
 		}
 
 		if !ok || val == "" {
-			if field.Required {
-				// Required field missing - that's okay for API calls,
-				// the server will validate
-			}
 			continue
 		}
 
@@ -550,9 +554,10 @@ func (e *Endpoint) ParamNames() []string {
 	var names []string
 
 	for _, param := range e.Params {
-		if param.Kind == ParamKindPrimitive {
+		switch param.Kind {
+		case ParamKindPrimitive:
 			names = append(names, param.Name)
-		} else if param.Kind == ParamKindStruct || param.Kind == ParamKindPointer {
+		case ParamKindStruct, ParamKindPointer:
 			for _, field := range param.Fields {
 				names = append(names, param.Name+"."+field.Name)
 			}

@@ -104,7 +104,11 @@ func (r *Registry) Build(client *rest.Client, repo config.Repository) {
 		}
 
 		groupName := toSnakeCase(method.Name)
-		groupVal := clientVal.MethodByName(method.Name).Call(nil)[0]
+		results := clientVal.MethodByName(method.Name).Call(nil)
+		if len(results) == 0 {
+			continue
+		}
+		groupVal := results[0]
 
 		r.discoverGroup(groupName, groupVal, repo)
 	}
@@ -139,7 +143,7 @@ func (r *Registry) discoverGroup(groupName string, groupVal reflect.Value, repo 
 }
 
 // discoverScopedClient discovers endpoints from a scoped client factory method.
-// For example, Git.PRs(repo) returns GitPRs, which has methods like List, ByID.
+// For example, Git.PRs(repo) returns GitPRs, which have methods like List, ByID.
 func (r *Registry) discoverScopedClient(
 	groupName string,
 	groupVal reflect.Value,
@@ -153,7 +157,11 @@ func (r *Registry) discoverScopedClient(
 
 	// Create the scoped client by calling the factory
 	repoVal := reflect.ValueOf(repo)
-	scopeVal := groupVal.MethodByName(factoryMethod.Name).Call([]reflect.Value{repoVal})[0]
+	results := groupVal.MethodByName(factoryMethod.Name).Call([]reflect.Value{repoVal})
+	if len(results) == 0 {
+		return
+	}
+	scopeVal := results[0]
 
 	for i := 0; i < scopeType.NumMethod(); i++ {
 		method := scopeType.Method(i)
@@ -172,7 +180,7 @@ func (r *Registry) discoverScopedClient(
 func (r *Registry) register(path string, endpoint *Endpoint) {
 	r.endpoints[path] = endpoint
 
-	// Build tree structure
+	// Build a tree structure
 	parts := strings.Split(path, ".")
 	current := r.tree
 	for _, part := range parts {
@@ -218,7 +226,7 @@ func (r *Registry) Complete(prefix string) []string {
 
 	if prefix == "" {
 		// Return top-level groups
-		var results []string
+		results := make([]string, 0, len(r.tree.children))
 		for name := range r.tree.children {
 			results = append(results, name)
 		}
@@ -239,7 +247,7 @@ func (r *Registry) Complete(prefix string) []string {
 		_ = i // compiler hint
 	}
 
-	// Get the last part being typed (may be partial)
+	// Get the last part being typed (maybe partial)
 	lastPart := parts[len(parts)-1]
 	basePath := strings.Join(parts[:len(parts)-1], ".")
 	if basePath != "" {
@@ -304,7 +312,7 @@ func isAPIMethod(m reflect.Method) bool {
 		return false
 	}
 
-	// First arg (after receiver) should be context.Context
+	// The first arg (after receiver) should be context.Context
 	ctxType := reflect.TypeOf((*context.Context)(nil)).Elem()
 	return t.In(1).Implements(ctxType)
 }

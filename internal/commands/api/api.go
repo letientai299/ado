@@ -2,6 +2,7 @@ package api
 
 import (
 	_ "embed"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -87,7 +88,7 @@ func runAPI(cmd *cobra.Command, args []string, output *util.EnumFlag[string]) er
 
 	// Require endpoint argument
 	if len(args) == 0 {
-		return fmt.Errorf("endpoint path required. Use --list to see available endpoints")
+		return errors.New("endpoint path required. Use --list to see available endpoints")
 	}
 
 	endpointPath := args[0]
@@ -97,7 +98,7 @@ func runAPI(cmd *cobra.Command, args []string, output *util.EnumFlag[string]) er
 		suggestions := registry.Complete(endpointPath)
 		if len(suggestions) > 0 {
 			return fmt.Errorf(
-				"unknown endpoint %q. Did you mean: %s?",
+				"unknown endpoint %q. Did you mean: %s",
 				endpointPath,
 				strings.Join(suggestions, ", "),
 			)
@@ -145,13 +146,13 @@ func listEndpoints() error {
 	sb.WriteString("Available API endpoints:\n\n")
 
 	// Sort groups
-	var groupNames []string
+	groupNames := make([]string, 0, len(groups))
 	for g := range groups {
 		groupNames = append(groupNames, g)
 	}
 
 	for _, group := range groupNames {
-		sb.WriteString(fmt.Sprintf("%s:\n", group))
+		sb.WriteString(group + ":\n")
 		for _, path := range groups[group] {
 			sb.WriteString(fmt.Sprintf("  %s\n", path))
 		}
@@ -215,7 +216,11 @@ func describeEndpoint(endpoint *Endpoint) error {
 //   - Simple: id=123
 //   - Nested: list_query.top=10
 //   - Shorthand: top=10 (automatically prefixed if unambiguous)
-func parseArgs(_ *cobra.Command, endpoint *Endpoint, positionalArgs []string) (map[string]string, error) {
+func parseArgs(
+	_ *cobra.Command,
+	endpoint *Endpoint,
+	positionalArgs []string,
+) (map[string]string, error) {
 	args := make(map[string]string)
 
 	// Parse positional arguments as key=value pairs
@@ -240,7 +245,7 @@ func parseArgs(_ *cobra.Command, endpoint *Endpoint, positionalArgs []string) (m
 // For example, "id" might resolve to "pr_id" if that's the only match.
 // If the key already contains a dot or is a direct match, it's returned as-is.
 func resolveParamKey(endpoint *Endpoint, key string) string {
-	// If key already has a dot, assume it's a full path
+	// If the key already has a dot, assume it's a full path
 	if strings.Contains(key, ".") {
 		return key
 	}
@@ -252,7 +257,7 @@ func resolveParamKey(endpoint *Endpoint, key string) string {
 		}
 	}
 
-	// Check for field match and return full path
+	// Check for field match and return a full path
 	for _, param := range endpoint.Params {
 		for _, field := range param.Fields {
 			if field.Name == key {
@@ -276,48 +281,5 @@ func outputResult(result any, format string) error {
 		return styles.DumpYAML(result)
 	default:
 		return styles.DumpJSON(result)
-	}
-}
-
-// RegisterDynamicFlags adds flags for the endpoint's parameters.
-// This is called during completion to enable flag completion.
-func RegisterDynamicFlags(cmd *cobra.Command, endpoint *Endpoint) {
-	flags := cmd.Flags()
-
-	for _, param := range endpoint.Params {
-		// Register the main parameter flag
-		switch param.Kind {
-		case ParamKindPrimitive:
-			flags.String(param.Name, "", fmt.Sprintf("%s parameter", param.Name))
-		case ParamKindStruct, ParamKindPointer:
-			// Register individual field flags
-			for _, field := range param.Fields {
-				flagName := param.Name + "." + field.Name
-				desc := fmt.Sprintf("%s.%s (%s)", param.Name, field.Name, field.Type)
-				flags.String(flagName, "", desc)
-
-				// Also register short form
-				flags.String(field.Name, "", desc)
-
-				// Register completion for enum values
-				if len(field.EnumValues) > 0 {
-					enumFlag := util.NewEnumFlag(field.EnumValues[0])
-					for _, v := range field.EnumValues[1:] {
-						enumFlag.AddAllowed(v)
-					}
-					enumFlag.RegisterCompletion(cmd, flagName)
-					enumFlag.RegisterCompletion(cmd, field.Name)
-				}
-			}
-		}
-
-		// Register completion for enum values
-		if len(param.EnumValues) > 0 {
-			enumFlag := util.NewEnumFlag(param.EnumValues[0])
-			for _, v := range param.EnumValues[1:] {
-				enumFlag.AddAllowed(v)
-			}
-			enumFlag.RegisterCompletion(cmd, param.Name)
-		}
 	}
 }

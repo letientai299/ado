@@ -12,9 +12,9 @@
   - Don't repeat yourself. Propose refactoring if needed.
   - Don't be complicated. Don't assume too much.
   - Ensure no lint issues. Don't use `//nolint`.
-- Use modern UNIX CLI (e.g., rg, fd, ...) when possiblee;.
+- Use modern UNIX CLI (e.g., rg, fd, ...) when possible;.
 - Don't generate go test code unnecessarily.
 - Generated files and temporary scripts should go into `.ai.dump` to prevent
   accidental commits.
-- Use modern Golang features, e.g. generic, new std libs, ... when possible to
+- Use modern Golang features, e.g., generic, new std libs, ... when possible to
   keep code simple, concise.

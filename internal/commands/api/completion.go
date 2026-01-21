@@ -16,7 +16,7 @@ func completeEndpoint(
 	args []string,
 	toComplete string,
 ) ([]string, cobra.ShellCompDirective) {
-	// Try to build registry for completion
+	// Try to build a registry for completion
 	// This may fail if not in a valid repo context, which is fine
 	buildRegistryForCompletion(cmd)
 
@@ -60,7 +60,7 @@ func completeEndpointPath(toComplete string) ([]string, cobra.ShellCompDirective
 func completeArgument(endpoint *Endpoint, toComplete string) ([]string, cobra.ShellCompDirective) {
 	// Check if we're completing a value (after =)
 	if key, valuePrefix, found := strings.Cut(toComplete, "="); found {
-		// Complete the value part with the partial value as filter
+		// Complete the value part with the partial value as a filter
 		values := CompleteParamValue(endpoint, key, valuePrefix)
 		if len(values) == 0 {
 			return nil, cobra.ShellCompDirectiveNoFileComp
@@ -185,7 +185,7 @@ var knownEnums = map[string][]string{
 
 // CompleteParamValue provides completion for parameter values.
 // It checks for known enums and returns valid values.
-// The paramPath can be a full path (param.field) or a shorthand (field).
+// The paramPath can be a full path (param.field) or shorthand (field).
 func CompleteParamValue(
 	endpoint *Endpoint,
 	paramPath string,
@@ -214,7 +214,7 @@ func CompleteParamValue(
 // resolveFieldType finds the type string for a parameter path.
 // Handles both full paths (param.field.subfield) and shorthand names (field).
 func resolveFieldType(endpoint *Endpoint, path string) string {
-	// First try direct match on parameter name
+	// First, try direct match on a parameter name
 	for _, param := range endpoint.Params {
 		if param.Name == path {
 			return param.Type
@@ -228,7 +228,7 @@ func resolveFieldType(endpoint *Endpoint, path string) string {
 			if field.Name == path {
 				return field.Type
 			}
-			// Shorthand match (last component of field name)
+			// Shorthand match (last component of the field name)
 			lastDot := strings.LastIndex(field.Name, ".")
 			if lastDot >= 0 {
 				shortName := field.Name[lastDot+1:]
@@ -267,35 +267,4 @@ func filterByPrefix(values []string, prefix string) []string {
 		}
 	}
 	return filtered
-}
-
-// RegisterFlagCompletion registers completion functions for all endpoint parameters.
-// Call this after parsing the endpoint path to enable flag value completion.
-func RegisterFlagCompletion(cmd *cobra.Command, endpoint *Endpoint) {
-	for _, param := range endpoint.Params {
-		// Register for main param
-		registerParamCompletion(cmd, endpoint, param.Name)
-
-		// Register for struct fields
-		for _, field := range param.Fields {
-			fullPath := param.Name + "." + field.Name
-			registerParamCompletion(cmd, endpoint, fullPath)
-			registerParamCompletion(cmd, endpoint, field.Name)
-		}
-	}
-}
-
-// registerParamCompletion registers a completion function for a single parameter.
-func registerParamCompletion(cmd *cobra.Command, endpoint *Endpoint, paramPath string) {
-	_ = cmd.RegisterFlagCompletionFunc(paramPath, func(
-		_ *cobra.Command,
-		_ []string,
-		toComplete string,
-	) ([]string, cobra.ShellCompDirective) {
-		values := CompleteParamValue(endpoint, paramPath, toComplete)
-		if len(values) == 0 {
-			return nil, cobra.ShellCompDirectiveNoFileComp
-		}
-		return values, cobra.ShellCompDirectiveNoFileComp
-	})
 }
