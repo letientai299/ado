@@ -26,6 +26,7 @@ var (
 	mdRendererOnce sync.Once
 	theme          = NoTTy
 	out            = termenv.DefaultOutput()
+	useColor       = computeUseColor()
 )
 
 func Init(th Theme) {
@@ -37,8 +38,9 @@ func Init(th Theme) {
 }
 
 func prepare() {
+	useColor = computeUseColor()
 	switch {
-	case !UseColor():
+	case !useColor:
 		out = termenv.NewOutput(os.Stdout, termenv.WithProfile(termenv.Ascii))
 		lipgloss.SetColorProfile(termenv.Ascii)
 	case theme.TrueColor:
@@ -47,11 +49,16 @@ func prepare() {
 		out = termenv.DefaultOutput()
 	}
 
-	initYAMLPrinter(out)
-	initJSONColorScheme(out)
+	precomputeStyleCache(theme)
+	initYAMLPrinter()
+	initJSONColorScheme()
 }
 
 func UseColor() bool {
+	return useColor
+}
+
+func computeUseColor() bool {
 	if termenv.EnvNoColor() {
 		return false
 	}
@@ -95,21 +102,8 @@ func FlagTypeStyle(s string) string { return colorize(s, theme.Tokens.Chroma.Key
 func Warn(s string) string          { return colorize(s, theme.Tokens.Warn) }
 func Success(s string) string       { return colorize(s, theme.Tokens.Success) }
 func Highlight(s string) string     { return underline(colorize(s, theme.Tokens.Success)) }
-
-func underline(s string) string {
-	return out.String(s).Underline().String()
-}
-
-// Faint returns the string with faint/dim styling.
-func Faint(s string) string {
-	return out.String(s).Faint().String()
-}
-
-func Error(s string) string { return colorize(s, theme.Tokens.Error) }
-
-func colorize(s, c string) string {
-	return out.String(s).Foreground(out.Color(c)).Bold().String()
-}
+func Faint(s string) string         { return out.String(s).Faint().String() }
+func Error(s string) string         { return colorize(s, theme.Tokens.Error) }
 
 func Wrap(s string) string {
 	w, _, err := term.GetSize(os.Stdout.Fd())
