@@ -143,7 +143,7 @@ func (pb ProjectBuilds) LogContent(
 // httpGetText performs a GET request and returns the response as plain text.
 func httpGetText(ctx context.Context, c Client, u string, qs ..._shared.Querier) (string, error) {
 	qs = append(qs, apiVersionQuery)
-	u = appendQueries(u, qs...)
+	u = _shared.AppendQueries(u, qs...)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
 		log.Errorf("fail to create HTTP request: %v", err)

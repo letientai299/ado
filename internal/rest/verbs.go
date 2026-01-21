@@ -23,7 +23,7 @@ var apiVersionQuery = _shared.KV[string]{
 // Query parameters are appended using the provided Querier implementations.
 func httpGet[T any](ctx context.Context, c Client, url string, qs ..._shared.Querier) (*T, error) {
 	qs = append(qs, apiVersionQuery)
-	url = appendQueries(url, qs...)
+	url = _shared.AppendQueries(url, qs...)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		log.Errorf("fail to create HTTP request: %v", err)
@@ -55,7 +55,7 @@ func httpX[T any](ctx context.Context, c Client, method, url string, body any) (
 		return nil, err
 	}
 
-	url = appendQueries(url, apiVersionQuery)
+	url = _shared.AppendQueries(url, apiVersionQuery)
 	var b io.Reader = strings.NewReader(string(jsonBody))
 	req, err := http.NewRequestWithContext(ctx, method, url, b)
 	if err != nil {
@@ -64,16 +64,6 @@ func httpX[T any](ctx context.Context, c Client, method, url string, body any) (
 
 	req.Header.Set("Content-Type", "application/json")
 	return call[T](c, req)
-}
-
-// appendQueries appends query parameters to a URL.
-// The first parameter is converted from & to ? to start the query string.
-func appendQueries(url string, queries ..._shared.Querier) string {
-	var sb strings.Builder
-	sb.WriteString(url)
-	_shared.Queriers(queries).AppendTo(&sb)
-	s := sb.String()
-	return strings.Replace(s, "&", "?", 1)
 }
 
 // call executes an HTTP request and decodes the JSON response.
@@ -146,7 +136,7 @@ func validateResponse(resp *http.Response) error {
 	return nil
 }
 
-// decode unmarshals JSON from the response body into the specified type.
+// decode unmarshal JSON from the response body into the specified type.
 func decode[T any](body io.ReadCloser) (*T, error) {
 	t := new(T)
 
