@@ -35,6 +35,13 @@
 #theme:
 #  include!: path/to/some_theme.yml
 
+#pipeline:
+#  # ListConfig holds configuration for the pipeline list command.
+#  list:
+#    custom_output_templates:
+#      example_key: example_value
+#    default_output: "simple"
+
 #pull-request:
 #  create:
 #    target: "main"

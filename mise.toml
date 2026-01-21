@@ -12,9 +12,14 @@ CGO_ENABLED = "0"
 ADO_EXE = "bin/ado" # allow overriding to bin/ado.exe on Windows
 _.file = ".env"
 
+[tasks.gen]
+description = "Generate code (must be run with native architecture)"
+run = "go generate ./..."
+
 [tasks.build]
 alias = ["b"]
 description = "Build the Go project"
+depends = ["gen"]
 outputs = ["{{env.ADO_EXE}}"]
 sources = ["*.go", "internal/**/*.*"]
 run = "go build -v -o {{env.ADO_EXE}} ."
@@ -41,8 +46,6 @@ run = "golangci-lint fmt"
 
 [tasks.release]
 description = "Build the binary with compact size and better performance for release"
+depends = ["gen"]
 env = { GOFLAGS = "-ldflags=-s -ldflags=-w -trimpath" }
-run = [
-  "go generate ./...",                # ensure generated files are up to date
-  "go build -v -o {{env.ADO_EXE}} .",
-]
+run = "go build -v -o {{env.ADO_EXE}} ."

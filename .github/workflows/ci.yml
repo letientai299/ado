@@ -19,8 +19,8 @@ jobs:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
-          key: go-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
-          restore-keys: go-${{ runner.os }}-
+          key: go-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: go-${{ runner.os }}-${{ runner.arch }}-
       - name: Build
         run: mise run build
       - name: Lint
@@ -29,21 +29,21 @@ jobs:
         run: mise run test
 
   release:
-    name: Release (${{ matrix.goos }}-${{ matrix.goarch }})
+    name: Release (${{ matrix.os }})
     needs: check
     if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
     strategy:
       matrix:
         include:
-          - { os: ubuntu-latest,  goos: linux,   goarch: amd64 }
-          - { os: ubuntu-latest,  goos: linux,   goarch: arm64 }
-          - { os: macos-latest,   goos: darwin,  goarch: amd64 }
-          - { os: macos-latest,   goos: darwin,  goarch: arm64 }
-          - { os: windows-latest, goos: windows, goarch: amd64 }
-          - { os: windows-latest, goos: windows, goarch: arm64 }
+          - { os: ubuntu-latest,  platform: linux-amd64 }
+          - { os: macos-13,       platform: darwin-amd64 }   # Intel Mac (x86_64)
+          - { os: macos-latest,   platform: darwin-arm64 }   # Apple Silicon (arm64)
+          - { os: windows-latest, platform: windows-amd64 }
     env:
-      BINARY: ado-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goos == 'windows' && '.exe' || '' }}
+      BINARY: ado-${{ matrix.platform }}${{ contains(matrix.platform, 'windows') && '.exe' || '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: jdx/mise-action@v2
@@ -56,20 +56,21 @@ jobs:
             ~\AppData\Local\go-build
             ~/go/pkg/mod
             ~\go\pkg\mod
-          key: go-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
-          restore-keys: go-${{ runner.os }}-
+          key: go-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: go-${{ runner.os }}-${{ runner.arch }}-
 
-      - name: Build release binary
+      - name: Build release binary (native)
         shell: bash
-        env:
-          CGO_ENABLED: "0"
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
         run: mise run release
 
       - name: Rename binary
         shell: bash
-        run: mv bin/ado bin/${{ env.BINARY }}
+        run: |
+          if [ -f "bin/ado.exe" ]; then
+            mv bin/ado.exe bin/${{ env.BINARY }}
+          else
+            mv bin/ado bin/${{ env.BINARY }}
+          fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
