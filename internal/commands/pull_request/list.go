@@ -182,7 +182,21 @@ func (l listProcessor) containsAll(pr models.GitPullRequest, keywords []string) 
 }
 
 func (l listProcessor) render(all []models.GitPullRequest) error {
-	prs := fp.Map(all, converter(l.baseURL))
+	// Fetch policy evaluations for all PRs
+	evaluations, err := l.fetchEvaluations(all)
+	if err != nil {
+		log.Warn("failed to fetch policy evaluations", "error", err)
+		// Continue without evaluations rather than failing
+		evaluations = nil
+	}
+
+	// Get first PR's repository for URL construction (all PRs should be from same repo)
+	var repo *models.GitRepository
+	if len(all) > 0 && all[0].Repository != nil {
+		repo = all[0].Repository
+	}
+
+	prs := fp.Map(all, converterWithStatuses(l.baseURL, l.cfg.Repository.Org, repo, evaluations))
 	log.Debug("found pull requests", "count", len(prs))
 
 	output := strings.ToLower(l.opts.output.Value())
@@ -200,6 +214,24 @@ func (l listProcessor) render(all []models.GitPullRequest) error {
 	}
 
 	return util.StrErr("unknown output format: " + l.opts.output.Value())
+}
+
+func (l listProcessor) fetchEvaluations(
+	prs []models.GitPullRequest,
+) (map[int32][]models.PolicyEvaluationRecord, error) {
+	result := make(map[int32][]models.PolicyEvaluationRecord)
+	for _, pr := range prs {
+		if pr.Repository == nil || pr.Repository.Project == nil {
+			continue
+		}
+		evals, err := l.client.Policy().
+			Evaluations(l.ctx, l.cfg.Repository, pr.Repository.Project.Id, pr.PullRequestId)
+		if err != nil {
+			return nil, err
+		}
+		result[pr.PullRequestId] = evals
+	}
+	return result, nil
 }
 
 func (l listProcessor) renderTemplate(tpl string, all []PR) error {
