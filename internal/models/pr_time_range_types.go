@@ -8,6 +8,7 @@ package models
 //goland:noinspection GoCommentStart,GoUnusedConst
 type PullRequestTimeRangeType string
 
+//goland:noinspection GoCommentStart,GoUnusedConst
 const (
 	PullRequestTimeRangeTypeCreated PullRequestTimeRangeType = "created"
 	PullRequestTimeRangeTypeClosed  PullRequestTimeRangeType = "closed"

@@ -10,14 +10,30 @@ import (
 	"github.com/letientai299/ado/internal/models"
 )
 
-// Policy provides access to Azure DevOps Policy APIs
-// https://learn.microsoft.com/en-us/rest/api/azure/devops/policy
+// Policy provides access to Azure DevOps Policy APIs.
+// This client wraps the Policy REST API for working with branch policies
+// and policy evaluations.
+//
+// Branch policies enforce code quality standards on pull requests, such as
+// requiring builds to pass, minimum reviewer counts, or work item linking.
+//
+// See: https://learn.microsoft.com/en-us/rest/api/azure/devops/policy
 type Policy struct {
 	client Client
 }
 
-// Evaluations returns policy evaluations for a pull request
-// https://learn.microsoft.com/en-us/rest/api/azure/devops/policy/evaluations/list
+// Evaluations retrieves policy evaluations for a pull request.
+// Policy evaluations show the status of each branch policy for the given PR,
+// including build validation policies, required reviewers, and other checks.
+//
+// The projectID should be the GUID of the project (available from repo.Project.Id).
+// The prID is the numeric pull request ID.
+//
+// Returns a list of [models.PolicyEvaluationRecord], one for each policy
+// configured for the target branch. Use [models.PolicyTypeBuildValidation]
+// to identify build validation policies.
+//
+// See: https://learn.microsoft.com/en-us/rest/api/azure/devops/policy/evaluations/list
 func (p Policy) Evaluations(
 	ctx context.Context,
 	repo config.Repository,
@@ -29,8 +45,13 @@ func (p Policy) Evaluations(
 	artifactId := fmt.Sprintf("vstfs:///CodeReview/CodeReviewId/%s/%d", projectID, prID)
 
 	// Policy evaluations API requires preview version
-	apiURL := fmt.Sprintf("%s/%s/%s/_apis/policy/evaluations?artifactId=%s&api-version=7.1-preview.1",
-		adoHost, repo.Org, repo.Project, url.QueryEscape(artifactId))
+	apiURL := fmt.Sprintf(
+		"%s/%s/%s/_apis/policy/evaluations?artifactId=%s&api-version=7.1-preview.1",
+		adoHost,
+		repo.Org,
+		repo.Project,
+		url.QueryEscape(artifactId),
+	)
 
 	// Make direct HTTP request
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)

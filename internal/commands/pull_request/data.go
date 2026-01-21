@@ -144,7 +144,7 @@ func buildStatusFromEvaluation(
 	repo *models.GitRepository,
 ) *BuildStatus {
 	bs := &BuildStatus{
-		State: eval.Status,
+		State: string(eval.Status),
 	}
 
 	// Get display name from settings
@@ -186,22 +186,22 @@ func buildStatusFromEvaluation(
 	}
 
 	// Set icon and status text based on status
-	switch strings.ToLower(eval.Status) {
-	case "approved":
+	switch eval.Status {
+	case models.PolicyEvaluationStatusApproved:
 		bs.Icon = "✓"
 		bs.StatusText = "passes"
-	case "rejected":
+	case models.PolicyEvaluationStatusRejected:
 		bs.Icon = "✗"
 		bs.StatusText = "fails"
-	case "queued", "running":
+	case models.PolicyEvaluationStatusQueued, models.PolicyEvaluationStatusRunning:
 		bs.Icon = "⏳"
 		bs.StatusText = "pending"
-	case "broken":
+	case models.PolicyEvaluationStatusBroken:
 		bs.Icon = "⚠"
 		bs.StatusText = "error"
 	default:
 		bs.Icon = "?"
-		bs.StatusText = eval.Status
+		bs.StatusText = string(eval.Status)
 	}
 
 	return bs

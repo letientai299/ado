@@ -311,23 +311,23 @@ func formatPerson(ref *models.IdentityRef) string {
 
 func formatTrigger(b models.Build) string {
 	switch b.Reason {
-	case "manual":
+	case models.BuildReasonManual:
 		return "by manual"
-	case "individualCI", "batchedCI":
+	case models.BuildReasonIndividualCI, models.BuildReasonBatchedCI:
 		return "by CI"
-	case "pullRequest":
+	case models.BuildReasonPullRequest:
 		if b.TriggerInfo != nil && b.TriggerInfo.PrNumber != "" {
 			return "by PR #" + b.TriggerInfo.PrNumber
 		}
 		return "by PR"
-	case "buildCompletion":
+	case models.BuildReasonBuildCompletion:
 		if b.TriggeredByBuild != nil {
 			return "by " + b.TriggeredByBuild.BuildNumber
 		}
 		return "by trigger"
-	case "schedule":
+	case models.BuildReasonSchedule:
 		return "by schedule"
-	case "resourceTrigger":
+	case models.BuildReasonResourceTrigger:
 		// For resource triggers, extract trigger info from the build number if available
 		// Build numbers like "20260120.6_Buddy20260120.7" contain trigger info after "_"
 		if idx := strings.Index(b.BuildNumber, "_"); idx > 0 {
@@ -336,7 +336,7 @@ func formatTrigger(b models.Build) string {
 		return "by resource"
 	default:
 		if b.Reason != "" {
-			return "by " + b.Reason
+			return "by " + string(b.Reason)
 		}
 		return ""
 	}
@@ -354,34 +354,34 @@ func formatStagesViz(stages []models.TimelineRecord) string {
 	return strings.Join(parts, "-")
 }
 
-func stageIcon(result, state string) string {
+func stageIcon(result models.TaskResult, state models.TimelineRecordState) string {
 	switch result {
-	case "succeeded":
+	case models.TaskResultSucceeded:
 		return styles.Success("☑")
-	case "failed":
+	case models.TaskResultFailed:
 		return styles.Error("☒")
-	case "canceled", "skipped":
+	case models.TaskResultCanceled, models.TaskResultSkipped:
 		return styles.Warn("☐")
-	case "partiallySucceeded":
+	case models.TaskResultSucceededWithIssues:
 		return styles.Warn("☑")
 	default:
 		// Check state for in-progress or pending
-		if state == "inProgress" {
+		if state == models.TimelineRecordStateInProgress {
 			return "▶"
 		}
 		return "☐"
 	}
 }
 
-func resultIcon(result string) string {
+func resultIcon(result models.TaskResult) string {
 	switch result {
-	case "succeeded":
+	case models.TaskResultSucceeded:
 		return styles.Success("✓")
-	case "failed":
+	case models.TaskResultFailed:
 		return styles.Error("✗")
-	case "canceled":
+	case models.TaskResultCanceled:
 		return styles.Warn("○")
-	case "partiallySucceeded":
+	case models.TaskResultSucceededWithIssues:
 		return styles.Warn("◐")
 	default:
 		return styles.Time("●")
