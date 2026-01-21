@@ -133,6 +133,21 @@ func (g GitPRs) Vote(
 	return httpPut[models.IdentityRefWithVote](ctx, g.client, reviewerURL, body)
 }
 
+// Statuses returns all statuses for a PR.
+// https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-request-statuses/list
+func (g GitPRs) Statuses(ctx context.Context, prID int32) ([]models.GitPullRequestStatus, error) {
+	statusesURL, _ := url.JoinPath(
+		g.baseUrl,
+		strconv.FormatInt(int64(prID), 10),
+		"statuses",
+	)
+	list, err := httpGet[List[models.GitPullRequestStatus]](ctx, g.client, statusesURL)
+	if err != nil {
+		return nil, err
+	}
+	return list.Value, nil
+}
+
 type List[T any] struct {
 	Value []T `json:"value"`
 	Count int `json:"count"`
