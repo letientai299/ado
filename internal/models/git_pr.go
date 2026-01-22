@@ -1,6 +1,25 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"github.com/letientai299/ado/internal/config"
+)
+
+// ToRepo converts a GitRepository model to a config.Repository.
+func ToRepo(r *GitRepository, org string) config.Repository {
+	if r == nil {
+		return config.Repository{Org: org}
+	}
+	repo := config.Repository{
+		Org:  org,
+		Name: r.Name,
+	}
+	if r.Project != nil {
+		repo.Project = r.Project.Name
+	}
+	return repo
+}
 
 // GitPullRequest represents all the data associated with a pull request.
 // Pull requests let your team review code and give feedback on changes before

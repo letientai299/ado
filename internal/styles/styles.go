@@ -99,6 +99,7 @@ func FlagStyle(s string) string     { return colorize(s, theme.Tokens.Chroma.Ope
 func FlagTypeStyle(s string) string { return colorize(s, theme.Tokens.Chroma.KeywordType) }
 func Warn(s string) string          { return colorize(s, theme.Tokens.Warn) }
 func Success(s string) string       { return colorize(s, theme.Tokens.Success) }
+func Pending(s string) string       { return colorize(s, theme.Tokens.Chroma.Function) }
 func Highlight(s string) string     { return underline(colorize(s, theme.Tokens.Success)) }
 func Faint(s string) string         { return out.String(s).Faint().String() }
 func Error(s string) string         { return colorize(s, theme.Tokens.Error) }

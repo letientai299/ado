@@ -66,3 +66,30 @@ func (p Policy) Evaluations(
 
 	return list.Value, nil
 }
+
+// Requeue re-evaluates a policy for a pull request.
+// Use this to trigger a fresh evaluation of policies, for example after
+// fixing a build validation failure.
+//
+// https://learn.microsoft.com/en-us/rest/api/azure/devops/policy/evaluations/requeue-policy-evaluation
+func (p Policy) Requeue(
+	ctx context.Context,
+	repo config.Repository,
+	projectID string,
+	evaluationID string,
+) (*models.PolicyEvaluationRecord, error) {
+	apiURL := fmt.Sprintf(
+		"%s/%s/%s/_apis/policy/evaluations/%s?api-version=7.1-preview.1",
+		adoHost,
+		repo.Org,
+		repo.Project,
+		evaluationID,
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, apiURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return call[models.PolicyEvaluationRecord](p.client, req)
+}

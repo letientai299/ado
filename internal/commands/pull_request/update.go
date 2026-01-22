@@ -115,7 +115,8 @@ func (u *updateProcessor) process(args []string) error {
 	}
 
 	if data.actionDone {
-		return u.inform("Done", pr)
+		msg := "Done triggering action " + u.opts.execute.String()
+		return u.inform(msg, pr)
 	}
 
 	return u.inform("No update", pr)
@@ -204,19 +205,18 @@ func (u *updateProcessor) prepareUpdateData(pr *models.GitPullRequest) (*updateD
 	}
 
 	if act, ok := u.pickAction(pr); ok {
-		prs := u.client.Git().PRs(u.cfg.Repository)
 		identity, err := u.client.Identity(u.ctx, u.cfg.Repository.Org)
 		if err != nil {
 			return nil, err
 		}
 
-		if act.hasVoted(u.ctx, prs, identity.Id, pr) {
+		if act.hasVoted(u.ctx, u.client.Git().PRs(u.cfg.Repository), identity.Id, pr) {
 			log.Infof("Already voted %s, skipping", act.displayName())
 			data.actionDone = true
 			return data, nil
 		}
 
-		modelDirty, err := act.exec(u.ctx, prs, pr, data.model)
+		modelDirty, err := act.exec(u.ctx, u.client, u.cfg.Repository.Org, pr, data.model)
 		if err != nil {
 			return nil, err
 		}

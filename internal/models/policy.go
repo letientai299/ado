@@ -140,8 +140,9 @@ type PolicyTypeRef struct {
 }
 
 // Well-known policy type IDs for Azure DevOps branch policies.
-//
 // See: https://learn.microsoft.com/en-us/azure/devops/repos/git/branch-policies
+//
+//goland:noinspection GoUnusedConst
 const (
 	// PolicyTypeBuildValidation is the policy type ID for build validation policies.
 	// These policies require a successful build before a pull request can be completed.
