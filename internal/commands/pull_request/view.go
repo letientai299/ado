@@ -60,30 +60,34 @@ func newViewProcessor(c *common[*ViewConfig]) *viewProcessor {
 
 type viewProcessor struct {
 	*common[*ViewConfig]
-	lp listProcessor
+	lp       listProcessor
+	cachedPR *models.GitPullRequest // cached PR from findPrID to avoid double API call
 }
 
-func (v viewProcessor) process(args []string) error {
+func (v *viewProcessor) process(args []string) error {
 	prId, err := v.findPrID(args)
 	if err != nil || prId == 0 {
 		return err
 	}
 
+	// Use cached PR if available (from findPrID numeric lookup)
+	if v.cachedPR != nil {
+		return v.renderOne(*v.cachedPR)
+	}
 	return v.renderByID(prId)
 }
 
-func (v viewProcessor) findPrID(args []string) (int32, error) {
+func (v *viewProcessor) findPrID(args []string) (int32, error) {
 	// 1. Try if the first arg is a PR ID
 	if len(args) == 1 {
 		if id, err := strconv.ParseInt(args[0], 10, 32); err == nil {
-			var m *models.GitPullRequest
-			// TODO (tai): in case of valid ID, we call ADO twice, should add ctx-cache,
-			//  but be careful to not serving stale data in long running TUI
-			m, err = v.client.Git().PRs(v.cfg.Repository).ByID(v.ctx, int32(id))
+			// Fetch and cache the PR to avoid double API call in renderByID
+			m, err := v.client.Git().PRs(v.cfg.Repository).ByID(v.ctx, int32(id))
 			if err == nil {
+				v.cachedPR = m
 				return m.PullRequestId, nil
 			}
-			// if error, treat the numeric arg as a keyword
+			// if error, treat the numeric arg as a keyword (fallback to list/filter)
 		}
 	}
 

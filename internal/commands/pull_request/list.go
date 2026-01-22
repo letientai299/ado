@@ -156,6 +156,15 @@ func (l listProcessor) filter(all []models.GitPullRequest) ([]models.GitPullRequ
 		id = &identity.Id
 	}
 
+	// Pre-convert keywords to lowercase once
+	var lowerKeywords []string
+	if len(l.opts.keywords) > 0 {
+		lowerKeywords = make([]string, len(l.opts.keywords))
+		for i, kw := range l.opts.keywords {
+			lowerKeywords[i] = strings.ToLower(kw)
+		}
+	}
+
 	return slices.DeleteFunc(all, func(m models.GitPullRequest) bool {
 		if !l.opts.draft && m.IsDraft {
 			return true
@@ -165,16 +174,21 @@ func (l listProcessor) filter(all []models.GitPullRequest) ([]models.GitPullRequ
 			return true
 		}
 
-		return !l.containsAll(m, l.opts.keywords)
+		return !l.containsAll(m, lowerKeywords)
 	}), nil
 }
 
-func (l listProcessor) containsAll(pr models.GitPullRequest, keywords []string) bool {
+func (l listProcessor) containsAll(pr models.GitPullRequest, lowerKeywords []string) bool {
+	if len(lowerKeywords) == 0 {
+		return true
+	}
+
+	// Convert title and desc to lowercase once
 	title := strings.ToLower(pr.Title)
 	desc := strings.ToLower(pr.Description)
-	for _, pattern := range keywords {
-		p := strings.ToLower(pattern)
-		if !strings.Contains(title, p) && !strings.Contains(desc, p) {
+
+	for _, pattern := range lowerKeywords {
+		if !strings.Contains(title, pattern) && !strings.Contains(desc, pattern) {
 			return false
 		}
 	}

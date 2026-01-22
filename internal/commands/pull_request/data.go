@@ -83,7 +83,9 @@ func (pc PolicyChecks) Pending() PolicyChecks {
 
 // SummaryText returns a formatted summary of failed/pending policies
 func (pc PolicyChecks) SummaryText() string {
-	var failedChecks, pendingChecks []string
+	// Pre-allocate with estimated size to reduce allocations
+	failedChecks := make([]string, 0, len(pc))
+	pendingChecks := make([]string, 0, len(pc))
 
 	for _, check := range pc {
 		if !check.IsRequired {
@@ -391,8 +393,10 @@ func resolvePolicyChecks(
 		return nil
 	}
 
+	// Pre-allocate with estimated capacity
+	checks := make([]PolicyCheck, 0, len(evaluations)+1)
+
 	// Add a merge conflict check first if needed
-	var checks []PolicyCheck
 	switch pr.MergeStatus {
 	case models.PullRequestAsyncStatusConflicts:
 		checks = append(checks, PolicyCheck{
@@ -410,12 +414,12 @@ func resolvePolicyChecks(
 		})
 	}
 
-	// Deduplicate by name and status
+	// Deduplicate by name and status - pre-allocate map
 	type dedupeKey struct {
 		name   string
 		status string
 	}
-	seen := make(map[dedupeKey]bool)
+	seen := make(map[dedupeKey]bool, len(evaluations))
 
 	for _, eval := range evaluations {
 		name := getPolicyDisplayName(eval)

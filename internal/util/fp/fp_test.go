@@ -36,7 +36,7 @@ func TestMap(t *testing.T) {
 				name:     "empty slice",
 				input:    []int{},
 				fn:       func(n int) int { return n * 2 },
-				expected: []int{},
+				expected: nil,
 			},
 			{
 				name:     "single element",
@@ -188,15 +188,12 @@ func TestMap(t *testing.T) {
 		}
 	})
 
-	t.Run("nil input returns empty slice", func(t *testing.T) {
+	t.Run("nil input returns nil", func(t *testing.T) {
 		var input []int
 		result := Map(input, func(n int) int { return n * 2 })
 
-		if result == nil {
-			t.Error("Map(nil) returned nil, want empty slice")
-		}
-		if len(result) != 0 {
-			t.Errorf("Map(nil) length = %d, want 0", len(result))
+		if result != nil {
+			t.Errorf("Map(nil) returned %v, want nil", result)
 		}
 	})
 }
@@ -353,7 +350,7 @@ func TestFilter(t *testing.T) {
 				name:      "no matches",
 				input:     []int{1, 3, 5, 7, 9},
 				predicate: func(n int) bool { return n%2 == 0 },
-				expected:  []int{},
+				expected:  nil,
 			},
 			{
 				name:      "all match",
@@ -365,7 +362,7 @@ func TestFilter(t *testing.T) {
 				name:      "empty input",
 				input:     []int{},
 				predicate: func(n int) bool { return n > 0 },
-				expected:  []int{},
+				expected:  nil,
 			},
 		}
 
@@ -509,6 +506,134 @@ func TestFilter(t *testing.T) {
 					t.Errorf("Filter() with Not = %v, want %v", result, tt.expected)
 				}
 			})
+		}
+	})
+}
+
+func TestFilterInPlace(t *testing.T) {
+	t.Run("integer filtering", func(t *testing.T) {
+		tests := []struct {
+			name      string
+			input     []int
+			predicate func(int) bool
+			expected  []int
+		}{
+			{
+				name:      "filter even numbers",
+				input:     []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+				predicate: func(n int) bool { return n%2 == 0 },
+				expected:  []int{2, 4, 6, 8, 10},
+			},
+			{
+				name:      "filter positive numbers",
+				input:     []int{-3, -1, 0, 1, 2, 3},
+				predicate: func(n int) bool { return n > 0 },
+				expected:  []int{1, 2, 3},
+			},
+			{
+				name:      "no matches",
+				input:     []int{1, 3, 5, 7, 9},
+				predicate: func(n int) bool { return n%2 == 0 },
+				expected:  nil,
+			},
+			{
+				name:      "all match",
+				input:     []int{2, 4, 6, 8, 10},
+				predicate: func(n int) bool { return n%2 == 0 },
+				expected:  []int{2, 4, 6, 8, 10},
+			},
+			{
+				name:      "empty input",
+				input:     []int{},
+				predicate: func(n int) bool { return n > 0 },
+				expected:  nil,
+			},
+			{
+				name:      "single element matches",
+				input:     []int{42},
+				predicate: func(n int) bool { return n == 42 },
+				expected:  []int{42},
+			},
+			{
+				name:      "single element doesn't match",
+				input:     []int{42},
+				predicate: func(n int) bool { return n == 0 },
+				expected:  nil,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				// Make a copy since FilterInPlace modifies the slice
+				input := make([]int, len(tt.input))
+				copy(input, tt.input)
+
+				result := FilterInPlace(input, tt.predicate)
+				if !reflect.DeepEqual(result, tt.expected) {
+					t.Errorf("FilterInPlace() = %v, want %v", result, tt.expected)
+				}
+			})
+		}
+	})
+
+	t.Run("capacity is clipped", func(t *testing.T) {
+		input := make([]int, 10, 20)
+		for i := range input {
+			input[i] = i + 1
+		}
+
+		// Filter to keep only even numbers
+		result := FilterInPlace(input, func(n int) bool { return n%2 == 0 })
+
+		if len(result) != 5 {
+			t.Errorf("FilterInPlace() length = %d, want 5", len(result))
+		}
+
+		// After slices.Clip, capacity should equal length
+		if cap(result) != len(result) {
+			t.Errorf(
+				"FilterInPlace() capacity = %d, want %d (should be clipped)",
+				cap(result),
+				len(result),
+			)
+		}
+	})
+
+	t.Run("modifies original slice", func(t *testing.T) {
+		original := []int{1, 2, 3, 4, 5}
+		input := original // Share the same backing array
+
+		result := FilterInPlace(input, func(n int) bool { return n > 2 })
+
+		// Result should be correct
+		expected := []int{3, 4, 5}
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("FilterInPlace() = %v, want %v", result, expected)
+		}
+
+		// Original slice's first elements should be modified
+		if original[0] != 3 || original[1] != 4 || original[2] != 5 {
+			t.Errorf("Original slice not modified as expected: %v", original[:3])
+		}
+	})
+}
+
+func TestFilterCapacityClip(t *testing.T) {
+	t.Run("Filter clips capacity", func(t *testing.T) {
+		input := make([]int, 10, 20)
+		for i := range input {
+			input[i] = i + 1
+		}
+
+		result := Filter(input, func(n int) bool { return n%2 == 0 })
+
+		if len(result) != 5 {
+			t.Errorf("Filter() length = %d, want 5", len(result))
+		}
+
+		// After slices.Clip, capacity should equal length
+		if cap(result) != len(result) {
+			t.Errorf("Filter() capacity = %d, want %d (should be clipped)", cap(result), len(result))
 		}
 	})
 }
