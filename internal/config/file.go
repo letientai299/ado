@@ -98,8 +98,13 @@ func processIncludes(data map[string]any, baseDir string, visited map[string]str
 				branchVisited[k] = v
 			}
 
-			absIncludePath := filepath.Join(baseDir, includePath)
-			includedData, err := loadYAMLWithIncludes(absIncludePath, branchVisited)
+			resolvedPath, err := resolveIncludePath(includePath, baseDir)
+			if err != nil {
+				return fmt.Errorf("resolving include path %q: %w", includePath, err)
+			}
+
+			log.Debugf("including config file %v", resolvedPath)
+			includedData, err := loadYAMLWithIncludes(resolvedPath, branchVisited)
 			if err != nil {
 				return fmt.Errorf("processing include %s: %w", includePath, err)
 			}
@@ -140,6 +145,38 @@ func processIncludes(data map[string]any, baseDir string, visited map[string]str
 		}
 	}
 	return nil
+}
+
+// resolveIncludePath expands environment variables in the include path,
+// handles both absolute and relative paths, and validates the resolved path is readable.
+func resolveIncludePath(includePath, baseDir string) (string, error) {
+	// Expand environment variables like $HOME, $PWD, etc.
+	expanded := os.ExpandEnv(includePath)
+
+	var resolved string
+	if filepath.IsAbs(expanded) {
+		resolved = expanded
+	} else {
+		resolved = filepath.Join(baseDir, expanded)
+	}
+
+	// Clean the path to resolve any ".." or "." components
+	resolved = filepath.Clean(resolved)
+
+	// Validate the path exists and is readable
+	info, err := os.Stat(resolved)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", fmt.Errorf("file does not exist: %s", resolved)
+		}
+		return "", fmt.Errorf("cannot access file: %w", err)
+	}
+
+	if info.IsDir() {
+		return "", fmt.Errorf("path is a directory, not a file: %s", resolved)
+	}
+
+	return resolved, nil
 }
 
 // FindConfigFile looks for .ado.y(a)ml or `.config/ado.y(a)ml` in the
