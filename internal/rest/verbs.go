@@ -30,32 +30,62 @@ func httpGet[T any](ctx context.Context, c Client, url string, qs ..._shared.Que
 	return call[T](c, req)
 }
 
-func httpPost[T any](ctx context.Context, c Client, url string, body any) (*T, error) {
-	return httpX[T](ctx, c, http.MethodPost, url, body)
+func httpPost[T any](
+	ctx context.Context,
+	c Client,
+	url string,
+	body any,
+	qs ..._shared.Querier,
+) (*T, error) {
+	return httpX[T](ctx, c, http.MethodPost, url, body, qs...)
 }
 
-func httpPatch[T any](ctx context.Context, c Client, url string, body any) (*T, error) {
-	return httpX[T](ctx, c, http.MethodPatch, url, body)
+func httpPatch[T any](
+	ctx context.Context,
+	c Client,
+	url string,
+	body any,
+	qs ..._shared.Querier,
+) (*T, error) {
+	return httpX[T](ctx, c, http.MethodPatch, url, body, qs...)
 }
 
-func httpPut[T any](ctx context.Context, c Client, url string, body any) (*T, error) {
-	return httpX[T](ctx, c, http.MethodPut, url, body)
+func httpPut[T any](
+	ctx context.Context,
+	c Client,
+	url string,
+	body any,
+	qs ..._shared.Querier,
+) (*T, error) {
+	return httpX[T](ctx, c, http.MethodPut, url, body, qs...)
 }
 
-func httpX[T any](ctx context.Context, c Client, method, url string, body any) (*T, error) {
-	jsonBody, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
+func httpX[T any](
+	ctx context.Context,
+	c Client,
+	method, url string,
+	body any,
+	qs ..._shared.Querier,
+) (*T, error) {
+	var b io.Reader
+	if body != nil {
+		jsonBody, err := json.Marshal(body)
+		if err != nil {
+			return nil, err
+		}
+		b = strings.NewReader(string(jsonBody))
 	}
 
-	url = _shared.AppendQueries(url, apiVersionQuery)
-	var b io.Reader = strings.NewReader(string(jsonBody))
+	qs = append(qs, apiVersionQuery)
+	url = _shared.AppendQueries(url, qs...)
 	req, err := http.NewRequestWithContext(ctx, method, url, b)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Set("Content-Type", "application/json")
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
 	return call[T](c, req)
 }
 

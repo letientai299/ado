@@ -3,6 +3,7 @@ package pull_request
 import (
 	"fmt"
 	"slices"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -103,6 +104,9 @@ func converterWithStatuses(
 			func(x *models.IdentityRefWithVote) *models.IdentityRef { return &x.IdentityRef },
 		)
 		pr.Approvers = fp.Map(approvers, toIdentity)
+		sort.Slice(pr.Approvers, func(i, j int) bool {
+			return pr.Approvers[i].Name < pr.Approvers[j].Name
+		})
 		pr.CreatedBy = toIdentity(m.CreatedBy)
 
 		// Add build status if available

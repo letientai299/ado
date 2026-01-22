@@ -219,19 +219,26 @@ func (l listProcessor) render(all []models.GitPullRequest) error {
 func (l listProcessor) fetchEvaluations(
 	prs []models.GitPullRequest,
 ) (map[int32][]models.PolicyEvaluationRecord, error) {
-	result := make(map[int32][]models.PolicyEvaluationRecord)
-	for _, pr := range prs {
-		if pr.Repository == nil || pr.Repository.Project == nil {
-			continue
-		}
-		evals, err := l.client.Policy().
-			Evaluations(l.ctx, l.cfg.Repository, pr.Repository.Project.Id, pr.PullRequestId)
-		if err != nil {
-			return nil, err
-		}
-		result[pr.PullRequestId] = evals
+	if len(prs) == 0 {
+		return nil, nil
 	}
-	return result, nil
+
+	// Assuming all PRs are from the same project
+	var projectID string
+	var prIDs []int32
+	for _, pr := range prs {
+		if pr.Repository != nil && pr.Repository.Project != nil {
+			projectID = pr.Repository.Project.Id
+			prIDs = append(prIDs, pr.PullRequestId)
+		}
+	}
+
+	if projectID == "" {
+		return nil, nil
+	}
+
+	return l.client.Policy().
+		Evaluations(l.ctx, l.cfg.Repository, projectID, prIDs...)
 }
 
 func (l listProcessor) renderTemplate(tpl string, all []PR) error {

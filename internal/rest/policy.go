@@ -3,11 +3,10 @@ package rest
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"net/url"
 
 	"github.com/letientai299/ado/internal/config"
 	"github.com/letientai299/ado/internal/models"
+	"github.com/letientai299/ado/internal/rest/_shared"
 )
 
 // Policy provides access to Azure DevOps Policy APIs.
@@ -38,58 +37,80 @@ func (p Policy) Evaluations(
 	ctx context.Context,
 	repo config.Repository,
 	projectID string,
-	prID int32,
-) ([]models.PolicyEvaluationRecord, error) {
-	// Construct the artifact ID for the pull request
-	// Format: vstfs:///CodeReview/CodeReviewId/{projectId}/{pullRequestId}
-	artifactId := fmt.Sprintf("vstfs:///CodeReview/CodeReviewId/%s/%d", projectID, prID)
+	prIDs ...int32,
+) (map[int32][]models.PolicyEvaluationRecord, error) {
+	if len(prIDs) == 0 {
+		return nil, nil
+	}
 
 	// Policy evaluations API requires preview version
-	apiURL := fmt.Sprintf(
-		"%s/%s/%s/_apis/policy/evaluations?artifactId=%s&api-version=7.1-preview.1",
+	baseURL := fmt.Sprintf(
+		"%s/%s/%s/_apis/policy/evaluations",
 		adoHost,
 		repo.Org,
 		repo.Project,
-		url.QueryEscape(artifactId),
 	)
 
-	// Make direct HTTP request
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
-	if err != nil {
-		return nil, err
+	// Fetch evaluations in parallel using goroutines
+	type result struct {
+		prID  int32
+		evals []models.PolicyEvaluationRecord
+		err   error
 	}
 
-	list, err := call[List[models.PolicyEvaluationRecord]](p.client, req)
-	if err != nil {
-		return nil, err
+	ch := make(chan result, len(prIDs))
+	for _, id := range prIDs {
+		go func(prID int32) {
+			artifactId := fmt.Sprintf("vstfs:///CodeReview/CodeReviewId/%s/%d", projectID, prID)
+			list, err := httpGet[List[models.PolicyEvaluationRecord]](
+				ctx,
+				p.client,
+				baseURL,
+				_shared.KV[string]{Key: "artifactId", Value: artifactId},
+				_shared.KV[string]{Key: "api-version", Value: "7.1-preview.1"},
+			)
+			if err != nil {
+				ch <- result{prID: prID, err: err}
+				return
+			}
+			ch <- result{prID: prID, evals: list.Value}
+		}(id)
 	}
 
-	return list.Value, nil
+	finalResult := make(map[int32][]models.PolicyEvaluationRecord, len(prIDs))
+	for range prIDs {
+		res := <-ch
+		if res.err != nil {
+			return nil, res.err
+		}
+		finalResult[res.prID] = res.evals
+	}
+
+	return finalResult, nil
 }
 
 // Requeue re-evaluates a policy for a pull request.
-// Use this to trigger a fresh evaluation of policies, for example after
+// Use this to trigger a fresh evaluation of policies, for example, after
 // fixing a build validation failure.
 //
 // https://learn.microsoft.com/en-us/rest/api/azure/devops/policy/evaluations/requeue-policy-evaluation
 func (p Policy) Requeue(
 	ctx context.Context,
 	repo config.Repository,
-	projectID string,
 	evaluationID string,
 ) (*models.PolicyEvaluationRecord, error) {
 	apiURL := fmt.Sprintf(
-		"%s/%s/%s/_apis/policy/evaluations/%s?api-version=7.1-preview.1",
+		"%s/%s/%s/_apis/policy/evaluations/%s",
 		adoHost,
 		repo.Org,
 		repo.Project,
 		evaluationID,
 	)
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, apiURL, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return call[models.PolicyEvaluationRecord](p.client, req)
+	return httpPatch[models.PolicyEvaluationRecord](
+		ctx,
+		p.client,
+		apiURL,
+		nil,
+		_shared.KV[string]{Key: "api-version", Value: "7.1-preview.1"},
+	)
 }

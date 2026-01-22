@@ -38,6 +38,8 @@ var allActions = []action{
 
 func (a action) applicable(cur *models.GitPullRequest) bool {
 	switch a {
+	case actionBuild:
+		return cur.Status != nil && *cur.Status != models.PullRequestStatusAbandoned
 	case actionApprove, actionReject, actionResetVote:
 		return cur.Status != nil && *cur.Status == models.PullRequestStatusActive
 	case actionDraft:
@@ -78,7 +80,7 @@ func (a action) exec(
 	}
 
 	if a == actionBuild {
-		return build(ctx, client, cur, repo)
+		return queueBuild(ctx, client, cur, repo)
 	}
 
 	switch a {
@@ -110,7 +112,7 @@ func (a action) exec(
 	return true, nil
 }
 
-func build(
+func queueBuild(
 	ctx context.Context,
 	client *rest.Client,
 	cur *models.GitPullRequest,
@@ -118,10 +120,11 @@ func build(
 ) (bool, error) {
 	log.Infof("Re-queueing PR build pipelines")
 	projectID := cur.Repository.Project.Id
-	evals, err := client.Policy().Evaluations(ctx, repo, projectID, cur.PullRequestId)
+	evalMap, err := client.Policy().Evaluations(ctx, repo, projectID, cur.PullRequestId)
 	if err != nil {
 		return false, err
 	}
+	evals := evalMap[cur.PullRequestId]
 	for _, e := range evals {
 		if e.Configuration.Type.Id != models.PolicyTypeBuildValidation {
 			continue
@@ -130,7 +133,7 @@ func build(
 		if determineBuildStatus(e) == PRBuildStatusExpired {
 			log.Infof("Re-queueing build: %s", e.Configuration.Type.DisplayName)
 			_, err = client.Policy().
-				Requeue(ctx, repo, projectID, e.EvaluationId)
+				Requeue(ctx, repo, e.EvaluationId)
 			if err != nil {
 				log.Errorf("Failed to re-queue build %s: %v", e.EvaluationId, err)
 				return false, err

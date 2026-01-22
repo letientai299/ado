@@ -157,21 +157,7 @@ func (v viewProcessor) renderByID(id int32) error {
 
 func (v viewProcessor) renderOne(m models.GitPullRequest) error {
 	// Fetch policy evaluations for the PR
-	var evaluations []models.PolicyEvaluationRecord
-	if m.Repository != nil && m.Repository.Project != nil {
-		evals, err := v.client.Policy().
-			Evaluations(v.ctx, v.cfg.Repository, m.Repository.Project.Id, m.PullRequestId)
-		if err != nil {
-			log.Warn("failed to fetch policy evaluations", "error", err)
-		} else {
-			evaluations = evals
-		}
-	}
-
-	evalMap := make(map[int32][]models.PolicyEvaluationRecord)
-	if evaluations != nil {
-		evalMap[m.PullRequestId] = evaluations
-	}
+	evalMap, _ := v.policyEvals(m)
 
 	pr := converterWithStatuses(v.baseURL, v.cfg.Repository.Org, m.Repository, evalMap)(m)
 	if v.opts.browse {
@@ -179,4 +165,19 @@ func (v viewProcessor) renderOne(m models.GitPullRequest) error {
 		return sh.Browse(pr.WebURL)
 	}
 	return styles.RenderOut(viewTpl, pr)
+}
+
+func (v viewProcessor) policyEvals(
+	m models.GitPullRequest,
+) (map[int32][]models.PolicyEvaluationRecord, error) {
+	if m.Repository == nil || m.Repository.Project == nil {
+		return nil, nil
+	}
+	evals, err := v.client.Policy().
+		Evaluations(v.ctx, v.cfg.Repository, m.Repository.Project.Id, m.PullRequestId)
+	if err != nil {
+		log.Warn("failed to fetch policy evaluations", "error", err)
+		return nil, err
+	}
+	return evals, nil
 }

@@ -87,6 +87,10 @@ func (c Client) Identity(ctx context.Context, org string) (*models.Identity, err
 	type Temp struct {
 		AuthenticatedUser *models.Identity `json:"authenticatedUser"`
 	}
+
+	// manually call instead of httpGet, to not include apiVersion automatically,
+	// because this API doesn't share the same version with others.
+	// this is not an ADO-specific API.
 	t, err := call[Temp](c, req)
 	if err != nil {
 		return nil, err
