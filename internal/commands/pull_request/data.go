@@ -2,7 +2,6 @@ package pull_request
 
 import (
 	"fmt"
-	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -189,7 +188,7 @@ func converterWithStatuses(
 		pr.WebURL = webURL(baseURL, pr.PullRequestId)
 
 		approvers := fp.Map(
-			slices.DeleteFunc(m.Reviewers, isApproved),
+			fp.Filter(m.Reviewers, isDirectlyApproved),
 			func(x *models.IdentityRefWithVote) *models.IdentityRef { return &x.IdentityRef },
 		)
 		pr.Approvers = fp.Map(approvers, toIdentity)
