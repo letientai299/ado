@@ -9,7 +9,6 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/letientai299/ado/internal/models"
 	"github.com/letientai299/ado/internal/rest/git_prs"
-	"github.com/letientai299/ado/internal/styles"
 	"github.com/letientai299/ado/internal/ui"
 	"github.com/letientai299/ado/internal/util"
 	"github.com/letientai299/ado/internal/util/fp"
@@ -115,8 +114,7 @@ func (u *updateProcessor) process(args []string) error {
 	}
 
 	if data.actionDone {
-		msg := "Done triggering action " + u.opts.execute.String()
-		return u.inform(msg, pr)
+		return u.inform("Action "+u.opts.execute.String()+"done", pr)
 	}
 
 	return u.inform("No update", pr)
@@ -268,7 +266,7 @@ func (u *updateProcessor) updateToADO(id int32, data *models.GitPullRequest) err
 }
 
 func (u *updateProcessor) inform(msg string, pr *models.GitPullRequest) error {
-	log.Infof("%s, #%d: %s", msg, pr.PullRequestId, styles.H1(pr.Title))
+	log.Infof("%s, #%d: %s", msg, pr.PullRequestId, pr.Title)
 	url := webURL(u.baseURL, pr.PullRequestId)
 	fmt.Println(url)
 	if u.opts.browse {
