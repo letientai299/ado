@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/log"
 	"github.com/goccy/go-json"
@@ -123,8 +124,7 @@ func callAndDecode[T any](
 	req *http.Request,
 	decodeFn func(reader io.Reader) (*T, error),
 ) (*T, error) {
-	log.Debugf("HTTP request: %s %s", req.Method, req.URL.RequestURI())
-
+	start := time.Now()
 	req.Header.Set("Authorization", "Bearer "+c.token)
 	resp, err := c.http.Do(req)
 	if err != nil {
@@ -132,6 +132,12 @@ func callAndDecode[T any](
 		return nil, err
 	}
 
+	log.Debugf(
+		"[%.3f ms] %s %s",
+		float64(time.Since(start))/float64(time.Millisecond),
+		req.Method,
+		req.URL.RequestURI(),
+	)
 	defer func() { _ = resp.Body.Close() }()
 
 	if err = validateResponse(resp); err != nil {
