@@ -5,6 +5,9 @@
   {{- if $pr.BuildStatus }}
   {{ $pr.BuildStatus.Icon }} Build {{ $pr.BuildStatus.StatusText }}: {{ $pr.BuildStatus.TargetURL }}
   {{- end }}
+  {{- if $pr.PolicyChecks.SummaryText }}
+  {{ $pr.PolicyChecks.SummaryIcon }} {{ $pr.PolicyChecks.SummaryText }}
+  {{- end }}
   Created by {{ $pr.CreatedBy.Name | person }} on {{ $pr.CreationDate | time}}
   {{- if gt (len $pr.Approvers) 0}}
   Approved by {{ range $i, $a := $pr.Approvers -}}{{ $a.Name | person }}, {{ end -}}{{end}}

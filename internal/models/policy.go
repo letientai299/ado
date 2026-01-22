@@ -163,4 +163,7 @@ const (
 	// PolicyTypeCommentRequirements is the policy type ID for comment resolution policies.
 	// These policies require all comments to be resolved before completion.
 	PolicyTypeCommentRequirements = "c6a1889d-b943-4856-b76f-9e46bb6b0df2"
+
+	// PolicyTypeStatus is the GUID for "Status" policy type in Azure DevOps.
+	PolicyTypeStatus = "cbdc66da-9728-4af8-aada-9a5a32e4a226"
 )

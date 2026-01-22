@@ -37,6 +37,7 @@ type PR struct {
 	SourceBranchName string       `yaml:"source_branch"   json:"source_branch,omitempty"`
 	TargetBranchName string       `yaml:"target_branch"   json:"target_branch,omitempty"`
 	BuildStatus      *BuildStatus `yaml:"build_status"    json:"build_status,omitempty"`
+	PolicyChecks     PolicyChecks `yaml:"policy_checks"   json:"policy_checks,omitempty"`
 }
 
 // PRBuildStatus represents the possible states of a PR build
@@ -59,6 +60,93 @@ type BuildStatus struct {
 	TargetURL   string        `yaml:"target_url"  json:"target_url,omitempty"`  // link to build results
 	Icon        string        `yaml:"icon"        json:"icon,omitempty"`        // emoji icon
 	StatusText  string        `yaml:"status_text" json:"status_text,omitempty"` // display text for the status
+}
+
+// PolicyCheck represents a simplified policy check result
+type PolicyCheck struct {
+	Name       string `yaml:"name"        json:"name,omitempty"`        // Display the name of the policy
+	Status     string `yaml:"status"      json:"status,omitempty"`      // approved, rejected, running, queued, etc.
+	IsRequired bool   `yaml:"is_required" json:"is_required,omitempty"` // Whether this is a required check
+	Icon       string `yaml:"icon"        json:"icon,omitempty"`        // Status icon for display
+}
+
+// PolicyChecks is a slice of PolicyCheck with helper methods
+type PolicyChecks []PolicyCheck
+
+// Pending returns only the pending or failed required policies
+func (pc PolicyChecks) Pending() PolicyChecks {
+	var pending PolicyChecks
+	for _, check := range pc {
+		if check.IsRequired && (check.isPending() || check.isFailed()) {
+			pending = append(pending, check)
+		}
+	}
+	return pending
+}
+
+// SummaryText returns a formatted summary of failed/pending policies
+func (pc PolicyChecks) SummaryText() string {
+	var failedChecks, pendingChecks []string
+
+	for _, check := range pc {
+		if !check.IsRequired {
+			continue
+		}
+		if check.isFailed() {
+			failedChecks = append(failedChecks, check.Name)
+		} else if check.isPending() {
+			pendingChecks = append(pendingChecks, check.Name)
+		}
+	}
+
+	if len(failedChecks) > 0 {
+		if len(failedChecks) == 1 {
+			return "Failed: " + failedChecks[0]
+		}
+		return fmt.Sprintf(
+			"%d checks failed: %s",
+			len(failedChecks),
+			strings.Join(failedChecks, ", "),
+		)
+	}
+
+	if len(pendingChecks) > 0 {
+		if len(pendingChecks) == 1 {
+			return "Pending: " + pendingChecks[0]
+		}
+		return fmt.Sprintf(
+			"%d checks pending: %s",
+			len(pendingChecks),
+			strings.Join(pendingChecks, ", "),
+		)
+	}
+
+	return ""
+}
+
+// SummaryIcon returns the appropriate icon for the policy status
+func (pc PolicyChecks) SummaryIcon() string {
+	for _, check := range pc {
+		if check.IsRequired && check.isFailed() {
+			return styles.Error(ui.IconFailure)
+		}
+	}
+	for _, check := range pc {
+		if check.IsRequired && check.isPending() {
+			return styles.Pending(ui.IconPending)
+		}
+	}
+	return ""
+}
+
+// isPending checks if a policy is pending or running
+func (c PolicyCheck) isPending() bool {
+	return c.Status == "queued" || c.Status == "running"
+}
+
+// isFailed checks if a policy has failed
+func (c PolicyCheck) isFailed() bool {
+	return c.Status == "rejected" || c.Status == "broken"
 }
 
 func isApproved(vote *models.IdentityRefWithVote) bool {
@@ -121,6 +209,7 @@ func converterWithStatuses(
 					prRepo = repo
 				}
 				pr.BuildStatus = parseBuildStatus(evals, orgName, prRepo)
+				pr.PolicyChecks = resolvePolicyChecks(&m, evals)
 			}
 		}
 
@@ -299,7 +388,7 @@ func getStatusDisplay(status PRBuildStatus) (icon, text string) {
 	case PRBuildStatusRunning:
 		return styles.Pending(ui.IconRunning), styles.Pending("running")
 	case PRBuildStatusPending:
-		return styles.Faint(ui.IconPending), styles.Faint("pending")
+		return styles.Pending(ui.IconPending), styles.Pending("pending")
 	case PRBuildStatusExpired:
 		return styles.Warn(ui.IconWarning), styles.Warn("expired")
 	case PRBuildStatusError:
@@ -336,4 +425,134 @@ func editPrInfo(info *prInfo, editorCmd string) (*prInfo, error) {
 type prInfo struct {
 	title string
 	desc  string
+}
+
+// resolvePolicyChecks converts policy evaluations to simplified PolicyCheck structs
+func resolvePolicyChecks(
+	pr *models.GitPullRequest,
+	evaluations []models.PolicyEvaluationRecord,
+) PolicyChecks {
+	if len(evaluations) == 0 {
+		return nil
+	}
+
+	// Add a merge conflict check first if needed
+	var checks []PolicyCheck
+	switch pr.MergeStatus {
+	case models.PullRequestAsyncStatusConflicts:
+		checks = append(checks, PolicyCheck{
+			Name:       "Merge conflicts",
+			Status:     "rejected",
+			IsRequired: true,
+			Icon:       styles.Error(ui.IconFailure),
+		})
+	case models.PullRequestAsyncStatusSucceeded:
+		checks = append(checks, PolicyCheck{
+			Name:       "No merge conflicts",
+			Status:     "approved",
+			IsRequired: true,
+			Icon:       styles.Success(ui.IconSuccess),
+		})
+	}
+
+	// Deduplicate by name and status
+	type dedupeKey struct {
+		name   string
+		status string
+	}
+	seen := make(map[dedupeKey]bool)
+
+	for _, eval := range evaluations {
+		name := getPolicyDisplayName(eval)
+		status := policyStatusToString(eval.Status)
+		key := dedupeKey{name, status}
+
+		if !seen[key] {
+			seen[key] = true
+			checks = append(checks, PolicyCheck{
+				Name:       name,
+				Status:     status,
+				IsRequired: eval.Configuration.IsBlocking,
+				Icon:       getPolicyStatusIcon(eval.Status),
+			})
+		}
+	}
+
+	// Sort: required first, then by name
+	sort.Slice(checks, func(i, j int) bool {
+		if checks[i].IsRequired != checks[j].IsRequired {
+			return checks[i].IsRequired
+		}
+		return checks[i].Name < checks[j].Name
+	})
+
+	return checks
+}
+
+// getPolicyDisplayName extracts the display name for a policy evaluation
+func getPolicyDisplayName(eval models.PolicyEvaluationRecord) string {
+	// Build Validation policies: use buildDefinitionName from context
+	if eval.Configuration.Type.Id == models.PolicyTypeBuildValidation {
+		if name, ok := eval.Context["buildDefinitionName"].(string); ok && name != "" {
+			return name
+		}
+	}
+
+	// Status policies: use defaultDisplayName or displayName
+	if eval.Configuration.Type.Id == models.PolicyTypeStatus {
+		if defaultName, ok := eval.Configuration.Settings["defaultDisplayName"].(string); ok &&
+			defaultName != "" {
+			return defaultName
+		}
+	}
+
+	// Try various fallbacks
+	if displayName, ok := eval.Configuration.Settings["displayName"].(string); ok &&
+		displayName != "" {
+		return displayName
+	}
+	if eval.Configuration.Type.DisplayName != "" {
+		return eval.Configuration.Type.DisplayName
+	}
+	return "Unknown Policy"
+}
+
+// getPolicyStatusIcon returns a styled icon for a policy evaluation status
+func getPolicyStatusIcon(status models.PolicyEvaluationStatus) string {
+	switch status {
+	case models.PolicyEvaluationStatusApproved:
+		return styles.Success(ui.IconSuccess)
+	case models.PolicyEvaluationStatusRejected:
+		return styles.Error(ui.IconFailure)
+	case models.PolicyEvaluationStatusRunning:
+		return styles.Pending(ui.IconRunning)
+	case models.PolicyEvaluationStatusQueued:
+		return styles.Pending(ui.IconPending)
+	case models.PolicyEvaluationStatusBroken:
+		return styles.Warn(ui.IconWarning)
+	case models.PolicyEvaluationStatusNotApplicable:
+		return styles.Faint("-")
+	default:
+		return "?"
+	}
+}
+
+// policyStatusToString converts PolicyEvaluationStatus to a simple string
+func policyStatusToString(status models.PolicyEvaluationStatus) string {
+	switch status {
+	case models.PolicyEvaluationStatusApproved:
+		return "approved"
+	case models.PolicyEvaluationStatusRejected:
+		return "rejected"
+	case models.PolicyEvaluationStatusRunning:
+		return "running"
+	case models.PolicyEvaluationStatusQueued:
+		return "queued"
+	case models.PolicyEvaluationStatusBroken:
+		return "broken"
+	case models.PolicyEvaluationStatusNotApplicable:
+		return "not_applicable"
+	default:
+		return "unknown"
+	}
 }
