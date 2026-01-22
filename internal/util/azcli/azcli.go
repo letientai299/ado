@@ -54,7 +54,8 @@ func GetToken(tenant string) (string, error) {
 	}
 
 	// Cache for ~1 hour (Azure default token lifetime)
-	if err = cache.Set(tokenCacheKey, token); err != nil {
+	ttl := time.Until(token.Expiry)
+	if err = cache.Set(tokenCacheKey, token, ttl); err != nil {
 		log.Warnf("failed to cache token: %v", err)
 	}
 

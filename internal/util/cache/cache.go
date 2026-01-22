@@ -5,12 +5,18 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"github.com/charmbracelet/log"
 	"github.com/goccy/go-json"
 )
 
 const appName = "ado"
+
+type entry[T any] struct {
+	Data      T         `json:"data"`
+	ExpiresAt time.Time `json:"expires_at"`
+}
 
 // cacheDir returns the cache directory for the app.
 // Uses XDG_CACHE_HOME on Linux/Mac, LocalAppData on Windows.
@@ -43,44 +49,55 @@ func cachePath(key string) (string, error) {
 	return filepath.Join(dir, key+".json"), nil
 }
 
-// Get retrieves a cached value by key. Returns false if not found or error.
+// Get retrieves a cached value by key. Returns false if not found, expired or error.
 func Get[T any](key string) (*T, bool) {
-	v := new(T)
+	e := new(entry[T])
 	path, err := cachePath(key)
 	if err != nil {
 		log.Debug("cache miss: failed to get cache path", "key", key, "err", err)
-		return v, false
+		return nil, false
 	}
 
 	data, err := os.ReadFile(path) //nolint:gosec
 	if err != nil {
 		log.Debug("cache miss", "key", key, "path", path)
-		return v, false
+		return nil, false
 	}
 
-	if err = json.Unmarshal(data, v); err != nil {
+	if err = json.Unmarshal(data, e); err != nil {
 		log.Debug("cache error: failed to unmarshal", "key", key, "path", path, "err", err)
-		return v, false
+		return nil, false
+	}
+
+	if time.Now().After(e.ExpiresAt) {
+		log.Debug("cache miss: expired", "key", key, "path", path, "expiry", e.ExpiresAt)
+		_ = os.Remove(path)
+		return nil, false
 	}
 
 	log.Debug("cache hit", "key", key, "path", path)
-	return v, true
+	return &e.Data, true
 }
 
-// Set stores a value in the cache by key.
-func Set(key string, v any) error {
+// Set stores a value in the cache by key with a TTL.
+func Set(key string, v any, ttl time.Duration) error {
 	path, err := cachePath(key)
 	if err != nil {
 		return err
 	}
 
-	log.Debug("cache set", "key", key, "path", path)
+	log.Debug("cache set", "key", key, "path", path, "ttl", ttl)
 
 	if err = os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return err
 	}
 
-	data, err := json.Marshal(v)
+	e := entry[any]{
+		Data:      v,
+		ExpiresAt: time.Now().Add(ttl),
+	}
+
+	data, err := json.Marshal(e)
 	if err != nil {
 		return err
 	}
