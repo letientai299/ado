@@ -7,15 +7,15 @@ tokens:
   markdown:
     text: "#e6edf3"
     heading: "#58a6ff"
-    h1: "#d2a8ff"
-    h1_background: ""
+    h1: "#79b8ff"
+    h1_background: "#1c3a5c"
     horizontal_rule: "#30363d"
     link: "#2f81f7"
     link_text: "#a5d6ff"
     image: "#2f81f7"
     image_text: "#a5d6ff"
     code: "#7ee787"
-    code_background: ""
+    code_background: "#1b2e1f"
     code_block: "#ffa657"
   chroma:
     text: "#e6edf3"
