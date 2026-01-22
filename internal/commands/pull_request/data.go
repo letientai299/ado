@@ -11,7 +11,6 @@ import (
 	"github.com/letientai299/ado/internal/ui"
 	"github.com/letientai299/ado/internal/util"
 	"github.com/letientai299/ado/internal/util/editor"
-	"github.com/letientai299/ado/internal/util/fp"
 )
 
 const ErrEmptyTitle util.StrErr = "PR title cannot be empty. PR creation/update cancelled."
@@ -189,11 +188,13 @@ func converterWithStatuses(
 
 		pr.WebURL = webURL(baseURL, pr.PullRequestId)
 
-		approvers := fp.Map(
-			fp.Filter(m.Reviewers, isDirectlyApproved),
-			func(x *models.IdentityRefWithVote) *models.IdentityRef { return &x.IdentityRef },
-		)
-		pr.Approvers = fp.Map(approvers, toIdentity)
+		// Optimize approver extraction - single pass filtering + mapping
+		pr.Approvers = make([]Identity, 0, len(m.Reviewers))
+		for _, reviewer := range m.Reviewers {
+			if isDirectlyApproved(reviewer) {
+				pr.Approvers = append(pr.Approvers, toIdentity(&reviewer.IdentityRef))
+			}
+		}
 		sort.Slice(pr.Approvers, func(i, j int) bool {
 			return pr.Approvers[i].Name < pr.Approvers[j].Name
 		})
