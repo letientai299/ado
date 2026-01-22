@@ -247,7 +247,12 @@ func convertToInt(v any) int {
 }
 
 // determineBuildStatus maps PolicyEvaluationStatus to PRBuildStatus
+// TODO (tai): need to check again with expired build status
 func determineBuildStatus(eval models.PolicyEvaluationRecord) PRBuildStatus {
+	if eval.Configuration.Type.Id != models.PolicyTypeBuildValidation {
+		return PRBuildStatusUnknown
+	}
+
 	switch eval.Status {
 	case models.PolicyEvaluationStatusApproved:
 		return PRBuildStatusSucceeded

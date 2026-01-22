@@ -129,14 +129,12 @@ func queueBuild(
 			continue
 		}
 
-		if determineBuildStatus(e) == PRBuildStatusExpired {
-			log.Infof("Re-queueing build: %s", e.Configuration.Type.DisplayName)
-			_, err = client.Policy().Evaluations(repo).
-				Requeue(ctx, e.EvaluationId)
-			if err != nil {
-				log.Errorf("Failed to re-queue build %s: %v", e.EvaluationId, err)
-				return false, err
-			}
+		log.Infof("Re-queueing build: %s", e.Configuration.Type.DisplayName)
+		_, err = client.Policy().Evaluations(repo).
+			Requeue(ctx, e.EvaluationId)
+		if err != nil {
+			log.Errorf("Failed to re-queue build %s: %v", e.EvaluationId, err)
+			return false, err
 		}
 	}
 	return false, nil

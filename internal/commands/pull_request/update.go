@@ -114,7 +114,7 @@ func (u *updateProcessor) process(args []string) error {
 	}
 
 	if data.actionDone {
-		return u.inform("Action "+u.opts.execute.String()+"done", pr)
+		return u.inform("Action '"+u.opts.execute.String()+"' done", pr)
 	}
 
 	return u.inform("No update", pr)
