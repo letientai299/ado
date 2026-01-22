@@ -88,10 +88,7 @@ type updateProcessor struct {
 }
 
 func newUpdateProcessor(c *common[*UpdateConfig]) *updateProcessor {
-	vp := newViewProcessor(copyCommon(c, func(b *common[*ViewConfig]) *common[*ViewConfig] {
-		b.opts = &ViewConfig{filterConfig: c.opts.filterConfig}
-		return b
-	}))
+	vp := newViewProcessor(copyCommon(c, &ViewConfig{filterConfig: c.opts.filterConfig}))
 	return &updateProcessor{common: c, vp: vp}
 }
 

@@ -54,10 +54,7 @@ func viewCmd() *cobra.Command {
 }
 
 func newViewProcessor(c *common[*ViewConfig]) *viewProcessor {
-	lp := newListProcessor(copyCommon(c, func(b *common[*ListConfig]) *common[*ListConfig] {
-		b.opts = &ListConfig{filterConfig: c.opts.filterConfig}
-		return b
-	}))
+	lp := newListProcessor(copyCommon(c, &ListConfig{filterConfig: c.opts.filterConfig}))
 	return &viewProcessor{common: c, lp: lp}
 }
 

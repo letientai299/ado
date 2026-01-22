@@ -17,8 +17,6 @@ import (
 
 const ErrEmptyTitle util.StrErr = "PR title cannot be empty. PR creation/update cancelled."
 
-type Vote string
-
 type Identity struct {
 	Id    string
 	Name  string
@@ -219,11 +217,7 @@ func converterWithStatuses(
 
 // cleanBranchName removes the "refs/heads/" prefix from branch names
 func cleanBranchName(refName string) string {
-	const prefix = "refs/heads/"
-	if strings.HasPrefix(refName, prefix) {
-		return refName[len(prefix):]
-	}
-	return refName
+	return strings.TrimPrefix(refName, "refs/heads/")
 }
 
 // parseBuildStatus extracts the build validation status from policy evaluations.
@@ -233,45 +227,20 @@ func parseBuildStatus(
 	orgName string,
 	repo *models.GitRepository,
 ) *BuildStatus {
-	if len(evaluations) == 0 {
-		return nil
-	}
-
-	// Look for build validation policy
 	for _, eval := range evaluations {
-		if eval.Configuration.Type.Id == models.PolicyTypeBuildValidation {
-			return buildStatusFromEvaluation(eval, orgName, repo)
+		if eval.Configuration.Type.Id != models.PolicyTypeBuildValidation {
+			continue
 		}
-	}
 
-	// No build validation policy found
+		bs := &BuildStatus{TargetURL: extractBuildURL(eval, orgName, repo)}
+		if displayName, ok := eval.Configuration.Settings["displayName"].(string); ok {
+			bs.Description = displayName
+		}
+		bs.State = determineBuildStatus(eval)
+		bs.Icon, bs.StatusText = getStatusDisplay(bs.State)
+		return bs
+	}
 	return nil
-}
-
-// buildStatusFromEvaluation converts a PolicyEvaluationRecord to BuildStatus
-func buildStatusFromEvaluation(
-	eval models.PolicyEvaluationRecord,
-	orgName string,
-	repo *models.GitRepository,
-) *BuildStatus {
-	bs := &BuildStatus{
-		Description: extractDisplayName(eval),
-		TargetURL:   extractBuildURL(eval, orgName, repo),
-	}
-
-	// Determine the build status and set corresponding icon and text
-	bs.State = determineBuildStatus(eval)
-	bs.Icon, bs.StatusText = getStatusDisplay(bs.State)
-
-	return bs
-}
-
-// extractDisplayName gets the display name from the evaluation settings
-func extractDisplayName(eval models.PolicyEvaluationRecord) string {
-	if displayName, ok := eval.Configuration.Settings["displayName"].(string); ok {
-		return displayName
-	}
-	return ""
 }
 
 // extractBuildURL constructs the build URL from the evaluation context
@@ -295,28 +264,15 @@ func extractBuildURL(
 
 // extractBuildId attempts to extract the build ID from various possible locations in the context
 func extractBuildId(context map[string]any) int {
-	// Try different possible locations for buildId
-	candidates := []any{
-		context["buildId"],
-		extractFromBuildObject(context),
-		context["id"],
+	if id := convertToInt(context["buildId"]); id > 0 {
+		return id
 	}
-
-	for _, candidate := range candidates {
-		if id := convertToInt(candidate); id > 0 {
+	if build, ok := context["build"].(map[string]any); ok {
+		if id := convertToInt(build["id"]); id > 0 {
 			return id
 		}
 	}
-
-	return 0
-}
-
-// extractFromBuildObject tries to extract ID from a nested build object
-func extractFromBuildObject(context map[string]any) any {
-	if build, ok := context["build"].(map[string]interface{}); ok {
-		return build["id"]
-	}
-	return nil
+	return convertToInt(context["id"])
 }
 
 // convertToInt converts various types to int
