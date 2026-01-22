@@ -1,10 +1,15 @@
 package editor
 
 import (
+	"runtime"
 	"testing"
 )
 
 func TestEditor_Edit(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on Windows: uses Unix shell commands")
+	}
+
 	// Use a simple shell command as an editor that replaces content
 	editor := New("test-edit-*", "echo 'modified content' >")
 
@@ -21,6 +26,10 @@ func TestEditor_Edit(t *testing.T) {
 }
 
 func TestEditor_Edit_NoChange(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on Windows: uses Unix shell commands")
+	}
+
 	// Use 'true' as an editor (does nothing)
 	editor := New("test-edit-*", "true")
 

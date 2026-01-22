@@ -1,12 +1,17 @@
 package pull_request
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestEditPrInfo_EmptyTitle(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on Windows: uses Unix shell commands")
+	}
+
 	// We use a simple command that empties the file to simulate empty title
 	info := &prInfo{title: "original", desc: "desc"}
 	// "truncate -s 0" or ">" or "cp /dev/null"
@@ -22,6 +27,10 @@ func TestEditPrInfo_EmptyTitle(t *testing.T) {
 }
 
 func TestEditPrInfo_Success(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on Windows: uses Unix shell commands")
+	}
+
 	info := &prInfo{title: "original", desc: "desc"}
 	// Replace content with "new title\n\nnew desc"
 	// Using printf to handle newlines

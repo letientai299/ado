@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -15,6 +16,13 @@ import (
 )
 
 const Origin = "origin"
+
+// cachedRepo holds the cached repository and the working directory it was opened from.
+var (
+	repoMu     sync.Mutex
+	cachedRepo *git.Repository
+	cachedWd   string
+)
 
 // Root finds the git repo root or fallback to current working if fail
 func Root() string {
@@ -32,16 +40,41 @@ func Root() string {
 	return wt.Filesystem.Root()
 }
 
+// Open returns a cached git repository handle for the current working directory.
+// The repository is cached and reused for subsequent calls from the same directory.
 func Open() (*git.Repository, error) {
 	wd, err := os.Getwd()
 	if err != nil {
 		return nil, err
 	}
 
-	return git.PlainOpenWithOptions(wd, &git.PlainOpenOptions{
+	repoMu.Lock()
+	defer repoMu.Unlock()
+
+	// Return cached repo if working directory hasn't changed
+	if cachedRepo != nil && cachedWd == wd {
+		return cachedRepo, nil
+	}
+
+	repo, err := git.PlainOpenWithOptions(wd, &git.PlainOpenOptions{
 		DetectDotGit:          true,
 		EnableDotGitCommonDir: true,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	cachedRepo = repo
+	cachedWd = wd
+	return repo, nil
+}
+
+// ClearCache clears the cached repository. Useful for testing.
+func ClearCache() {
+	repoMu.Lock()
+	defer repoMu.Unlock()
+	cachedRepo = nil
+	cachedWd = ""
 }
 
 // RemoteURL returns the first URL of the specified remote.
