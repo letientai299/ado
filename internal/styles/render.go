@@ -13,6 +13,7 @@ var TemplateFuncs = template.FuncMap{
 	"warn":       Warn,
 	"error":      Error,
 	"success":    Success,
+	"pending":    Pending,
 	"highlight":  Highlight,
 	"heading":    Heading,
 	"h1":         H1,
