@@ -223,22 +223,13 @@ func (l listProcessor) fetchEvaluations(
 		return nil, nil
 	}
 
-	// Assuming all PRs are from the same project
-	var projectID string
 	var prIDs []int32
 	for _, pr := range prs {
-		if pr.Repository != nil && pr.Repository.Project != nil {
-			projectID = pr.Repository.Project.Id
-			prIDs = append(prIDs, pr.PullRequestId)
-		}
+		prIDs = append(prIDs, pr.PullRequestId)
 	}
 
-	if projectID == "" {
-		return nil, nil
-	}
-
-	return l.client.Policy().
-		Evaluations(l.ctx, l.cfg.Repository, projectID, prIDs...)
+	return l.client.Policy().Evaluations(l.cfg.Repository).
+		List(l.ctx, prIDs...)
 }
 
 func (l listProcessor) renderTemplate(tpl string, all []PR) error {

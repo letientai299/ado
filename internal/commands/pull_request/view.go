@@ -170,11 +170,8 @@ func (v viewProcessor) renderOne(m models.GitPullRequest) error {
 func (v viewProcessor) policyEvals(
 	m models.GitPullRequest,
 ) (map[int32][]models.PolicyEvaluationRecord, error) {
-	if m.Repository == nil || m.Repository.Project == nil {
-		return nil, nil
-	}
-	evals, err := v.client.Policy().
-		Evaluations(v.ctx, v.cfg.Repository, m.Repository.Project.Id, m.PullRequestId)
+	evals, err := v.client.Policy().Evaluations(v.cfg.Repository).
+		List(v.ctx, m.PullRequestId)
 	if err != nil {
 		log.Warn("failed to fetch policy evaluations", "error", err)
 		return nil, err

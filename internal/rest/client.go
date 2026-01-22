@@ -55,6 +55,12 @@ func (c Client) Builds() Builds {
 	return Builds{client: c}
 }
 
+// Core returns a client for core operations (Projects, Teams, etc.).
+// See: https://learn.microsoft.com/en-us/rest/api/azure/devops/core
+func (c Client) Core() Core {
+	return Core{client: c}
+}
+
 // Policy returns a client for branch policy operations.
 // See: https://learn.microsoft.com/en-us/rest/api/azure/devops/policy
 func (c Client) Policy() Policy {
