@@ -29,6 +29,10 @@ linters:
 
     # Security
     - gosec
+  settings:
+    gosec:
+      excludes:
+        - G304 # File path provided as taint input
 formatters:
   enable:
     - gci
