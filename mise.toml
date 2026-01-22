@@ -14,6 +14,8 @@ _.file = ".env"
 
 [tasks.gen]
 description = "Generate code (must be run with native architecture)"
+outputs = ["./etc/schemas", "./internal/commands/config_cmd/init.ado.yml"]
+sources = ["*.go", "internal/**/*.{go,tpl,md}" ]
 run = "go generate ./..."
 
 [tasks.build]
