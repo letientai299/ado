@@ -38,11 +38,10 @@
       {{- end }}
     {{- end }}
   {{- end }}
-{{- end -}}
+{{- end }}
 
-{{- renderFlags . -}}
-
-{{ if .HasHelpSubCommands }}
+{{ renderFlags . -}}
+{{- if .HasHelpSubCommands }}
 {{ "Additional help topics:" | heading }}
   {{- range .Commands }}
     {{- if .IsAdditionalHelpTopicCommand }}
@@ -52,4 +51,4 @@
 {{- end}}
 {{ if .HasAvailableSubCommands }}
 Use "{{ .CommandPath | cmdStyle }} [command] --help" for more information about a command.
-{{- end -}}
+{{- end}}

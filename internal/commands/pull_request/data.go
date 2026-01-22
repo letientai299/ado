@@ -297,7 +297,7 @@ func getStatusDisplay(status PRBuildStatus) (icon, text string) {
 	case PRBuildStatusFailed:
 		return styles.Error(ui.IconFailure), styles.Error("fails")
 	case PRBuildStatusRunning:
-		return styles.Faint(ui.IconRunning), styles.Time("running")
+		return styles.Pending(ui.IconRunning), styles.Pending("running")
 	case PRBuildStatusPending:
 		return styles.Faint(ui.IconPending), styles.Faint("pending")
 	case PRBuildStatusExpired:

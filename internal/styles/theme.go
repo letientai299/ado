@@ -82,9 +82,7 @@ func (t Theme) glamourStyle() ansi.StyleConfig {
 	return ansi.StyleConfig{
 		Document: ansi.StyleBlock{
 			StylePrimitive: ansi.StylePrimitive{
-				BlockPrefix: "\n",
-				BlockSuffix: "\n",
-				Color:       ptr(t.Tokens.Markdown.Text),
+				Color: ptr(t.Tokens.Markdown.Text),
 			},
 			Margin: ptr(uint(defaultMargin)),
 		},
@@ -147,7 +145,7 @@ func (t Theme) glamourStyle() ansi.StyleConfig {
 		},
 		HorizontalRule: ansi.StylePrimitive{
 			Color:  ptr(t.Tokens.Markdown.HorizontalRule),
-			Format: "\n--------\n",
+			Format: "\n----------------------------------------\n",
 		},
 		Item: ansi.StylePrimitive{
 			BlockPrefix: "• ",

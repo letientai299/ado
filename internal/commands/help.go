@@ -50,7 +50,7 @@ func renderFlags(cmd *cobra.Command) string {
 		renderSection("Global Flags:", cmd.InheritedFlags())
 	}
 
-	return "\n\n" + strings.TrimSpace(sb.String()) + "\n"
+	return strings.TrimSpace(sb.String())
 }
 
 func calcMaxFlagLen(fss ...*pflag.FlagSet) flagMaxLen {
