@@ -13,14 +13,24 @@ import (
 	"github.com/letientai299/ado/internal/styles"
 )
 
-var apiVersionQuery = _shared.KV[string]{
-	Key:   "api-version",
-	Value: apiVersion,
+type ctxKey string
+
+const (
+	ctxApiVersion ctxKey = apiVersion7_1
+)
+
+func WithAPIVersion(ctx context.Context, ver string) context.Context {
+	return context.WithValue(ctx, ctxApiVersion, ver)
+}
+
+func ApiVersion(ctx context.Context) (string, bool) {
+	v := ctx.Value(ctxApiVersion)
+	ver, ok := v.(string)
+	return ver, ok
 }
 
 func httpGet[T any](ctx context.Context, c Client, url string, qs ..._shared.Querier) (*T, error) {
-	qs = append(qs, apiVersionQuery)
-	url = _shared.AppendQueries(url, qs...)
+	url = buildFullURL(ctx, url, qs)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		log.Errorf("fail to create HTTP request: %v", err)
@@ -67,30 +77,53 @@ func httpX[T any](
 	body any,
 	qs ..._shared.Querier,
 ) (*T, error) {
-	var b io.Reader
-	if body != nil {
-		jsonBody, err := json.Marshal(body)
-		if err != nil {
-			return nil, err
-		}
-		b = strings.NewReader(string(jsonBody))
-	}
-
-	qs = append(qs, apiVersionQuery)
-	url = _shared.AppendQueries(url, qs...)
-	req, err := http.NewRequestWithContext(ctx, method, url, b)
+	bodyReader, err := prepareBody(body)
 	if err != nil {
 		return nil, err
 	}
 
-	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
+	url = buildFullURL(ctx, url, qs)
+	req, err := http.NewRequestWithContext(ctx, method, url, bodyReader)
+	if err != nil {
+		return nil, err
 	}
+
+	req.Header.Set("Content-Type", "application/json")
 	return call[T](c, req)
 }
 
+func buildFullURL(ctx context.Context, url string, qs []_shared.Querier) string {
+	if ver, ok := ApiVersion(ctx); ok {
+		qs = append(qs, _shared.KV[string]{Key: apiVersionQuery, Value: ver})
+	} else {
+		qs = append(qs, _shared.KV[string]{Key: apiVersionQuery, Value: apiVersion7_1})
+	}
+	return _shared.AppendQueries(url, qs...)
+}
+
+func prepareBody(body any) (io.Reader, error) {
+	if body == nil {
+		return nil, nil
+	}
+
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+
+	return strings.NewReader(string(jsonBody)), nil
+}
+
 func call[T any](c Client, req *http.Request) (*T, error) {
-	log.Debugf("HTTP request: %s %s", req.Method, req.URL)
+	return callAndDecode(c, req, decode[T])
+}
+
+func callAndDecode[T any](
+	c Client,
+	req *http.Request,
+	decodeFn func(reader io.Reader) (*T, error),
+) (*T, error) {
+	log.Debugf("HTTP request: %s %s", req.Method, req.URL.RequestURI())
 
 	req.Header.Set("Authorization", "Bearer "+c.token)
 	resp, err := c.http.Do(req)
@@ -106,7 +139,7 @@ func call[T any](c Client, req *http.Request) (*T, error) {
 		return nil, err
 	}
 
-	return decode[T](resp.Body)
+	return decodeFn(resp.Body)
 }
 
 func logErrResponse(resp *http.Response) {
@@ -155,7 +188,7 @@ func validateResponse(resp *http.Response) error {
 	return nil
 }
 
-func decode[T any](body io.ReadCloser) (*T, error) {
+func decode[T any](body io.Reader) (*T, error) {
 	t := new(T)
 
 	err := json.NewDecoder(body).Decode(t)

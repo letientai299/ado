@@ -142,7 +142,7 @@ func (pb ProjectBuilds) LogContent(
 
 // httpGetText performs a GET request and returns the response as plain text.
 func httpGetText(ctx context.Context, c Client, u string, qs ..._shared.Querier) (string, error) {
-	qs = append(qs, apiVersionQuery)
+	ctx = WithAPIVersion(ctx, apiVersion7_1)
 	u = _shared.AppendQueries(u, qs...)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
@@ -151,21 +151,13 @@ func httpGetText(ctx context.Context, c Client, u string, qs ..._shared.Querier)
 	}
 
 	req.Header.Set("Authorization", "Bearer "+c.token)
-	resp, err := c.http.Do(req)
-	if err != nil {
-		log.Error("fail to call HTTP request", "url", req.URL, "err", err)
-		return "", err
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	if err = validateResponse(resp); err != nil {
-		return "", err
-	}
-
-	body, err := io.ReadAll(resp.Body)
+	buf, err := callAndDecode[[]byte](c, req, func(r io.Reader) (*[]byte, error) {
+		buf, err := io.ReadAll(r)
+		return &buf, err
+	})
 	if err != nil {
 		return "", err
 	}
 
-	return string(body), nil
+	return string(*buf), nil
 }

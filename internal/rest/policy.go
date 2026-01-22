@@ -21,7 +21,7 @@ type Policy struct {
 	client Client
 }
 
-// Evaluations retrieves policy evaluations for a pull request.
+// Evaluations retrieve policy evaluations for a pull request.
 // Policy evaluations show the status of each branch policy for the given PR,
 // including build validation policies, required reviewers, and other checks.
 //
@@ -42,6 +42,7 @@ func (p Policy) Evaluations(
 	if len(prIDs) == 0 {
 		return nil, nil
 	}
+	ctx = WithAPIVersion(ctx, apiVersion7_1_preview)
 
 	// Policy evaluations API requires preview version
 	baseURL := fmt.Sprintf(
@@ -67,7 +68,6 @@ func (p Policy) Evaluations(
 				p.client,
 				baseURL,
 				_shared.KV[string]{Key: "artifactId", Value: artifactId},
-				_shared.KV[string]{Key: "api-version", Value: "7.1-preview.1"},
 			)
 			if err != nil {
 				ch <- result{prID: prID, err: err}
@@ -106,11 +106,5 @@ func (p Policy) Requeue(
 		repo.Project,
 		evaluationID,
 	)
-	return httpPatch[models.PolicyEvaluationRecord](
-		ctx,
-		p.client,
-		apiURL,
-		nil,
-		_shared.KV[string]{Key: "api-version", Value: "7.1-preview.1"},
-	)
+	return httpPatch[models.PolicyEvaluationRecord](ctx, p.client, apiURL, nil)
 }

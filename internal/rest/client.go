@@ -9,9 +9,12 @@ import (
 	"github.com/letientai299/ado/internal/models"
 )
 
+//goland:noinspection GoSnakeCaseUsage
 const (
-	// apiVersion is the Azure DevOps REST API version used by this client.
-	apiVersion = "7.1"
+	// apiVersion7_1 is the Azure DevOps REST API version used by this client.
+	apiVersion7_1         = "7.1"
+	apiVersion7_1_preview = "7.1-preview"
+	apiVersionQuery       = "api-version"
 
 	// adoHost is the base URL for Azure DevOps REST APIs.
 	adoHost = "https://dev.azure.com"
@@ -35,33 +38,25 @@ type Client struct {
 }
 
 // Git returns a client for Git repository and pull request operations.
-//
-// See:
-// https://learn.microsoft.com/en-us/rest/api/azure/devops/git
+// See: https://learn.microsoft.com/en-us/rest/api/azure/devops/git
 func (c Client) Git() Git {
 	return Git{client: c}
 }
 
-// Pipelines returns a client for pipeline operations.
-//
-// See:
-// https://learn.microsoft.com/en-us/rest/api/azure/devops/pipelines
+// Pipelines return a client for pipeline operations.
+// See: https://learn.microsoft.com/en-us/rest/api/azure/devops/pipelines
 func (c Client) Pipelines() Pipelines {
 	return Pipelines{client: c}
 }
 
 // Builds returns a client for build operations.
-//
-// See:
-// https://learn.microsoft.com/en-us/rest/api/azure/devops/build
+// See: https://learn.microsoft.com/en-us/rest/api/azure/devops/build
 func (c Client) Builds() Builds {
 	return Builds{client: c}
 }
 
 // Policy returns a client for branch policy operations.
-//
-// See:
-// https://learn.microsoft.com/en-us/rest/api/azure/devops/policy
+// See: https://learn.microsoft.com/en-us/rest/api/azure/devops/policy
 func (c Client) Policy() Policy {
 	return Policy{client: c}
 }
@@ -70,8 +65,7 @@ func (c Client) Policy() Policy {
 // This is useful for operations that require the current user's ID,
 // such as setting PR votes.
 //
-// See:
-// https://learn.microsoft.com/en-us/rest/api/azure/devops/account/accounts/list
+// See: https://learn.microsoft.com/en-us/rest/api/azure/devops/account/accounts/list
 func (c Client) Identity(ctx context.Context, org string) (*models.Identity, error) {
 	api, err := url.JoinPath(adoHost, org, "_apis/connectionData")
 	if err != nil {
@@ -88,7 +82,7 @@ func (c Client) Identity(ctx context.Context, org string) (*models.Identity, err
 		AuthenticatedUser *models.Identity `json:"authenticatedUser"`
 	}
 
-	// manually call instead of httpGet, to not include apiVersion automatically,
+	// manually call instead of httpGet, to not include api version automatically,
 	// because this API doesn't share the same version with others.
 	// this is not an ADO-specific API.
 	t, err := call[Temp](c, req)
