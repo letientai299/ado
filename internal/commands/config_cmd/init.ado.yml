@@ -1,6 +1,6 @@
 # ADO CLI Configuration file. See `ado help config`.
 ## Debug mode enables verbose logging
-#debug: 
+#debug:
 
 ## Editor specifies the command to use for editing PR descriptions and other interactive text.
 ## If not set, falls back to the EDITOR environment variable, then common defaults.
@@ -47,7 +47,7 @@
 #    target: "main"
 #    templates:
 #      desc: "{{range .Commits}}- {{.Subject}}\n{{end}}"
-#      title: "{{replaceAll .BranchName \"/\" \"-\"}}"
+#      title: "{{.BranchName | replaceAll \"/\" \"-\"}}"
 #  # ListConfig holds configuration for the pr list command.
 #  list:
 #    # Custom output templates is a map of output format names to their templates.

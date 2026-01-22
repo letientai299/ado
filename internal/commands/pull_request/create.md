@@ -49,12 +49,12 @@ pull-request:
   create:
     templates:
       title: |
-        {{ .BranchName | trimLeft "tai/"  |replaceAll "/" "-" }}
-      desc: |
+        {{ .BranchName | trimPrefix "prefix/"  |replaceAll "/" "-" }}
+      desc: |-
         {{range .Commits}}
-        - <details><summary>{{.Subject}}</summary>
-            {{.Body}}
-          </details>
+        - {{.Subject}}
+
+          {{if .Body}}{{.Body}}{{end}}
         {{end}}
 ```
 

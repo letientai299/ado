@@ -20,11 +20,12 @@ var TemplateFuncs = template.FuncMap{
 	"time":       Time,
 	"cmdStyle":   Cmd,
 	"markdown":   Markdown,
-	"join":       strings.Join,
+	"join":       func(sep string, s []string) string { return strings.Join(s, sep) },
 	"indent":     Indent,
 	"trimSpace":  strings.TrimSpace,
-	"trimLeft":   strings.TrimLeft,
-	"replaceAll": strings.ReplaceAll,
+	"trimLeft":   func(cutset, s string) string { return strings.TrimLeft(s, cutset) },
+	"trimPrefix": func(prefix, s string) string { return strings.TrimPrefix(s, prefix) },
+	"replaceAll": func(old, new, s string) string { return strings.ReplaceAll(s, old, new) },
 }
 
 func Render(w io.Writer, tpl string, v any, funcMaps ...template.FuncMap) error {

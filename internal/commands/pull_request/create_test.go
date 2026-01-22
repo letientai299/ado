@@ -1,6 +1,7 @@
 package pull_request
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/letientai299/ado/internal/util/gitcli"
@@ -65,6 +66,35 @@ func TestGenPrInfo(t *testing.T) {
 			want: &prInfo{
 				title: "PR: feature/custom",
 				desc:  "Commits: 2",
+			},
+			wantErr: false,
+		},
+		{
+			name:   "multiple commits - custom markdown templates from create.md",
+			branch: "prefix/task-1",
+			commits: []gitcli.Commit{
+				{Subject: "feat: add foo", Body: "details about foo"},
+				{Subject: "fix: bar bug", Body: ""},
+			},
+			opts: &CreateConfig{
+				Templates: prTemplates{
+					Title: `{{ .BranchName | trimPrefix "prefix/"  |replaceAll "/" "-" }}`,
+					Desc: strings.TrimSpace(`
+{{range .Commits}}
+- {{.Subject}}
+
+  {{if .Body}}{{.Body}}{{end}}
+{{end}}`),
+				},
+			},
+			want: &prInfo{
+				title: "task-1",
+				desc: strings.TrimSpace(`
+- feat: add foo
+
+  details about foo
+
+- fix: bar bug`),
 			},
 			wantErr: false,
 		},

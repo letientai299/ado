@@ -21,7 +21,7 @@ import (
 var createDoc string
 
 const (
-	defaultPrTitleTemplate = `{{replaceAll .BranchName "/" "-"}}`
+	defaultPrTitleTemplate = `{{.BranchName | replaceAll "/" "-"}}`
 	defaultPrDescTemplate  = `{{range .Commits}}- {{.Subject}}
 {{end}}`
 )
