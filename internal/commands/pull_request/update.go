@@ -12,6 +12,7 @@ import (
 	"github.com/letientai299/ado/internal/styles"
 	"github.com/letientai299/ado/internal/ui"
 	"github.com/letientai299/ado/internal/util"
+	"github.com/letientai299/ado/internal/util/fp"
 	"github.com/letientai299/ado/internal/util/gitcli"
 	"github.com/letientai299/ado/internal/util/sh"
 	"github.com/spf13/cobra"
@@ -162,8 +163,35 @@ func (u *updateProcessor) findByCurrentBranch() (*models.GitPullRequest, error) 
 		return &list[0], nil
 	}
 
-	pr, _ := pick(list)
-	return &pr, nil
+	evaluations, err := u.vp.lp.fetchEvaluations(list)
+	if err != nil {
+		log.Warn("failed to fetch policy evaluations", "error", err)
+		evaluations = nil
+	}
+
+	var repo *models.GitRepository
+	if len(list) > 0 && list[0].Repository != nil {
+		repo = list[0].Repository
+	}
+
+	displayPRs := fp.Map(
+		list,
+		converterWithStatuses(u.baseURL, u.cfg.Repository.Org, repo, evaluations),
+	)
+
+	pr, ok := pick(displayPRs)
+	if !ok {
+		return nil, util.StrErr("no pull request selected")
+	}
+
+	// Find the original model by ID
+	for i := range list {
+		if list[i].PullRequestId == pr.PullRequestId {
+			return &list[i], nil
+		}
+	}
+
+	return nil, util.StrErr("selected pull request not found in original list")
 }
 
 func (u *updateProcessor) prepareUpdateData(pr *models.GitPullRequest) (*updateData, error) {

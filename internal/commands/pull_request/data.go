@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/letientai299/ado/internal/models"
+	"github.com/letientai299/ado/internal/styles"
 	"github.com/letientai299/ado/internal/ui"
 	"github.com/letientai299/ado/internal/util/editor"
 	"github.com/letientai299/ado/internal/util/fp"
@@ -34,13 +35,26 @@ type PR struct {
 	BuildStatus      *BuildStatus `yaml:"build_status"    json:"build_status,omitempty"`
 }
 
+// PRBuildStatus represents the possible states of a PR build
+type PRBuildStatus string
+
+const (
+	PRBuildStatusSucceeded PRBuildStatus = "succeeded"
+	PRBuildStatusFailed    PRBuildStatus = "failed"
+	PRBuildStatusRunning   PRBuildStatus = "running"
+	PRBuildStatusPending   PRBuildStatus = "pending"
+	PRBuildStatusExpired   PRBuildStatus = "expired"
+	PRBuildStatusError     PRBuildStatus = "error"
+	PRBuildStatusUnknown   PRBuildStatus = "unknown"
+)
+
 // BuildStatus represents the build/pipeline status for a pull request
 type BuildStatus struct {
-	State       string `yaml:"state"       json:"state,omitempty"`       // succeeded, failed, pending, error
-	Description string `yaml:"description" json:"description,omitempty"` // human-readable description
-	TargetURL   string `yaml:"target_url"  json:"target_url,omitempty"`  // link to build results
-	Icon        string `yaml:"icon"        json:"icon,omitempty"`        // emoji icon
-	StatusText  string `yaml:"status_text" json:"status_text,omitempty"` // "passes", "fails", "pending"
+	State       PRBuildStatus `yaml:"state"       json:"state,omitempty"`       // succeeded, failed, pending, expired, error, etc.
+	Description string        `yaml:"description" json:"description,omitempty"` // human-readable description
+	TargetURL   string        `yaml:"target_url"  json:"target_url,omitempty"`  // link to build results
+	Icon        string        `yaml:"icon"        json:"icon,omitempty"`        // emoji icon
+	StatusText  string        `yaml:"status_text" json:"status_text,omitempty"` // display text for the status
 }
 
 func isApproved(vote *models.IdentityRefWithVote) bool {
@@ -145,67 +159,142 @@ func buildStatusFromEvaluation(
 	repo *models.GitRepository,
 ) *BuildStatus {
 	bs := &BuildStatus{
-		State: string(eval.Status),
+		Description: extractDisplayName(eval),
+		TargetURL:   extractBuildURL(eval, orgName, repo),
 	}
 
-	// Get display name from settings
-	if displayName, ok := eval.Configuration.Settings["displayName"].(string); ok {
-		bs.Description = displayName
-	}
-
-	// Extract buildId from context and construct URL
-	if eval.Context != nil {
-		// Try to extract buildId
-		var buildId interface{}
-		if id, ok := eval.Context["buildId"]; ok {
-			buildId = id
-		} else if build, ok := eval.Context["build"].(map[string]interface{}); ok {
-			buildId = build["id"]
-		} else if id, ok := eval.Context["id"]; ok {
-			buildId = id
-		}
-
-		// Convert buildId to int and construct URL
-		if buildId != nil && orgName != "" && repo != nil && repo.Project != nil {
-			var buildIdNum int
-			switch v := buildId.(type) {
-			case float64:
-				buildIdNum = int(v)
-			case int:
-				buildIdNum = v
-			case string:
-				if parsed, err := strconv.Atoi(v); err == nil {
-					buildIdNum = parsed
-				}
-			}
-
-			if buildIdNum > 0 && repo.Project.Name != "" {
-				bs.TargetURL = fmt.Sprintf("https://dev.azure.com/%s/%s/_build/results?buildId=%d",
-					orgName, repo.Project.Name, buildIdNum)
-			}
-		}
-	}
-
-	// Set icon and status text based on status
-	switch eval.Status {
-	case models.PolicyEvaluationStatusApproved:
-		bs.Icon = ui.IconSuccess
-		bs.StatusText = "passes"
-	case models.PolicyEvaluationStatusRejected:
-		bs.Icon = ui.IconFailure
-		bs.StatusText = "fails"
-	case models.PolicyEvaluationStatusQueued, models.PolicyEvaluationStatusRunning:
-		bs.Icon = ui.IconPending
-		bs.StatusText = "pending"
-	case models.PolicyEvaluationStatusBroken:
-		bs.Icon = ui.IconWarning
-		bs.StatusText = "error"
-	default:
-		bs.Icon = "?"
-		bs.StatusText = string(eval.Status)
-	}
+	// Determine the build status and set corresponding icon and text
+	bs.State = determineBuildStatus(eval)
+	bs.Icon, bs.StatusText = getStatusDisplay(bs.State)
 
 	return bs
+}
+
+// extractDisplayName gets the display name from the evaluation settings
+func extractDisplayName(eval models.PolicyEvaluationRecord) string {
+	if displayName, ok := eval.Configuration.Settings["displayName"].(string); ok {
+		return displayName
+	}
+	return ""
+}
+
+// extractBuildURL constructs the build URL from the evaluation context
+func extractBuildURL(
+	eval models.PolicyEvaluationRecord,
+	orgName string,
+	repo *models.GitRepository,
+) string {
+	if eval.Context == nil || orgName == "" || repo == nil || repo.Project == nil {
+		return ""
+	}
+
+	buildId := extractBuildId(eval.Context)
+	if buildId <= 0 || repo.Project.Name == "" {
+		return ""
+	}
+
+	return fmt.Sprintf("https://dev.azure.com/%s/%s/_build/results?buildId=%d",
+		orgName, repo.Project.Name, buildId)
+}
+
+// extractBuildId attempts to extract the build ID from various possible locations in the context
+func extractBuildId(context map[string]any) int {
+	// Try different possible locations for buildId
+	candidates := []any{
+		context["buildId"],
+		extractFromBuildObject(context),
+		context["id"],
+	}
+
+	for _, candidate := range candidates {
+		if id := convertToInt(candidate); id > 0 {
+			return id
+		}
+	}
+
+	return 0
+}
+
+// extractFromBuildObject tries to extract ID from a nested build object
+func extractFromBuildObject(context map[string]any) any {
+	if build, ok := context["build"].(map[string]interface{}); ok {
+		return build["id"]
+	}
+	return nil
+}
+
+// convertToInt converts various types to int
+func convertToInt(v any) int {
+	if v == nil {
+		return 0
+	}
+
+	switch val := v.(type) {
+	case float64:
+		return int(val)
+	case int:
+		return val
+	case string:
+		if parsed, err := strconv.Atoi(val); err == nil {
+			return parsed
+		}
+	}
+	return 0
+}
+
+// determineBuildStatus maps PolicyEvaluationStatus to PRBuildStatus
+func determineBuildStatus(eval models.PolicyEvaluationRecord) PRBuildStatus {
+	switch eval.Status {
+	case models.PolicyEvaluationStatusApproved:
+		return PRBuildStatusSucceeded
+
+	case models.PolicyEvaluationStatusRejected:
+		return PRBuildStatusFailed
+
+	case models.PolicyEvaluationStatusQueued:
+		return determineQueuedStatus(eval)
+
+	case models.PolicyEvaluationStatusRunning:
+		return PRBuildStatusRunning
+
+	case models.PolicyEvaluationStatusBroken:
+		return PRBuildStatusError
+
+	default:
+		return PRBuildStatusUnknown
+	}
+}
+
+// determineQueuedStatus distinguishes between expired and pending builds
+func determineQueuedStatus(eval models.PolicyEvaluationRecord) PRBuildStatus {
+	// An expired build has completed in the past but needs re-running
+	hasCompletedDate := eval.CompletedDate != nil
+	hasBuildId := eval.Context != nil && eval.Context["buildId"] != nil
+
+	if hasCompletedDate && hasBuildId {
+		return PRBuildStatusExpired
+	}
+	return PRBuildStatusPending
+}
+
+// getStatusDisplay returns the icon and text for a given build status
+func getStatusDisplay(status PRBuildStatus) (icon, text string) {
+	switch status {
+	case PRBuildStatusSucceeded:
+		return styles.Success(ui.IconSuccess), styles.Success("passes")
+	case PRBuildStatusFailed:
+		return styles.Error(ui.IconFailure), styles.Error("fails")
+	case PRBuildStatusRunning:
+		return styles.Faint(ui.IconPending), styles.Faint("running")
+	case PRBuildStatusPending:
+		return styles.Faint(ui.IconPending), styles.Faint("pending")
+	case PRBuildStatusExpired:
+		return styles.Warn(ui.IconWarning), styles.Warn("expired")
+	case PRBuildStatusError:
+		return styles.Warn(ui.IconWarning), styles.Warn("error")
+	default:
+		return "?", string(status)
+	}
 }
 
 func editPrInfo(info *prInfo, editorCmd string) (*prInfo, error) {

@@ -47,14 +47,15 @@ Both these templates can be customized in the configuration file. For example:
 ```yaml
 pull-request:
   create:
-    pr_title_template: |
-      {{ .BranchName | trimLeft "tai/"  |replaceAll "/" "-" }}
-    pr_desc_template: |
-      {{range .Commits}}
-      - <details><summary>{{.Subject}}</summary>
-          {{.Body}}
-        </details>
-      {{end}}
+    templates:
+      title: |
+        {{ .BranchName | trimLeft "tai/"  |replaceAll "/" "-" }}
+      desc: |
+        {{range .Commits}}
+        - <details><summary>{{.Subject}}</summary>
+            {{.Body}}
+          </details>
+        {{end}}
 ```
 
 ## Examples

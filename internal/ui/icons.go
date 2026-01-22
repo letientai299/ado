@@ -1,10 +1,10 @@
 package ui
 
 const (
-	IconSuccess = "✓"
-	IconFailure = "✗"
-	IconPending = "⏳"
-	IconWarning = "⚠"
+	IconSuccess = "✔"
+	IconFailure = "✘"
+	IconPending = "⧖"
+	IconWarning = "!"
 
 	IconChecked   = "☑"
 	IconUnchecked = "☐"

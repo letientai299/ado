@@ -13,6 +13,7 @@ import (
 	"github.com/letientai299/ado/internal/styles"
 	"github.com/letientai299/ado/internal/ui"
 	"github.com/letientai299/ado/internal/util"
+	"github.com/letientai299/ado/internal/util/fp"
 	"github.com/letientai299/ado/internal/util/sh"
 	"github.com/spf13/cobra"
 )
@@ -102,26 +103,42 @@ func (v viewProcessor) findPrID(args []string) (int32, error) {
 		return prs[0].PullRequestId, nil
 	}
 
-	if pr, ok := pick(prs); ok {
+	evaluations, err := v.lp.fetchEvaluations(prs)
+	if err != nil {
+		log.Warn("failed to fetch policy evaluations", "error", err)
+		evaluations = nil
+	}
+
+	var repo *models.GitRepository
+	if len(prs) > 0 && prs[0].Repository != nil {
+		repo = prs[0].Repository
+	}
+
+	displayPRs := fp.Map(
+		prs,
+		converterWithStatuses(v.baseURL, v.cfg.Repository.Org, repo, evaluations),
+	)
+
+	if pr, ok := pick(displayPRs); ok {
 		return pr.PullRequestId, nil
 	}
 
 	return 0, nil
 }
 
-const prPickTpl = `{{.Title}} ({{.CreatedBy.DisplayName|person}}, {{.CreationDate.Format "2016-01-16" | time }}{{if .IsDraft}}, {{warn "DRAFT"}}{{end}})`
+const prPickTpl = `{{if .BuildStatus}}{{.BuildStatus.Icon}} {{end}}{{.Title}} ({{.CreatedBy.Name|person}}, {{.CreationDate | time }}{{if .IsDraft}}, {{warn "DRAFT"}}{{end}})`
 
-func pick(prs []models.GitPullRequest) (models.GitPullRequest, bool) {
-	selected := ui.Pick(prs, ui.PickConfig[models.GitPullRequest]{
-		Render: func(w io.Writer, pr models.GitPullRequest, matches []int) {
+func pick(prs []PR) (PR, bool) {
+	selected := ui.Pick(prs, ui.PickConfig[PR]{
+		Render: func(w io.Writer, pr PR, matches []int) {
 			pr.Title = styles.HighlightMatch(pr.Title, matches)
 			util.PanicIf(styles.Render(w, prPickTpl, pr))
 		},
-		FilterValue: func(pr models.GitPullRequest) string { return strings.ToLower(pr.Title) },
+		FilterValue: func(pr PR) string { return strings.ToLower(pr.Title) },
 	})
 
 	if selected.IsNil() {
-		return models.GitPullRequest{}, false
+		return PR{}, false
 	}
 
 	return selected.Get(), true
