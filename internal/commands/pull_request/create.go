@@ -2,6 +2,7 @@ package pull_request
 
 import (
 	_ "embed"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -134,6 +135,10 @@ func (p *createProcessor) createNew(source, target string) error {
 	if !p.opts.yes {
 		info, err = editPrInfo(info, p.cfg.Editor)
 		if err != nil {
+			if errors.Is(err, ErrEmptyTitle) {
+				fmt.Println(err)
+				return nil
+			}
 			return err
 		}
 	}
@@ -197,6 +202,10 @@ func (p *createProcessor) updateExistingPrInfo(pr models.GitPullRequest) error {
 
 	info, err = editPrInfo(info, p.cfg.Editor)
 	if err != nil {
+		if errors.Is(err, ErrEmptyTitle) {
+			fmt.Println(err)
+			return nil
+		}
 		return fmt.Errorf("failed to edit PR info: %w", err)
 	}
 

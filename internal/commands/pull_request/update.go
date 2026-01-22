@@ -2,6 +2,7 @@ package pull_request
 
 import (
 	_ "embed"
+	"errors"
 	"fmt"
 	"io"
 	"slices"
@@ -233,6 +234,10 @@ func (u *updateProcessor) updateInfo(m *models.GitPullRequest, data *updateData)
 	curInfo := &prInfo{title: m.Title, desc: m.Description}
 	newInfo, err := editPrInfo(curInfo, u.cfg.Editor)
 	if err != nil {
+		if errors.Is(err, ErrEmptyTitle) {
+			fmt.Println(err)
+			return nil
+		}
 		return err
 	}
 

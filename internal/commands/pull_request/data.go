@@ -10,9 +10,12 @@ import (
 	"github.com/letientai299/ado/internal/models"
 	"github.com/letientai299/ado/internal/styles"
 	"github.com/letientai299/ado/internal/ui"
+	"github.com/letientai299/ado/internal/util"
 	"github.com/letientai299/ado/internal/util/editor"
 	"github.com/letientai299/ado/internal/util/fp"
 )
+
+const ErrEmptyTitle util.StrErr = "PR title cannot be empty. PR creation/update cancelled."
 
 type Vote string
 
@@ -319,6 +322,9 @@ func editPrInfo(info *prInfo, editorCmd string) (*prInfo, error) {
 
 	parts := strings.SplitN(updatedContent, "\n\n", 2)
 	newTitle := strings.TrimSpace(parts[0])
+	if newTitle == "" {
+		return nil, ErrEmptyTitle
+	}
 	newDesc := ""
 	if len(parts) > 1 {
 		newDesc = strings.TrimSpace(parts[1])
