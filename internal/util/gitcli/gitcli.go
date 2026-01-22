@@ -39,7 +39,8 @@ func Open() (*git.Repository, error) {
 	}
 
 	return git.PlainOpenWithOptions(wd, &git.PlainOpenOptions{
-		DetectDotGit: true,
+		DetectDotGit:          true,
+		EnableDotGitCommonDir: true,
 	})
 }
 
