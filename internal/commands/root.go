@@ -11,6 +11,7 @@ import (
 	"github.com/letientai299/ado/internal/commands/pull_request"
 	"github.com/letientai299/ado/internal/commands/workitem"
 	"github.com/letientai299/ado/internal/config"
+	"github.com/letientai299/ado/internal/util/profiling"
 	"github.com/spf13/cobra"
 )
 
@@ -26,12 +27,20 @@ var (
 var initOnce sync.Once
 
 func Root() *cobra.Command {
+	var stopProfiling profiling.StopFn
+
 	root := &cobra.Command{
 		Use:   os.Args[0],
 		Short: "Azure DevOps CLI",
 		Long:  doc,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+			stopProfiling = profiling.Start(cmd)
 			return initConfig(cmd)
+		},
+		PersistentPostRun: func(_ *cobra.Command, _ []string) {
+			if stopProfiling != nil {
+				stopProfiling()
+			}
 		},
 		SilenceUsage: true,
 	}
@@ -50,6 +59,7 @@ func Root() *cobra.Command {
 	)
 
 	config.AddGlobalFlags(root)
+	profiling.RegisterFlag(root)
 	return root
 }
 

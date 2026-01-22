@@ -37,3 +37,5 @@ bin/
 .ai/
 .ai.*/
 .output.txt
+
+*.pprof
