@@ -147,11 +147,11 @@ func (c PolicyCheck) isFailed() bool {
 	return c.Status == "rejected" || c.Status == "broken"
 }
 
-func isApproved(vote *models.IdentityRefWithVote) bool {
+func isDirectlyApproved(vote *models.IdentityRefWithVote) bool {
 	// NOTE (tai): there's Approve (vote=10) and Approve-with-suggestions (vote=5).
 	//  Almost no one use approve with suggestions, so we only consider vote > 0 as approval.
 	//  We might update this logic if there's a need later
-	return vote.Vote > 0
+	return vote.Vote > 0 && !vote.IsContainer
 }
 
 func toIdentity(a *models.IdentityRef) Identity {
