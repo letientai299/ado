@@ -105,18 +105,21 @@ func (g GitPRs) Create(
 	return httpPost[models.GitPullRequest](ctx, g.client, g.baseUrl, pr)
 }
 
+type PrUpdateRequest struct {
+	Status      *models.PullRequestStatus `json:"status,omitempty"`
+	Title       *string                   `json:"title,omitempty"`
+	Description *string                   `json:"description,omitempty"`
+	IsDraft     *bool                     `json:"isDraft"`
+}
+
 // Update modifies an existing pull request.
 // Can update title, description, status, reviewers, and completion options.
 //
 // See:
 // https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-requests/update
-func (g GitPRs) Update(
-	ctx context.Context,
-	id int32,
-	pr models.GitPullRequest,
-) (*models.GitPullRequest, error) {
+func (g GitPRs) Update(ctx context.Context, id int32, body PrUpdateRequest) (*models.GitPullRequest, error) {
 	prURL, _ := url.JoinPath(g.baseUrl, strconv.FormatInt(int64(id), 10))
-	return httpPatch[models.GitPullRequest](ctx, g.client, prURL, pr)
+	return httpPatch[models.GitPullRequest](ctx, g.client, prURL, body)
 }
 
 // Reviewers return all reviewers for a pull request, including their votes.

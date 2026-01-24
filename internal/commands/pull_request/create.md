@@ -33,13 +33,14 @@ If the branch contains more than one new commit:
 - The PR title will be the branch name formatted with this template
 
   ```gotemplate
-  {{.BranchName | replaceAll "/" "-"}}
+  {{.BranchName | tr "/" "-"}}
   ```
 
 - The PR description will be generated from commit messages using this template
 
   ```gotemplate
-  {{range .Commits}}- {{.Subject}}{{end}}
+  {{range .Commits}}- {{.Subject}}
+  {{end}}
   ```
 
 Both these templates can be customized in the configuration file. For example:

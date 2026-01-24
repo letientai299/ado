@@ -2,12 +2,11 @@ package pull_request
 
 import (
 	_ "embed"
-	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/letientai299/ado/internal/config"
 	"github.com/letientai299/ado/internal/models"
+	"github.com/letientai299/ado/internal/rest"
 	"github.com/letientai299/ado/internal/rest/git_prs"
 	"github.com/letientai299/ado/internal/styles"
 	"github.com/letientai299/ado/internal/ui"
@@ -23,7 +22,7 @@ var createDoc string
 const (
 	defaultPrTitleTemplate = `{{.BranchName | replaceAll "/" "-"}}`
 	defaultPrDescTemplate  = `{{range .Commits}}- {{.Subject}}
-{{end}}`
+{{end}}` // the newline is crucial
 )
 
 type prTemplates struct {
@@ -102,7 +101,7 @@ func (p *createProcessor) process() error {
 		return fmt.Errorf("fail to get current branch: %w", err)
 	}
 
-	if err = p.syncWithTarget(); err != nil {
+	if err = p.rebaseFromTarget(); err != nil {
 		return err
 	}
 
@@ -119,26 +118,20 @@ func (p *createProcessor) process() error {
 	})
 
 	if err == nil && len(existing) > 0 {
-		return p.updateExistingPrInfo(existing[0])
+		return p.updateExisting(existing[0])
 	}
 
 	return p.createNew(source, p.opts.Target)
 }
 
-func (p *createProcessor) syncWithTarget() error {
+func (p *createProcessor) rebaseFromTarget() error {
 	target := p.opts.Target
-
-	if !p.confirmFn(fmt.Sprintf("Fetch latest '%s' from remote?", target)) {
-		return nil
+	source, err := gitcli.CurrentBranch()
+	if err != nil {
+		return err
 	}
 
-	if err := gitcli.FetchBranch(target); err != nil {
-		return fmt.Errorf("fail to fetch target branch: %w", err)
-	}
-
-	source, _ := gitcli.CurrentBranch()
-	remote := gitcli.Origin + "/" + target
-	div, err := gitcli.CompareRevision(remote, source)
+	div, err := gitcli.CompareRevision(target, source)
 	if err != nil {
 		return err
 	}
@@ -160,23 +153,13 @@ func (p *createProcessor) syncWithTarget() error {
 }
 
 func (p *createProcessor) createNew(source, target string) error {
-	div, err := gitcli.CompareRevision(target, source)
-	if err != nil {
-		return fmt.Errorf("fail to get commits: %w", err)
-	}
-
-	info, err := p.genPrInfo(source, div.Ahead)
+	info, err := p.genPrInfo(target, source)
 	if err != nil {
 		return fmt.Errorf("fail to generate PR details: %w", err)
 	}
 
 	if !p.opts.yes {
-		info, err = editPrInfo(info, p.cfg.Editor)
-		if err != nil {
-			if errors.Is(err, ErrEmptyTitle) {
-				fmt.Println(err)
-				return nil
-			}
+		if err = info.editWith(p.cfg.Editor); err != nil {
 			return err
 		}
 	}
@@ -197,34 +180,50 @@ func (p *createProcessor) createNew(source, target string) error {
 	return p.postProcess(created)
 }
 
-func (p *createProcessor) genPrInfo(branch string, commits []gitcli.Commit) (*prInfo, error) {
+func (p *createProcessor) genPrInfo(target, source string) (*prInfo, error) {
+	commits, err := commitsAhead(target, source)
+	if err != nil {
+		return nil, err
+	}
+
+	info := &prInfo{commits: commits, isNew: true}
+
 	if len(commits) == 1 {
-		cm := commits[0]
-		return &prInfo{title: cm.Subject, desc: cm.Body}, nil
+		info.title = commits[0].Subject
+		info.desc = commits[0].Body
+		return info, nil
 	}
 
 	data := struct {
 		BranchName string
 		Commits    []gitcli.Commit
 	}{
-		BranchName: branch,
+		BranchName: source,
 		Commits:    commits,
 	}
 
-	var title, desc string
-	var err error
-	if title, err = styles.RenderS(p.opts.Templates.Title, data); err != nil {
+	if info.title, err = styles.RenderS(p.opts.Templates.Title, data); err != nil {
 		return nil, err
 	}
 
-	if desc, err = styles.RenderS(p.opts.Templates.Desc, data); err != nil {
+	if info.desc, err = styles.RenderS(p.opts.Templates.Desc, data); err != nil {
 		return nil, err
 	}
 
-	return &prInfo{
-		title: strings.TrimSpace(title),
-		desc:  strings.TrimSpace(desc),
-	}, nil
+	return info, nil
+}
+
+func commitsAhead(target string, source string) ([]gitcli.Commit, error) {
+	div, err := gitcli.CompareRevision(target, source)
+	if err != nil {
+		return nil, fmt.Errorf("fail to get commits: %w", err)
+	}
+
+	if len(div.Ahead) == 0 {
+		return nil, fmt.Errorf("no commits found between %s and %s", target, source)
+	}
+
+	return div.Ahead, nil
 }
 
 func (p *createProcessor) confirmFn(ask string) bool {
@@ -234,24 +233,28 @@ func (p *createProcessor) confirmFn(ask string) bool {
 	return ui.Confirm(ask, true)
 }
 
-func (p *createProcessor) updateExistingPrInfo(pr models.GitPullRequest) error {
-	var err error
-	info := &prInfo{title: pr.Title, desc: pr.Description}
-
-	info, err = editPrInfo(info, p.cfg.Editor)
+func (p *createProcessor) updateExisting(pr models.GitPullRequest) error {
+	commits, err := commitsAhead(pr.TargetRefName, cleanBranchName(pr.SourceRefName))
 	if err != nil {
-		if errors.Is(err, ErrEmptyTitle) {
-			fmt.Println(err)
-			return nil
-		}
-		return fmt.Errorf("failed to edit PR info: %w", err)
+		return err
+	}
+
+	info := &prInfo{
+		commits: commits,
+		title:   pr.Title,
+		desc:    pr.Description,
+	}
+
+	if err = info.editWith(p.cfg.Editor); err != nil {
+		return err
 	}
 
 	updated, err := p.client.Git().PRs(p.cfg.Repository).Update(p.ctx,
 		pr.PullRequestId,
-		models.GitPullRequest{
-			Title:       info.title,
-			Description: info.desc,
+		rest.PrUpdateRequest{
+			Title:       util.Ptr(info.title),
+			IsDraft:     util.Ptr(pr.IsDraft),
+			Description: util.Ptr(info.desc),
 		})
 	if err != nil {
 		return fmt.Errorf("fail to update PR: %w", err)

@@ -9,6 +9,7 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/letientai299/ado/internal/models"
+	"github.com/letientai299/ado/internal/rest"
 	"github.com/letientai299/ado/internal/rest/git_prs"
 	"github.com/letientai299/ado/internal/ui"
 	"github.com/letientai299/ado/internal/util"
@@ -30,14 +31,14 @@ type UpdateConfig struct {
 	execute       *util.EnumFlag[action]
 }
 
-func (c UpdateConfig) noExplicitEditFlags() bool {
-	return !c.edit && c.execute.Value() == ""
+func (c UpdateConfig) explicitEditFlags() bool {
+	return c.edit || c.execute.Changed()
 }
 
 type updateData struct {
 	actionDone bool
 	modelDirty bool
-	model      *models.GitPullRequest
+	model      rest.PrUpdateRequest
 }
 
 func updateCmd() *cobra.Command {
@@ -104,6 +105,9 @@ func (u *updateProcessor) process(args []string) error {
 
 	data, err := u.prepareUpdateData(pr)
 	if err != nil {
+		if errors.Is(err, ErrUnchanged) {
+			return u.inform("No update", pr)
+		}
 		return err
 	}
 
@@ -173,7 +177,7 @@ func (u *updateProcessor) findByCurrentBranch() (*models.GitPullRequest, error) 
 
 	displayPRs := fp.Map(
 		list,
-		converterWithStatuses(u.baseURL, u.cfg.Repository.Org, repo, evaluations),
+		converter(u.baseURL, u.cfg.Repository.Org, repo, evaluations),
 	)
 
 	pr, ok := pick(displayPRs)
@@ -193,7 +197,8 @@ func (u *updateProcessor) findByCurrentBranch() (*models.GitPullRequest, error) 
 
 func (u *updateProcessor) prepareUpdateData(pr *models.GitPullRequest) (*updateData, error) {
 	data := &updateData{
-		model: &models.GitPullRequest{},
+		model: rest.PrUpdateRequest{
+		},
 	}
 
 	if err := u.updateInfo(pr, data); err != nil {
@@ -201,26 +206,33 @@ func (u *updateProcessor) prepareUpdateData(pr *models.GitPullRequest) (*updateD
 	}
 
 	if act, ok := u.pickAction(pr); ok {
-		identity, err := u.client.Identity(u.ctx, u.cfg.Repository.Org)
-		if err != nil {
+		if err := u.execAction(pr, act, data); err != nil {
 			return nil, err
 		}
-
-		if act.hasVoted(u.ctx, u.client.Git().PRs(u.cfg.Repository), identity.Id, pr) {
-			log.Infof("Already voted %s, skipping", act.displayName())
-			data.actionDone = true
-			return data, nil
-		}
-
-		modelDirty, err := act.exec(u.ctx, u.client, u.cfg.Repository.Org, pr, data.model)
-		if err != nil {
-			return nil, err
-		}
-		data.actionDone = true
-		data.modelDirty = data.modelDirty || modelDirty
 	}
 
 	return data, nil
+}
+
+func (u *updateProcessor) execAction(pr *models.GitPullRequest, act action, data *updateData) error {
+	identity, err := u.client.Identity(u.ctx, u.cfg.Repository.Org)
+	if err != nil {
+		return err
+	}
+
+	if act.hasVoted(u.ctx, u.client.Git().PRs(u.cfg.Repository), identity.Id, pr) {
+		log.Infof("Already voted %s, skipping", act.displayName())
+		data.actionDone = true
+		return nil
+	}
+
+	modelDirty, err := act.exec(u.ctx, u.client, u.cfg.Repository.Org, pr, &data.model)
+	if err != nil {
+		return err
+	}
+	data.actionDone = true
+	data.modelDirty = data.modelDirty || modelDirty
+	return nil
 }
 
 func (u *updateProcessor) updateInfo(m *models.GitPullRequest, data *updateData) error {
@@ -228,39 +240,39 @@ func (u *updateProcessor) updateInfo(m *models.GitPullRequest, data *updateData)
 		return nil
 	}
 
-	curInfo := &prInfo{title: m.Title, desc: m.Description}
-	newInfo, err := editPrInfo(curInfo, u.cfg.Editor)
+	target := cleanBranchName(m.TargetRefName)
+	source := cleanBranchName(m.SourceRefName)
+	commits, err := commitsAhead(target, source)
 	if err != nil {
-		if errors.Is(err, ErrEmptyTitle) {
-			fmt.Println(err)
-			return nil
-		}
 		return err
 	}
 
-	if newInfo.title != curInfo.title {
-		data.model.Title = newInfo.title
-		data.modelDirty = true
+	info := &prInfo{
+		title:   m.Title,
+		desc:    m.Description,
+		commits: commits,
 	}
 
-	if newInfo.desc != curInfo.desc {
-		data.model.Description = newInfo.desc
-		data.modelDirty = true
+	if err = info.editWith(u.cfg.Editor); err != nil {
+		return err
 	}
 
+	data.model.Title = util.Ptr(info.title)
+	data.model.Description = util.Ptr(info.desc)
+	data.modelDirty = true
 	return nil
 }
 
 func (u *updateProcessor) confirm(ask string) bool {
-	if !u.opts.noExplicitEditFlags() {
+	if u.opts.explicitEditFlags() {
 		return false // don't ask for confirmation if users use any edit flags
 	}
 
 	return ui.Confirm(ask, false)
 }
 
-func (u *updateProcessor) updateToADO(id int32, data *models.GitPullRequest) error {
-	updated, err := u.client.Git().PRs(u.cfg.Repository).Update(u.ctx, id, *data)
+func (u *updateProcessor) updateToADO(id int32, data rest.PrUpdateRequest) error {
+	updated, err := u.client.Git().PRs(u.cfg.Repository).Update(u.ctx, id, data)
 	if err != nil {
 		return err
 	}
@@ -280,7 +292,11 @@ func (u *updateProcessor) inform(msg string, pr *models.GitPullRequest) error {
 func (u *updateProcessor) pickAction(cur *models.GitPullRequest) (action, bool) {
 	act := u.opts.execute.Value()
 	if act != "" {
-		return act, true
+		return act, true // explicit action
+	}
+
+	if u.opts.explicitEditFlags() {
+		return "", false // don't ask for action if users use any other editing flags
 	}
 
 	usable := slices.DeleteFunc(allActions, func(a action) bool { return !a.applicable(cur) })

@@ -11,7 +11,9 @@ a typical development workflow where each branch is often associated with only
 one PR, this flag helps skip the filtering process.
 
 Use `-e/--edit` to open editor (see `ado help config editor`) for editing the
-PR's title and description.
+PR's title and description. The editor will show all commit messages as
+reference below a marker line. Content at and after the marker line is ignored
+when saving.
 
 Use `-x/--execute` to execute one of the following actions on the PR.
 

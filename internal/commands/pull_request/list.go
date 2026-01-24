@@ -210,7 +210,7 @@ func (l listProcessor) render(all []models.GitPullRequest) error {
 		repo = all[0].Repository
 	}
 
-	prs := fp.Map(all, converterWithStatuses(l.baseURL, l.cfg.Repository.Org, repo, evaluations))
+	prs := fp.Map(all, converter(l.baseURL, l.cfg.Repository.Org, repo, evaluations))
 	log.Debug("found pull requests", "count", len(prs))
 
 	output := strings.ToLower(l.opts.output.Value())

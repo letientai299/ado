@@ -5,63 +5,7 @@ import (
 	"time"
 
 	"github.com/letientai299/ado/internal/models"
-	"github.com/letientai299/ado/internal/util/gitcli"
 )
-
-// BenchmarkGenPrInfo benchmarks the PR info generation for create command.
-// This is a core part of `ado pr create` that can be benchmarked without API calls.
-func BenchmarkGenPrInfo(b *testing.B) {
-	defaultOpts := &CreateConfig{
-		Templates: prTemplates{
-			Title: defaultPrTitleTemplate,
-			Desc:  defaultPrDescTemplate,
-		},
-	}
-
-	tests := []struct {
-		name    string
-		branch  string
-		commits []gitcli.Commit
-	}{
-		{
-			name:   "single_commit",
-			branch: "feature/foo",
-			commits: []gitcli.Commit{
-				{Subject: "feat: add foo", Body: "details about foo"},
-			},
-		},
-		{
-			name:    "5_commits",
-			branch:  "feature/foo-bar",
-			commits: makeCommits(5),
-		},
-		{
-			name:    "20_commits",
-			branch:  "feature/large-pr",
-			commits: makeCommits(20),
-		},
-		{
-			name:    "50_commits",
-			branch:  "feature/very-large-pr",
-			commits: makeCommits(50),
-		},
-	}
-
-	for _, tt := range tests {
-		b.Run(tt.name, func(b *testing.B) {
-			p := &createProcessor{
-				common: &common[*CreateConfig]{
-					opts: defaultOpts,
-				},
-			}
-			b.ResetTimer()
-			b.ReportAllocs()
-			for b.Loop() {
-				_, _ = p.genPrInfo(tt.branch, tt.commits)
-			}
-		})
-	}
-}
 
 // BenchmarkConverterWithStatuses benchmarks the PR conversion function.
 // This is used in both `pr list`, `pr view`, and `pr update`.
@@ -106,7 +50,7 @@ func BenchmarkConverterWithStatuses(b *testing.B) {
 
 	for _, tt := range tests {
 		b.Run(tt.name, func(b *testing.B) {
-			converter := converterWithStatuses(baseURL, orgName, repo, tt.evaluations)
+			converter := converter(baseURL, orgName, repo, tt.evaluations)
 			b.ResetTimer()
 			b.ReportAllocs()
 			for b.Loop() {
@@ -173,19 +117,6 @@ func BenchmarkPolicyChecksSummary(b *testing.B) {
 			}
 		})
 	}
-}
-
-// Helper functions for generating test data
-
-func makeCommits(n int) []gitcli.Commit {
-	commits := make([]gitcli.Commit, n)
-	for i := range n {
-		commits[i] = gitcli.Commit{
-			Subject: "feat: add feature " + string(rune('A'+i%26)),
-			Body:    "This is a detailed description for commit.",
-		}
-	}
-	return commits
 }
 
 func makePR(numReviewers, numApprovers int) models.GitPullRequest {

@@ -9,11 +9,7 @@ import (
 	"github.com/letientai299/ado/internal/models"
 	"github.com/letientai299/ado/internal/styles"
 	"github.com/letientai299/ado/internal/ui"
-	"github.com/letientai299/ado/internal/util"
-	"github.com/letientai299/ado/internal/util/editor"
 )
-
-const ErrEmptyTitle util.StrErr = "PR title cannot be empty. PR creation/update cancelled."
 
 type Identity struct {
 	Id    string
@@ -166,7 +162,7 @@ func webURL(baseURL string, id int32) string {
 	return baseURL + "/" + strconv.FormatInt(int64(id), 10)
 }
 
-func converterWithStatuses(
+func converter(
 	baseURL string,
 	orgName string,
 	repo *models.GitRepository,
@@ -354,35 +350,6 @@ func getStatusDisplay(status PRBuildStatus) (icon, text string) {
 	default:
 		return "?", string(status)
 	}
-}
-
-func editPrInfo(info *prInfo, editorCmd string) (*prInfo, error) {
-	content := fmt.Sprintf("%s\n\n%s", info.title, info.desc)
-
-	// Use the configured editor from global config, which handles fallbacks properly
-	ed := editor.New("PR_EDIT*.md", editorCmd)
-
-	updatedContent, err := ed.Edit(content)
-	if err != nil {
-		return nil, err
-	}
-
-	parts := strings.SplitN(updatedContent, "\n\n", 2)
-	newTitle := strings.TrimSpace(parts[0])
-	if newTitle == "" {
-		return nil, ErrEmptyTitle
-	}
-	newDesc := ""
-	if len(parts) > 1 {
-		newDesc = strings.TrimSpace(parts[1])
-	}
-
-	return &prInfo{title: newTitle, desc: newDesc}, nil
-}
-
-type prInfo struct {
-	title string
-	desc  string
 }
 
 // resolvePolicyChecks converts policy evaluations to simplified PolicyCheck structs

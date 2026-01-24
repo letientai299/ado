@@ -19,6 +19,7 @@ type EnumFlag[T ~string] struct {
 	values       []T // all valid enum values
 	valueStrings []string
 	optional     bool
+	changed      bool
 }
 
 // NewEnumFlag creates an EnumFlag with the given default value and built-in allowed values.
@@ -46,6 +47,7 @@ func (e *EnumFlag[T]) Set(s string) error {
 	// Don't validate here - custom values may be added later via AddAllowed.
 	// Validation should be done after config resolution via Validate().
 	e.value = T(s)
+	e.changed = true
 	return nil
 }
 
@@ -105,3 +107,5 @@ func (e *EnumFlag[T]) RegisterCompletion(cmd *cobra.Command, flagName string) {
 		log.Fatal(err)
 	}
 }
+
+func (e *EnumFlag[T]) Changed() bool {return e.changed }

@@ -62,7 +62,8 @@ func (a action) exec(
 	ctx context.Context,
 	client *rest.Client,
 	org string,
-	cur, next *models.GitPullRequest,
+	cur *models.GitPullRequest,
+	next *rest.PrUpdateRequest,
 ) (bool, error) {
 	if !a.applicable(cur) {
 		log.Warnf("Action '%s' is not applicable for current PR status", a)
@@ -86,11 +87,11 @@ func (a action) exec(
 	switch a {
 	case actionDraft:
 		log.Infof("Marking PR as draft")
-		next.IsDraft = true
+		next.IsDraft = util.Ptr(true)
 
 	case actionPublish:
 		log.Infof("Marking PR as active")
-		next.IsDraft = false
+		next.IsDraft = util.Ptr(false)
 
 	case actionComplete:
 		log.Infof("Marking PR as completed")

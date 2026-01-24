@@ -117,7 +117,7 @@ func (v *viewProcessor) findPrID(args []string) (int32, error) {
 
 	displayPRs := fp.Map(
 		prs,
-		converterWithStatuses(v.baseURL, v.cfg.Repository.Org, repo, evaluations),
+		converter(v.baseURL, v.cfg.Repository.Org, repo, evaluations),
 	)
 
 	if pr, ok := pick(displayPRs); ok {
@@ -145,7 +145,7 @@ func pick(prs []PR) (PR, bool) {
 	return selected.Get(), true
 }
 
-func (v viewProcessor) renderByID(id int32) error {
+func (v *viewProcessor) renderByID(id int32) error {
 	// use this ByID API to fetch full PR details.
 	// The List API returns only max 400 chars for PR description.
 	m, err := v.client.Git().PRs(v.cfg.Repository).ByID(v.ctx, id)
@@ -156,11 +156,11 @@ func (v viewProcessor) renderByID(id int32) error {
 	return v.renderOne(*m)
 }
 
-func (v viewProcessor) renderOne(m models.GitPullRequest) error {
+func (v *viewProcessor) renderOne(m models.GitPullRequest) error {
 	// Fetch policy evaluations for the PR
 	evalMap, _ := v.policyEvals(m)
 
-	pr := converterWithStatuses(v.baseURL, v.cfg.Repository.Org, m.Repository, evalMap)(m)
+	pr := converter(v.baseURL, v.cfg.Repository.Org, m.Repository, evalMap)(m)
 	if v.opts.browse {
 		fmt.Println(pr.WebURL)
 		return sh.Browse(pr.WebURL)
@@ -168,7 +168,7 @@ func (v viewProcessor) renderOne(m models.GitPullRequest) error {
 	return styles.RenderOut(viewTpl, pr)
 }
 
-func (v viewProcessor) policyEvals(
+func (v *viewProcessor) policyEvals(
 	m models.GitPullRequest,
 ) (map[int32][]models.PolicyEvaluationRecord, error) {
 	evals, err := v.client.Policy().Evaluations(v.cfg.Repository).

@@ -3,6 +3,7 @@ package styles
 import (
 	"io"
 	"os"
+	"regexp"
 	"strings"
 	"sync"
 	"text/template"
@@ -25,13 +26,13 @@ var TemplateFuncs = template.FuncMap{
 	"join":       func(sep string, s []string) string { return strings.Join(s, sep) },
 	"indent":     Indent,
 	"trimSpace":  strings.TrimSpace,
-	"trimLeft":   func(cutset, s string) string { return strings.TrimLeft(s, cutset) },
 	"trimPrefix": func(prefix, s string) string { return strings.TrimPrefix(s, prefix) },
 	"replaceAll": func(old, new, s string) string { return strings.ReplaceAll(s, old, new) },
+	"tr": func(old, new, s string) string { return regexp.MustCompile(old).ReplaceAllString(s, new) },
 }
 
 // templateCache caches parsed templates to avoid repeated parsing.
-// Only caches templates without custom funcMaps (the common case).
+// Only cache templates without custom funcMaps (the common case).
 var (
 	templateCache   = make(map[string]*template.Template)
 	templateCacheMu sync.RWMutex
