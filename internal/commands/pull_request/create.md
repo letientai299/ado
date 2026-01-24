@@ -48,14 +48,12 @@ Both these templates can be customized in the configuration file. For example:
 pull-request:
   create:
     templates:
-      title: |
-        {{ .BranchName | trimPrefix "prefix/"  |replaceAll "/" "-" }}
+      title: |-
+        {{ .BranchName | trimPrefix "prefix/" | replaceAll "/" "-" }}
       desc: |-
-        {{range .Commits}}
+        {{- range .Commits}}
         - {{.Subject}}
-
-          {{if .Body}}{{.Body}}{{end}}
-        {{end}}
+        {{- end}}
 ```
 
 ## Examples
