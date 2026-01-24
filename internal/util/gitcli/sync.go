@@ -17,6 +17,7 @@ import (
 
 var (
 	authOnce sync.Once
+	auth     transport.AuthMethod
 	tokenFn  func() (string, error)
 )
 
@@ -25,14 +26,13 @@ func SetTokenProvider(fn func() (string, error)) {
 }
 
 func getAuth() transport.AuthMethod {
-	var auth transport.AuthMethod
 	authOnce.Do(func() {
 		token, err := tokenFn()
 		if err != nil {
-			panic(fmt.Errorf("fail to get token; %w", err))
+			panic(fmt.Errorf("fail to get token: %w", err))
 		}
 		auth = &http.BasicAuth{
-			Password: token, // no need password
+			Password: token, // no need username
 		}
 	})
 	return auth
@@ -186,7 +186,6 @@ func FetchBranch(branch string) error {
 
 	return nil
 }
-
 
 // Rebase rebases the current branch onto the target branch.
 // Returns ErrRebaseConflict if conflicts occur.

@@ -149,13 +149,16 @@ func callAndDecode[T any](
 }
 
 func logErrResponse(resp *http.Response) {
-	all, _ := io.ReadAll(resp.Body)
 	log.Errorf("HTTP response: %s %s", resp.Status, resp.Request.URL.RequestURI())
 
+	for k, v := range resp.Header {
+		log.Errorf("Header %s: %s", k, strings.Join(v, ", "))
+	}
+
+	all, _ := io.ReadAll(resp.Body)
 	contentType := resp.Header.Get("content-type")
 	if !strings.HasPrefix(contentType, "application/json") {
-		log.Error("response body", "body", string(all))
-		return
+		return // don't log, too long
 	}
 
 	var m map[string]any
