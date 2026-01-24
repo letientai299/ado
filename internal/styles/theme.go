@@ -98,14 +98,14 @@ func (t Theme) glamourStyle() ansi.StyleConfig {
 			StylePrimitive: ansi.StylePrimitive{
 				BlockSuffix: "\n",
 				Color:       ptr(t.Tokens.Markdown.Heading),
-				Bold:        ptr(true),
+				Bold:        ptr(useColor),
 			},
 		},
 		H1: ansi.StyleBlock{
 			StylePrimitive: ansi.StylePrimitive{
 				Color:           ptr(t.Tokens.Markdown.H1),
 				BackgroundColor: ptr(t.Tokens.Markdown.H1Background),
-				Bold:            ptr(true),
+				Bold:            ptr(useColor),
 			},
 		},
 		H2: ansi.StyleBlock{
@@ -135,13 +135,13 @@ func (t Theme) glamourStyle() ansi.StyleConfig {
 			},
 		},
 		Strikethrough: ansi.StylePrimitive{
-			CrossedOut: ptr(true),
+			CrossedOut: ptr(useColor),
 		},
 		Emph: ansi.StylePrimitive{
-			Italic: ptr(true),
+			Italic: ptr(useColor),
 		},
 		Strong: ansi.StylePrimitive{
-			Bold: ptr(true),
+			Bold: ptr(useColor),
 		},
 		HorizontalRule: ansi.StylePrimitive{
 			Color:  ptr(t.Tokens.Markdown.HorizontalRule),
@@ -160,15 +160,15 @@ func (t Theme) glamourStyle() ansi.StyleConfig {
 		},
 		Link: ansi.StylePrimitive{
 			Color:     ptr(t.Tokens.Markdown.Link),
-			Underline: ptr(true),
+			Underline: ptr(useColor),
 		},
 		LinkText: ansi.StylePrimitive{
 			Color: ptr(t.Tokens.Markdown.LinkText),
-			Bold:  ptr(true),
+			Bold:  ptr(useColor),
 		},
 		Image: ansi.StylePrimitive{
 			Color:     ptr(t.Tokens.Markdown.Image),
-			Underline: ptr(true),
+			Underline: ptr(useColor),
 		},
 		ImageText: ansi.StylePrimitive{
 			Color:  ptr(t.Tokens.Markdown.ImageText),
@@ -198,7 +198,7 @@ func (t Theme) glamourStyle() ansi.StyleConfig {
 				},
 				Comment: ansi.StylePrimitive{
 					Color:  ptr(t.Tokens.Chroma.Comment),
-					Italic: ptr(true),
+					Italic: ptr(useColor),
 				},
 				CommentPreproc: ansi.StylePrimitive{
 					Color: ptr(t.Tokens.Chroma.CommentPreproc),
@@ -235,8 +235,8 @@ func (t Theme) glamourStyle() ansi.StyleConfig {
 				},
 				NameClass: ansi.StylePrimitive{
 					Color:     ptr(t.Tokens.Chroma.NameClass),
-					Underline: ptr(true),
-					Bold:      ptr(true),
+					Underline: ptr(useColor),
+					Bold:      ptr(useColor),
 				},
 				NameConstant: ansi.StylePrimitive{
 					Color: ptr(t.Tokens.Chroma.NameConstant),
@@ -260,13 +260,13 @@ func (t Theme) glamourStyle() ansi.StyleConfig {
 					Color: ptr(t.Tokens.Chroma.GenericDeleted),
 				},
 				GenericEmph: ansi.StylePrimitive{
-					Italic: ptr(true),
+					Italic: ptr(useColor),
 				},
 				GenericInserted: ansi.StylePrimitive{
 					Color: ptr(t.Tokens.Chroma.GenericInserted),
 				},
 				GenericStrong: ansi.StylePrimitive{
-					Bold: ptr(true),
+					Bold: ptr(useColor),
 				},
 				GenericSubheading: ansi.StylePrimitive{
 					Color: ptr(t.Tokens.Chroma.GenericSubheading),

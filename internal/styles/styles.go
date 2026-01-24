@@ -74,12 +74,15 @@ func computeUseColor() bool {
 }
 
 // initMdRenderer lazily initializes the glamour markdown renderer.
-// Note: chroma's lexer init happens at import time and cannot be deferred.
 func initMdRenderer() {
 	mdRendererOnce.Do(func() {
+		th := theme
+		if !useColor {
+			th = NoTTy
+		}
 		var err error
 		mdRenderer, err = glamour.NewTermRenderer(
-			glamour.WithStyles(theme.glamourStyle()),
+			glamour.WithStyles(th.glamourStyle()),
 			glamour.WithWordWrap(MaxLineLength),
 			glamour.WithInlineTableLinks(true),
 		)
