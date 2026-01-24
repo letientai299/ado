@@ -17,6 +17,13 @@ import (
 
 const Origin = "origin"
 
+const (
+	ErrNotOnBranch = util.StrErr("not on a branch")
+
+	// ErrRebaseConflict indicates that a rebase operation resulted in conflicts.
+	ErrRebaseConflict = util.StrErr("rebase conflict")
+)
+
 // cachedRepo holds the cached repository and the working directory it was opened from.
 var (
 	repoMu     sync.Mutex
@@ -95,8 +102,6 @@ func RemoteURL() (string, error) {
 
 	return remote.Config().URLs[0], nil
 }
-
-const ErrNotOnBranch = util.StrErr("not on a branch")
 
 // CurrentBranch returns the name of the current branch.
 func CurrentBranch() (string, error) {

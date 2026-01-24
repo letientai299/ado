@@ -102,6 +102,10 @@ func (p *createProcessor) process() error {
 		return fmt.Errorf("fail to get current branch: %w", err)
 	}
 
+	if err = p.syncWithTarget(); err != nil {
+		return err
+	}
+
 	if err = gitcli.SyncToRemote(source, p.confirmFn); err != nil {
 		return err
 	}
@@ -119,6 +123,40 @@ func (p *createProcessor) process() error {
 	}
 
 	return p.createNew(source, p.opts.Target)
+}
+
+func (p *createProcessor) syncWithTarget() error {
+	target := p.opts.Target
+
+	if !p.confirmFn(fmt.Sprintf("Fetch latest '%s' from remote?", target)) {
+		return nil
+	}
+
+	if err := gitcli.FetchBranch(target); err != nil {
+		return fmt.Errorf("fail to fetch target branch: %w", err)
+	}
+
+	source, _ := gitcli.CurrentBranch()
+	remote := gitcli.Origin + "/" + target
+	div, err := gitcli.CompareRevision(remote, source)
+	if err != nil {
+		return err
+	}
+
+	if len(div.Behind) == 0 {
+		return nil
+	}
+
+	ask := fmt.Sprintf("Current branch is %d commit(s) behind %s. Rebase?", len(div.Behind), target)
+	if !p.confirmFn(ask) {
+		return nil
+	}
+
+	if err = gitcli.Rebase(target); err != nil {
+		return util.StrErr("rebase failed with conflicts, please resolve manually")
+	}
+
+	return nil
 }
 
 func (p *createProcessor) createNew(source, target string) error {
@@ -224,11 +262,11 @@ func (p *createProcessor) updateExistingPrInfo(pr models.GitPullRequest) error {
 
 func (p *createProcessor) postProcess(pr *models.GitPullRequest) error {
 	fmt.Printf("PR #%d: %s\n", pr.PullRequestId, styles.H1(pr.Title))
-	webURL := fmt.Sprintf("%s/%d", p.baseURL, pr.PullRequestId)
-	fmt.Println(webURL)
+	url := fmt.Sprintf("%s/%d", p.baseURL, pr.PullRequestId)
+	fmt.Println(url)
 
 	if p.opts.browse {
-		return sh.Browse(webURL)
+		return sh.Browse(url)
 	}
 
 	return nil

@@ -3,6 +3,7 @@ package gitcli
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/go-git/go-git/v5"
@@ -11,6 +12,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/letientai299/ado/internal/util"
+	"github.com/letientai299/ado/internal/util/sh"
 )
 
 var (
@@ -158,4 +160,49 @@ func Pull(branch string) error {
 	}
 
 	return nil
+}
+
+// FetchBranch fetches the specified branch from remote.
+func FetchBranch(branch string) error {
+	repo, err := Open()
+	if err != nil {
+		return err
+	}
+
+	refSpec := config.RefSpec(fmt.Sprintf(
+		"refs/heads/%[1]s:refs/remotes/%[2]s/%[1]s",
+		branch, Origin,
+	))
+
+	err = repo.Fetch(&git.FetchOptions{
+		RemoteName: Origin,
+		RefSpecs:   []config.RefSpec{refSpec},
+		Auth:       getAuth(),
+	})
+
+	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
+		return err
+	}
+
+	return nil
+}
+
+
+// Rebase rebases the current branch onto the target branch.
+// Returns ErrRebaseConflict if conflicts occur.
+func Rebase(target string) error {
+	_, err := runGit("rebase", Origin+"/"+target)
+	if err != nil {
+		// Abort the rebase to leave the repo in a clean state
+		_, _ = runGit("rebase", "--abort")
+		return ErrRebaseConflict
+	}
+	return nil
+}
+
+// runGit executes a git command and returns its output.
+func runGit(args ...string) (string, error) {
+	root := Root()
+	cmd := fmt.Sprintf("cd %q && git %s", root, strings.Join(args, " "))
+	return sh.Run(cmd)
 }
