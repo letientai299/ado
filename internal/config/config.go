@@ -185,18 +185,14 @@ func Resolve(cmd *cobra.Command, _ []string) error {
 		return nil
 	}
 
-	token, err := cfg.Token()
-	if err != nil {
-		return err
-	}
-
-	gitcli.SetToken(token)
+	gitcli.SetTokenProvider(cfg.Token)
 	return nil
 }
 
 func noNeedToken(cmd *cobra.Command) bool {
 	return cmd.IsAdditionalHelpTopicCommand() || !cmd.Runnable() ||
-		strings.Contains(cmd.CommandPath(), "config")
+		strings.Contains(cmd.CommandPath(), "config") ||
+		strings.Contains(cmd.CommandPath(), "help")
 }
 
 func flagsResolver(cmd *cobra.Command) func(cfg *Config) error {

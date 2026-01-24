@@ -3,6 +3,7 @@ package gitcli
 import (
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -12,13 +13,27 @@ import (
 	"github.com/letientai299/ado/internal/util"
 )
 
-var auth transport.AuthMethod
+var (
+	authOnce sync.Once
+	tokenFn  func() (string, error)
+)
 
-func SetToken(token string) {
-	auth = &http.BasicAuth{
-		Username: "",
-		Password: token,
-	}
+func SetTokenProvider(fn func() (string, error)) {
+	tokenFn = fn
+}
+
+func getAuth() transport.AuthMethod {
+	var auth transport.AuthMethod
+	authOnce.Do(func() {
+		token, err := tokenFn()
+		if err != nil {
+			panic(fmt.Errorf("fail to get token; %w", err))
+		}
+		auth = &http.BasicAuth{
+			Password: token, // no need password
+		}
+	})
+	return auth
 }
 
 // SyncToRemote ensures the local branch is pushed to remote.
@@ -103,7 +118,7 @@ func Push(branch string) error {
 	if err = repo.Push(&git.PushOptions{
 		RemoteName: Origin,
 		RefSpecs:   []config.RefSpec{refSpec},
-		Auth:       auth,
+		Auth:       getAuth(),
 	}); err != nil {
 		return err
 	}
@@ -136,7 +151,7 @@ func Pull(branch string) error {
 	err = wt.Pull(&git.PullOptions{
 		RemoteName:    Origin,
 		ReferenceName: plumbing.NewBranchReferenceName(branch),
-		Auth:          auth,
+		Auth:          getAuth(),
 	})
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
 		return err

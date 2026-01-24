@@ -236,7 +236,7 @@ func RemoteBranchExists(branch string) bool {
 	}
 
 	err = remote.Fetch(&git.FetchOptions{
-		Auth: auth,
+		Auth: getAuth(),
 		RefSpecs: []config.RefSpec{
 			config.RefSpec(fmt.Sprintf("refs/heads/%[1]s:refs/remotes/%[2]s/%[1]s", branch, Origin)),
 		},
