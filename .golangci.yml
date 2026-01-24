@@ -6,6 +6,8 @@ run:
 
 linters:
   default: standard
+  disable:
+    - gci
   enable:
     # Correctness
     - errcheck
