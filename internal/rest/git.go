@@ -117,7 +117,11 @@ type PrUpdateRequest struct {
 //
 // See:
 // https://learn.microsoft.com/en-us/rest/api/azure/devops/git/pull-requests/update
-func (g GitPRs) Update(ctx context.Context, id int32, body PrUpdateRequest) (*models.GitPullRequest, error) {
+func (g GitPRs) Update(
+	ctx context.Context,
+	id int32,
+	body PrUpdateRequest,
+) (*models.GitPullRequest, error) {
 	prURL, _ := url.JoinPath(g.baseUrl, strconv.FormatInt(int64(id), 10))
 	return httpPatch[models.GitPullRequest](ctx, g.client, prURL, body)
 }

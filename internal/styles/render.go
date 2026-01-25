@@ -28,7 +28,7 @@ var TemplateFuncs = template.FuncMap{
 	"trimSpace":  strings.TrimSpace,
 	"trimPrefix": func(prefix, s string) string { return strings.TrimPrefix(s, prefix) },
 	"replaceAll": func(old, new, s string) string { return strings.ReplaceAll(s, old, new) },
-	"tr": func(old, new, s string) string { return regexp.MustCompile(old).ReplaceAllString(s, new) },
+	"tr":         func(old, new, s string) string { return regexp.MustCompile(old).ReplaceAllString(s, new) },
 }
 
 // templateCache caches parsed templates to avoid repeated parsing.

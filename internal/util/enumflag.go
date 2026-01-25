@@ -108,4 +108,4 @@ func (e *EnumFlag[T]) RegisterCompletion(cmd *cobra.Command, flagName string) {
 	}
 }
 
-func (e *EnumFlag[T]) Changed() bool {return e.changed }
+func (e *EnumFlag[T]) Changed() bool { return e.changed }

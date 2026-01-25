@@ -61,6 +61,7 @@ func Open(cmd, filePath string) error {
 	}
 
 	x := exec.Command(shell, args...) //nolint:gosec
+	x.Dir = ""                        // use the current working directory
 	x.Stdin = os.Stdin
 	x.Stdout = os.Stdout
 	x.Stderr = os.Stderr

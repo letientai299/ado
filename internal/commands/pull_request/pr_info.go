@@ -10,9 +10,11 @@ import (
 	"github.com/letientai299/ado/internal/util/gitcli"
 )
 
-const ErrEmptyTitle util.StrErr = "PR title cannot be empty."
-const ErrUnchanged util.StrErr = "PR title and description unchanged."
-const blankLine = "\n\n"
+const (
+	ErrEmptyTitle util.StrErr = "PR title cannot be empty."
+	ErrUnchanged  util.StrErr = "PR title and description unchanged."
+	blankLine                 = "\n\n"
+)
 
 const (
 	// prEditingMarker is used to separate the PR title/desc from the commit messages reference
@@ -44,6 +46,9 @@ func (p *prInfo) editWith(editorCmd string) error {
 
 	content := fmt.Sprintf("%s\n\n%s\n%s", p.title, p.desc, prEditingMarker+"\n"+reference)
 	updatedContent, err := editor.New("PR_EDIT*.md", editorCmd).Edit(content)
+	if err != nil {
+		return err
+	}
 	return p.parse(updatedContent)
 }
 

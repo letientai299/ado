@@ -213,7 +213,7 @@ func (p *createProcessor) genPrInfo(target, source string) (*prInfo, error) {
 	return info, nil
 }
 
-func commitsAhead(target string, source string) ([]gitcli.Commit, error) {
+func commitsAhead(target, source string) ([]gitcli.Commit, error) {
 	div, err := gitcli.CompareRevision(target, source)
 	if err != nil {
 		return nil, fmt.Errorf("fail to get commits: %w", err)

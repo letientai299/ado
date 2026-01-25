@@ -197,8 +197,7 @@ func (u *updateProcessor) findByCurrentBranch() (*models.GitPullRequest, error) 
 
 func (u *updateProcessor) prepareUpdateData(pr *models.GitPullRequest) (*updateData, error) {
 	data := &updateData{
-		model: rest.PrUpdateRequest{
-		},
+		model: rest.PrUpdateRequest{},
 	}
 
 	if err := u.updateInfo(pr, data); err != nil {
@@ -214,7 +213,11 @@ func (u *updateProcessor) prepareUpdateData(pr *models.GitPullRequest) (*updateD
 	return data, nil
 }
 
-func (u *updateProcessor) execAction(pr *models.GitPullRequest, act action, data *updateData) error {
+func (u *updateProcessor) execAction(
+	pr *models.GitPullRequest,
+	act action,
+	data *updateData,
+) error {
 	identity, err := u.client.Identity(u.ctx, u.cfg.Repository.Org)
 	if err != nil {
 		return err

@@ -52,9 +52,9 @@ func TestPrInfoParse(t *testing.T) {
 			wantDesc:  "new desc",
 		},
 		{
-			name: "title only",
-			info: prInfo{},
-			content: "new title",
+			name:      "title only",
+			info:      prInfo{},
+			content:   "new title",
 			wantTitle: "new title",
 			wantDesc:  "",
 		},
