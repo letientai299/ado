@@ -247,7 +247,11 @@ func (u *updateProcessor) updateInfo(m *models.GitPullRequest, data *updateData)
 	source := cleanBranchName(m.SourceRefName)
 	commits, err := commitsAhead(target, source)
 	if err != nil {
-		return err
+		// commit logs are optional when updating existing PR
+		log.Debug(
+			"can't find commits ahead",
+			"target", target, "source", source, "error", err,
+		)
 	}
 
 	info := &prInfo{

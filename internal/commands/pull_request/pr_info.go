@@ -39,17 +39,29 @@ type prInfo struct {
 }
 
 func (p *prInfo) editWith(editorCmd string) error {
-	reference, err := styles.RenderS(prReferences, p.commits)
+	ref, err := p.renderCommitRefs()
 	if err != nil {
-		return fmt.Errorf("failed to render diff template: %w", err)
+		return err
 	}
 
-	content := fmt.Sprintf("%s\n\n%s\n%s", p.title, p.desc, prEditingMarker+"\n"+reference)
+	content := fmt.Sprintf("%s\n\n%s\n%s", p.title, p.desc, ref)
 	updatedContent, err := editor.New("PR_EDIT*.md", editorCmd).Edit(content)
 	if err != nil {
 		return err
 	}
 	return p.parse(updatedContent)
+}
+
+func (p *prInfo) renderCommitRefs() (string, error) {
+	if len(p.commits) == 0 {
+		return "", nil
+	}
+	ref, err := styles.RenderS(prReferences, p.commits)
+	if err != nil {
+		return "", fmt.Errorf("failed to render diff template: %w", err)
+	}
+
+	return prEditingMarker + "\n" + ref, nil
 }
 
 func (p *prInfo) parse(content string) error {
