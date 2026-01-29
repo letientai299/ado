@@ -30,13 +30,13 @@ commit _subject_ and _body_ will be used as PR title and description.
 
 If the branch contains more than one new commit:
 
-- The PR title will be the branch name formatted with this template
+- The PR title will be the branch name formatted with this template:
 
   ```gotemplate
-  {{.BranchName | tr "/" "-"}}
+  {{.BranchName | tr "/-" " "}}
   ```
 
-- The PR description will be generated from commit messages using this template
+- The PR description will be generated from commit messages using this template:
 
   ```gotemplate
   {{range .Commits}}- {{.Subject}}
@@ -50,11 +50,16 @@ pull-request:
   create:
     templates:
       title: |-
-        {{ .BranchName | trimPrefix "prefix/" | replaceAll "/" "-" }}
+        {{ .BranchName | trimPrefix "prefix/" | tr "[/-]" "-" }}
       desc: |-
-        {{- range .Commits}}
-        - {{.Subject}}
-        {{- end}}
+        {{- range .Commits -}}
+        - {{ .Subject }}
+        {{- if .Body }}
+
+        {{ .Body | indent 2 }}
+        {{- end }}
+
+        {{ end -}}
 ```
 
 ## Examples

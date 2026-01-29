@@ -20,7 +20,7 @@ import (
 var createDoc string
 
 const (
-	defaultPrTitleTemplate = `{{.BranchName | replaceAll "/" "-"}}`
+	defaultPrTitleTemplate = `{{.BranchName | tr "[/-]" " "}}`
 	defaultPrDescTemplate  = `{{range .Commits}}- {{.Subject}}
 {{end}}` // the newline is crucial
 )
