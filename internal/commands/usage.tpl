@@ -42,6 +42,7 @@
 
 {{ renderFlags . -}}
 {{- if .HasHelpSubCommands }}
+
 {{ "Additional help topics:" | heading }}
   {{- range .Commands }}
     {{- if .IsAdditionalHelpTopicCommand }}

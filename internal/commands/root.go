@@ -11,6 +11,7 @@ import (
 	"github.com/letientai299/ado/internal/commands/pull_request"
 	"github.com/letientai299/ado/internal/commands/workitem"
 	"github.com/letientai299/ado/internal/config"
+	"github.com/letientai299/ado/internal/util"
 	"github.com/letientai299/ado/internal/util/profiling"
 	"github.com/spf13/cobra"
 )
@@ -18,6 +19,8 @@ import (
 var (
 	//go:embed root.md
 	doc string
+	//go:embed templates.md
+	templatesDoc string
 	//go:embed usage.tpl
 	usageTemplate string
 	//go:embed help.tpl
@@ -56,6 +59,7 @@ func Root() *cobra.Command {
 		workitem.Cmd(),
 		config_cmd.Cmd(),
 		Version(),
+		util.HelpTopic("templates", templatesDoc),
 	)
 
 	config.AddGlobalFlags(root)

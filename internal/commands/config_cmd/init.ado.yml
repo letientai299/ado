@@ -47,7 +47,7 @@
 #    target: "main"
 #    templates:
 #      desc: "{{range .Commits}}- {{.Subject}}\n{{end}}"
-#      title: "{{.BranchName | replaceAll \"/\" \"-\"}}"
+#      title: "{{.BranchName | tr \"[/-]\" \" \"}}"
 #  # ListConfig holds configuration for the pr list command.
 #  list:
 #    # Custom output templates is a map of output format names to their templates.

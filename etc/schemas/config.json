@@ -275,7 +275,7 @@
                 },
                 "title": {
                   "type": "string",
-                  "default": "{{.BranchName | replaceAll \"/\" \"-\"}}"
+                  "default": "{{.BranchName | tr \"[/-]\" \" \"}}"
                 }
               },
               "additionalProperties": false,
