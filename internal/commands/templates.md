@@ -1,13 +1,14 @@
 # Available Template Functions
 
-ADO CLI uses [Go templates](https://golang.org/pkg/text/template/) for various output formatting.
-For more information about Go template syntax (actions, pipelines, variables, etc.), see the Go
-documentation. Below are the available template functions you can use in your config.
+ADO CLI uses [Go templates](https://golang.org/pkg/text/template/) for various
+output formatting. For more information about Go template syntax (actions,
+pipelines, variables, etc.), see the Go documentation. Below are the available
+template functions you can use in your config.
 
 Utils (see `ado help pr list` for some example usages)
 
 | Function     | Description                                              |
-|:-------------|:---------------------------------------------------------|
+| :----------- | :------------------------------------------------------- |
 | `markdown`   | Render markdown string                                   |
 | `join`       | Join slice of strings with a separator: `join sep slice` |
 | `indent`     | Indent all lines in the string: `indent num str`         |
@@ -19,7 +20,7 @@ Utils (see `ado help pr list` for some example usages)
 Coloring:
 
 | Function    | Description                        |
-|:------------|:-----------------------------------|
+| :---------- | :--------------------------------- |
 | `const`     | Apply style for constants          |
 | `faint`     | Apply faint style                  |
 | `warn`      | Apply warning style                |

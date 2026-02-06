@@ -1,6 +1,6 @@
 # ADO CLI Configuration file. See `ado help config`.
 ## Debug mode enables verbose logging
-#debug: 
+#debug:
 
 ## Editor specifies the command to use for editing PR descriptions and other interactive text.
 ## If not set, falls back to the EDITOR environment variable, then common defaults.

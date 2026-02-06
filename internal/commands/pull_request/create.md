@@ -10,8 +10,7 @@ It will ask for confirmation and push the branch to remote before submitting PR.
 If the remote branch does not exist yet, it will also create that. It will open
 `$EDITOR` to edit PR title and description.
 
-The default target branch is the git default branch. Use `-t/--target` to
-specify a different target branch.
+By default, PR is submit to git default branch. Use `-t/--target` to change it.
 
 All confirmation prompts and editing can be skipped by passing `-y/--yes` flag.
 
@@ -28,20 +27,19 @@ convention below.
 If the branch contains only one new commit compare the target branch, that
 commit _subject_ and _body_ will be used as PR title and description.
 
-If the branch contains more than one new commit:
+If the branch contains more than one new commit, the PR title will be formatted
+with this template:
 
-- The PR title will be the branch name formatted with this template:
+```go
+{{.BranchName | tr "/-" " "}}
+```
 
-  ```gotemplate
-  {{.BranchName | tr "/-" " "}}
-  ```
+The PR description will be generated from commit messages using this template:
 
-- The PR description will be generated from commit messages using this template:
-
-  ```gotemplate
-  {{range .Commits}}- {{.Subject}}
-  {{end}}
-  ```
+```go
+ {{range .Commits}}- {{.Subject}}
+ {{end}}
+```
 
 Both these templates can be customized in the configuration file. For example:
 

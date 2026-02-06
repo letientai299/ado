@@ -19,7 +19,8 @@ jobs:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
-          key: go-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/go.sum') }}
+          key:
+            go-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/go.sum') }}
           restore-keys: go-${{ runner.os }}-${{ runner.arch }}-
       - name: Build
         run: mise run build
@@ -38,11 +39,13 @@ jobs:
     strategy:
       matrix:
         include:
-          - { os: ubuntu-latest,  platform: linux-amd64 }
-          - { os: macos-latest,   platform: darwin-arm64 }   # Apple Silicon (arm64)
+          - { os: ubuntu-latest, platform: linux-amd64 }
+          - { os: macos-latest, platform: darwin-arm64 } # Apple Silicon (arm64)
           - { os: windows-latest, platform: windows-amd64 }
     env:
-      BINARY: ado-${{ matrix.platform }}${{ contains(matrix.platform, 'windows') && '.exe' || '' }}
+      BINARY:
+        ado-${{ matrix.platform }}${{ contains(matrix.platform, 'windows') &&
+        '.exe' || '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: jdx/mise-action@v2
@@ -55,7 +58,8 @@ jobs:
             ~\AppData\Local\go-build
             ~/go/pkg/mod
             ~\go\pkg\mod
-          key: go-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/go.sum') }}
+          key:
+            go-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/go.sum') }}
           restore-keys: go-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Build release binary (native)

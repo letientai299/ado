@@ -2,7 +2,8 @@
 
 Query and list Azure DevOps work items using WIQL (Work Item Query Language).
 
-By default, lists work items assigned to you that are not in Closed, Done, or Removed states.
+By default, lists work items assigned to you that are not in Closed, Done, or
+Removed states.
 
 ## Examples
 

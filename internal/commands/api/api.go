@@ -31,27 +31,10 @@ func Cmd() *cobra.Command {
 	output := util.NewEnumFlag(outputJSON, outputYAML).Default(outputJSON)
 
 	cmd := &cobra.Command{
-		Use:     "api <endpoint> [flags]",
-		Aliases: []string{"a"},
-		Short:   "Call Azure DevOps REST APIs directly",
-		Long:    doc,
-		Example: `  # List all available API endpoints
-  ado api --list
-
-  # Describe an endpoint's parameters
-  ado api git.prs.by_id --describe
-
-  # Get a pull request by ID
-  ado api git.prs.by_id id=123
-
-  # List builds with filters
-  ado api builds.for_project.list definition_id=456 top=10
-
-  # Use nested parameters with dot notation
-  ado api git.prs.list list_query.top=10 list_query.search_criteria.status=active
-
-  # Use YAML output
-  ado api git.prs.by_id id=123 -o yaml`,
+		Use:               "api <endpoint> [flags]",
+		Aliases:           []string{"a"},
+		Short:             "Call Azure DevOps REST APIs directly",
+		Long:              doc,
 		ValidArgsFunction: completeEndpoint,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runAPI(cmd, args, output)

@@ -1,7 +1,7 @@
 # `pipeline list` shows pipeline definitions
 
 Lists all pipeline definitions for your repository. Filter by providing keywords
-that match pipeline name or path (case-insensitive).
+that match the pipeline name or path (case-insensitive).
 
 ## Output formats
 

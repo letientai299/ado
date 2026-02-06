@@ -1,4 +1,4 @@
-Call Azure DevOps REST APIs directly.
+# `api` call Azure DevOps REST APIs directly
 
 The api command provides a generic interface to Azure DevOps REST APIs,
 automatically discovering available endpoints from the internal REST client.
@@ -6,12 +6,15 @@ This allows calling any API without writing custom command code.
 
 ## Endpoint Discovery
 
-Endpoints are discovered automatically via reflection from the REST client.
-The naming convention follows the client structure:
+Endpoints are discovered automatically via reflection from the REST client. The
+naming convention follows the client structure:
 
-    Client.Group().Scope().Method() -> group.scope.method
+```go
+Client.Group().Scope().Method() -> group.scope.method
+```
 
 For example:
+
 - `Git().PRs(repo).List(ctx, query)` -> `git.prs.list`
 - `Builds().ForProject(repo).ByID(ctx, id)` -> `builds.for_project.by_id`
 
@@ -19,19 +22,27 @@ For example:
 
 Parameters are passed as key=value pairs after the endpoint path:
 
-    ado api git.prs.by_id id=123
+```shell
+ado api git.prs.by_id id=123
+```
 
 For struct parameters, use dot notation for nested fields:
 
-    ado api git.prs.list list_query.top=10 list_query.search_criteria.status=active
+```shell
+ado api git.prs.list list_query.top=10 list_query.search_criteria.status=active
+```
 
 Shorthand field names are supported when unambiguous:
 
-    ado api git.prs.list top=10 status=active
+```shell
+ado api git.prs.list top=10 status=active
+```
 
 Use `--describe` to see available parameters for an endpoint:
 
-    ado api git.prs.list --describe
+```shell
+ado api git.prs.list --describe
+```
 
 ## Output
 

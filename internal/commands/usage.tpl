@@ -1,9 +1,11 @@
 {{- /*gotype:github.com/spf13/cobra.Command */ -}}
-{{- if gt (len .Aliases) 0}}
+{{if gt (len .Aliases) 0}}
+
 {{ "Aliases:" | heading }} {{ range $i, $alias := .Aliases }}{{ if $i }}, {{ end }}{{ $alias | cmdStyle }}{{ end }}
 {{- end }}
 
 {{- if .HasExample }}
+
 {{ "Examples:" | heading }}
 {{ .Example }}
 {{- end }}
@@ -52,4 +54,4 @@
 {{- end}}
 {{ if .HasAvailableSubCommands }}
 Use "{{ .CommandPath | cmdStyle }} [command] --help" for more information about a command.
-{{- end}}
+{{- end -}}

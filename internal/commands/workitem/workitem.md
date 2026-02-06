@@ -2,7 +2,8 @@
 
 Commands for listing and viewing Azure DevOps work items.
 
-Work items are units of work tracked in Azure DevOps, such as bugs, tasks, user stories, features, and epics.
+Work items are units of work tracked in Azure DevOps, such as bugs, tasks, user
+stories, features, and epics.
 
 ## Examples
 

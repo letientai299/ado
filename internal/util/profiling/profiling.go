@@ -29,8 +29,13 @@ func NoOp() {}
 
 func RegisterFlag(cmd *cobra.Command) {
 	all := strings.Join(supportedProfiles, ", ")
-	cmd.PersistentFlags().
-		StringSlice(flagName, nil, "collect profiles: "+all)
+	fs := cmd.PersistentFlags()
+	fs.StringSlice(flagName, nil, "collect profiles: "+all)
+
+	// hide the profiling flag as it's mainly used for debugging purposes
+	if err := fs.MarkHidden(flagName); err != nil {
+		panic(err)
+	}
 }
 
 // Start initializes and starts the requested pprof profiles.

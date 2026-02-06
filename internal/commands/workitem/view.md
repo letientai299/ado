@@ -3,6 +3,7 @@
 Display detailed information about a single Azure DevOps work item.
 
 Shows comprehensive information including:
+
 - Title, ID, state, and type
 - Assigned to, priority, area path, and iteration path
 - Tags and parent work item
@@ -35,7 +36,8 @@ ado wi view "login bug"
 ## Flags
 
 - `-b, --browse`: Open work item in browser
-- `-r, --relations`: Include relations (links to other items, commits, PRs, etc.)
+- `-r, --relations`: Include relations (links to other items, commits, PRs,
+  etc.)
 - `-o, --output`: Output format (simple, json, yaml)
 - `-m, --mine`: When searching, only show your work items
 
