@@ -27,6 +27,8 @@ var (
 	helpTemplate string
 )
 
+const groupExperimental = "Experimental"
+
 var initOnce sync.Once
 
 func Root() *cobra.Command {
@@ -53,18 +55,33 @@ func Root() *cobra.Command {
 	root.SetHelpFunc(helpFunc(root.HelpFunc()))
 
 	root.AddCommand(
-		api.Cmd(),
-		pull_request.Cmd(),
-		pipeline.Cmd(),
-		workitem.Cmd(),
 		config_cmd.Cmd(),
+		pull_request.Cmd(),
 		Version(),
 		util.HelpTopic("templates", templatesDoc),
+	)
+
+	addGroup(root, groupExperimental,
+		api.Cmd(),
+		pipeline.Cmd(),
+		workitem.Cmd(),
 	)
 
 	config.AddGlobalFlags(root)
 	profiling.RegisterFlag(root)
 	return root
+}
+
+func addGroup(root *cobra.Command, groupId string, cs ...*cobra.Command) {
+	root.AddGroup(&cobra.Group{
+		ID:    groupId,
+		Title: groupId,
+	})
+
+	for _, c := range cs {
+		root.AddCommand(c)
+		c.GroupID = groupId
+	}
 }
 
 func initConfig(cmd *cobra.Command) error {

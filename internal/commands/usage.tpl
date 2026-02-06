@@ -6,7 +6,7 @@
 
 {{- if .HasExample }}
 
-{{ "Examples:" | heading }}
+{{ "Examples" | heading }}
 {{ .Example }}
 {{- end }}
 
@@ -14,30 +14,29 @@
   {{- $cmds := .Commands }}
   {{- if eq (len .Groups) 0 }}
 
-{{ "Available Commands:" | heading }}
+{{ "Commands" | heading }}
     {{- range $cmds }}
       {{- if (or .IsAvailableCommand (eq .Name "help")) }}
   {{ rpad .Name .NamePadding | cmdStyle }} {{ .Short }}
       {{- end }}
     {{- end }}
   {{- else }}
+    {{ if not .AllChildCommandsHaveGroup }}
+{{ "Commands" | heading }}
+      {{- range $cmds }}
+        {{- if (and (eq .GroupID "") (or .IsAvailableCommand (eq .Name "help"))) }}
+  {{ rpad .Name .NamePadding | cmdStyle }} {{ .Short }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
     {{- range $group := .Groups }}
 
 {{ .Title | heading }}
       {{- range $cmds }}
         {{- if (and (eq .GroupID $group.ID) (or .IsAvailableCommand (eq .Name "help"))) }}
   {{ rpad .Name .NamePadding | cmdStyle }} {{ .Short }}
-        {{- end }}
-      {{- end }}
-    {{- end }}
-
-    {{ if not .AllChildCommandsHaveGroup }}
-{{ "Additional Commands:" | heading }}
-      {{- range $cmds }}
-        {{- if (and (eq .GroupID "") (or .IsAvailableCommand (eq .Name "help"))) }}
-  {{ rpad .Name .NamePadding | cmdStyle }} {{ .Short }}
-        {{- end }}
-      {{- end }}
+        {{- end -}}
+      {{- end -}}
     {{- end }}
   {{- end }}
 {{- end }}
@@ -45,7 +44,7 @@
 {{ renderFlags . -}}
 {{- if .HasHelpSubCommands }}
 
-{{ "Additional help topics:" | heading }}
+{{ "Help topics" | heading }}
   {{- range .Commands }}
     {{- if .IsAdditionalHelpTopicCommand }}
   {{ rpad .CommandPath .CommandPathPadding | cmdStyle }} {{ .Short }}

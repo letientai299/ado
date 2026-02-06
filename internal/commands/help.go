@@ -43,11 +43,11 @@ func renderFlags(cmd *cobra.Command) string {
 	}
 
 	if cmd.HasAvailableLocalFlags() {
-		renderSection("Flags:", cmd.LocalFlags())
+		renderSection("Flags", cmd.LocalFlags())
 	}
 
 	if cmd.HasAvailableInheritedFlags() {
-		renderSection("Global Flags:", cmd.InheritedFlags())
+		renderSection("Global Flags", cmd.InheritedFlags())
 	}
 
 	return strings.TrimSpace(sb.String())
