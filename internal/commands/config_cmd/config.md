@@ -4,7 +4,7 @@
 sources _might_ override previous ones):
 
 1. Config file.
-2. Environment variables. Only a few variables are supported.
+2. Environment variables, and `.env`.
 3. Command-line flags
 4. Auto-detect necessary info from git repo and Azure CLI.
 
