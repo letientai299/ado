@@ -27,6 +27,15 @@ var configEditorDoc string
 //go:embed config.theme.md
 var configThemeDoc string
 
+//go:embed init.md
+var initDoc string
+
+//go:embed edit.md
+var editDoc string
+
+//go:embed cfg_dump.md
+var dumpDoc string
+
 //go:generate go run ../../../cmd/schema_gen
 //go:embed init.ado.yml
 var initAdoYAML string
@@ -52,7 +61,7 @@ func initCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init",
 		Short: "Initialize a config file with defaults",
-		Long:  "Create a new .ado.yaml config file with default values and documentation.",
+		Long:  initDoc,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, err := createConfigFile()
 			return err
@@ -66,6 +75,7 @@ func editCmd() *cobra.Command {
 		Use:     "edit",
 		Aliases: []string{"e"},
 		Short:   "Edit the config file in the configured editor",
+		Long:    editDoc,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg := config.From(cmd.Context())
 			file := cfg.FilePath()
@@ -148,6 +158,7 @@ func dumpCmd() *cobra.Command {
 		Use:     "dump",
 		Aliases: []string{"d"},
 		Short:   "Dump the resolved config",
+		Long:    dumpDoc,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg := config.From(cmd.Context())
 			registry := config.Registry()

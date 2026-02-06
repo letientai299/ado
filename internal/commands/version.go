@@ -1,17 +1,21 @@
 package commands
 
 import (
+	_ "embed"
 	"fmt"
 	"runtime/debug"
 
-	"github.com/letientai299/ado/internal/styles"
 	"github.com/spf13/cobra"
 )
+
+//go:embed version.md
+var versionDoc string
 
 func Version() *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
 		Short: "Show version information",
+		Long:  versionDoc,
 		Run: func(cmd *cobra.Command, args []string) {
 			info, ok := debug.ReadBuildInfo()
 			if !ok {
@@ -20,13 +24,11 @@ func Version() *cobra.Command {
 			}
 
 			printInfo := func(key, value string) {
-				fmt.Printf(
-					"%s %s\n",
-					styles.Heading(fmt.Sprintf("%-12s", key)),
-					value,
-				)
+				fmt.Printf("%-12s %s\n", key, value)
 			}
 
+			fmt.Println("ado - Azure DevOps CLI")
+			fmt.Println("https://github.com/letientai299/ado")
 			printInfo("Version:", info.Main.Version)
 			for _, setting := range info.Settings {
 				switch setting.Key {
