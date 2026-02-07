@@ -4,7 +4,7 @@ go = "1.25.6"
 gofumpt = "latest"
 golangci-lint = "2.8.0"
 gotestsum = "latest"
-lefthook = "2.0.15"
+prek = "0.3.2"
 prettier = "latest"
 
 [env]

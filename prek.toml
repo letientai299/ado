@@ -1,0 +1,8 @@
+[[repos]]
+repo = "local"
+hooks = [
+  { id = "fmt-go", name = "fmt go", entry = "mise fmt:go", language = "system", pass_filenames = false, types = ["go"], priority = 0 },
+  { id = "fmt-prettier", name = "fmt using prettier", entry = "prettier --write", language = "system", types = ["markdown", "yaml"], priority = 0 },
+  { id = "tidy", name = "go mod tidy", entry = "go mod tidy", language = "system", pass_filenames = false, always_run = true, priority = 0 },
+  { id = "lint", name = "lint", entry = "mise lint", language = "system", pass_filenames = false, types = ["go"], priority = 1 },
+]
