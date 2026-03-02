@@ -3,6 +3,7 @@ package commands
 import (
 	_ "embed"
 	"os"
+	"slices"
 	"sync"
 
 	"github.com/letientai299/ado/internal/commands/api"
@@ -29,6 +30,8 @@ var (
 
 const groupExperimental = "Experimental"
 
+var nonAdoCommands = []string{"completion", "version"}
+
 var initOnce sync.Once
 
 func Root() *cobra.Command {
@@ -39,6 +42,13 @@ func Root() *cobra.Command {
 		Short: "Azure DevOps CLI",
 		Long:  doc,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+			c := cmd
+			for c.HasParent() {
+				if slices.Contains(nonAdoCommands, c.Name()) {
+					return nil
+				}
+				c = c.Parent()
+			}
 			stopProfiling = profiling.Start(cmd)
 			return initConfig(cmd)
 		},
