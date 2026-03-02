@@ -9,7 +9,7 @@ prettier = "latest"
 
 [env]
 CGO_ENABLED = "0"
-ADO_EXE = "bin/ado" # allow overriding to bin/ado.exe on Windows
+ADO_EXE = "bin/ado{% if os() == 'windows' %}.exe{% endif %}"
 _.file = ".env"
 
 [tasks.gen]
