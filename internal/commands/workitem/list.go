@@ -22,6 +22,9 @@ const (
 //go:embed list_simple.tpl
 var listSimpleTpl string
 
+//go:embed list_report.tpl
+var listReportTpl string
+
 //go:embed list.md
 var listDoc string
 
@@ -42,6 +45,7 @@ type ListConfig struct {
 	wiType       string                 `yaml:"-"` // filter by work item type
 	state        string                 `yaml:"-"` // filter by state
 	assignee     string                 `yaml:"-"` // filter by assignee (substring match)
+	report       string                 `yaml:"-"` // show all items (active+closed+resolved) changed since date
 }
 
 func (l *ListConfig) OnResolved(c *cobra.Command) error {
@@ -111,6 +115,7 @@ func listCmd() *cobra.Command {
 	)
 	flags.StringVarP(&opts.state, "state", "s", "", "filter by state (e.g., New, Active, Closed)")
 	flags.StringVarP(&opts.assignee, "assignee", "A", "", "filter by assignee alias or email (substring match); implies --all")
+	flags.StringVar(&opts.report, "report", "", "show all items (closed, resolved) changed since date, e.g. 2026-01-01 or @Today-7")
 
 	return cmd
 }
@@ -213,15 +218,35 @@ func (l listProcessor) buildWIQL() string {
 	}
 
 	// Filter by state
-	if l.opts.state != "" {
+	switch {
+	case l.opts.state != "":
+		// Explicit state takes priority
 		conditions = append(conditions, fmt.Sprintf("[System.State] = '%s'", wiqlEscape(l.opts.state)))
-	}
-
-	// Default: exclude closed/done items
-	if l.opts.state == "" {
+	case l.opts.report != "":
+		// Report mode: active, closed and resolved items
+		conditions = append(conditions, "[System.State] IN ('Closed', 'Resolved')")
+	default:
+		// Default: exclude completed items
 		conditions = append(conditions, "[System.State] <> 'Closed'")
 		conditions = append(conditions, "[System.State] <> 'Done'")
 		conditions = append(conditions, "[System.State] <> 'Removed'")
+	}
+
+	// In report mode, filter by ResolvedDate or ClosedDate to scope the period
+	if l.opts.report != "" {
+		date := l.opts.report
+		// WIQL date expressions like @Today-7 should not be quoted
+		if strings.HasPrefix(date, "@Today") {
+			conditions = append(conditions,
+				fmt.Sprintf("([Microsoft.VSTS.Common.ResolvedDate] >= %s OR [Microsoft.VSTS.Common.ClosedDate] >= %s)", date, date),
+			)
+		} else {
+			// Regular date strings need to be quoted and escaped
+			escapedDate := wiqlEscape(date)
+			conditions = append(conditions,
+				fmt.Sprintf("([Microsoft.VSTS.Common.ResolvedDate] >= '%s' OR [Microsoft.VSTS.Common.ClosedDate] >= '%s')", escapedDate, escapedDate),
+			)
+		}
 	}
 
 	if len(conditions) == 0 {
@@ -269,6 +294,9 @@ func (l listProcessor) render(all []models.WorkItem) error {
 	case outputJSON:
 		return styles.DumpJSON(all)
 	case outputSimple:
+		if l.opts.report != "" {
+			return l.renderTemplate(listReportTpl, all)
+		}
 		return l.renderTemplate(listSimpleTpl, all)
 	default:
 		if tpl, ok := l.opts.CustomOutputTemplates[output]; ok {
@@ -284,29 +312,45 @@ func (l listProcessor) renderTemplate(tpl string, all []models.WorkItem) error {
 	for i, wi := range all {
 		items[i] = toWorkItemView(wi, l.baseURL)
 	}
-	return styles.RenderOut(tpl, items)
+	
+	// Custom template functions for report formatting
+	funcMap := map[string]any{
+		"groupByState": func(items []WorkItemView) map[string][]WorkItemView {
+			groups := make(map[string][]WorkItemView)
+			for _, item := range items {
+				groups[item.State] = append(groups[item.State], item)
+			}
+			return groups
+		},
+	}
+	
+	return styles.RenderOut(tpl, items, funcMap)
 }
 
 // WorkItemView is a simplified view of a work item for template rendering.
 type WorkItemView struct {
-	ID          int
-	Title       string
-	State       string
-	Type        string
-	AssignedTo  string
-	ChangedDate string
-	WebURL      string
+	ID           int
+	Title        string
+	State        string
+	Type         string
+	AssignedTo   string
+	ChangedDate  string
+	ResolvedDate string
+	ClosedDate   string
+	WebURL       string
 }
 
 func toWorkItemView(wi models.WorkItem, baseURL string) WorkItemView {
 	return WorkItemView{
-		ID:          wi.ID,
-		Title:       getStringField(wi, models.FieldTitle),
-		State:       getStringField(wi, models.FieldState),
-		Type:        getStringField(wi, models.FieldWorkItemType),
-		AssignedTo:  getAssignedTo(wi),
-		ChangedDate: getStringField(wi, models.FieldChangedDate),
-		WebURL:      fmt.Sprintf("%s/%d", baseURL, wi.ID),
+		ID:           wi.ID,
+		Title:        getStringField(wi, models.FieldTitle),
+		State:        getStringField(wi, models.FieldState),
+		Type:         getStringField(wi, models.FieldWorkItemType),
+		AssignedTo:   getAssignedTo(wi),
+		ChangedDate:  getStringField(wi, models.FieldChangedDate),
+		ResolvedDate: getStringField(wi, models.FieldResolvedDate),
+		ClosedDate:   getStringField(wi, models.FieldClosedDate),
+		WebURL:       fmt.Sprintf("%s/%d", baseURL, wi.ID),
 	}
 }
 
