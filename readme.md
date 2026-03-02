@@ -6,7 +6,7 @@ pull requests, pipelines, work items, and more without leaving the command line.
 <!-- prettier-ignore-start -->
 > [!NOTE]
 > This is usable, but still mostly a WIP. CLI commands, flags, output format
-> and bahaviors might changes without any prior notice.
+> and behaviors might change without any prior notice.
 <!-- prettier-ignore-end -->
 
 <!-- toc -->

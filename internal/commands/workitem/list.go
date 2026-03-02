@@ -41,6 +41,7 @@ type ListConfig struct {
 	all          bool                   `yaml:"-"` // show all work items, not just mine
 	wiType       string                 `yaml:"-"` // filter by work item type
 	state        string                 `yaml:"-"` // filter by state
+	assignee     string                 `yaml:"-"` // filter by assignee (substring match)
 }
 
 func (l *ListConfig) OnResolved(c *cobra.Command) error {
@@ -109,6 +110,7 @@ func listCmd() *cobra.Command {
 		"filter by work item type (e.g., Bug, Task, \"User Story\")",
 	)
 	flags.StringVarP(&opts.state, "state", "s", "", "filter by state (e.g., New, Active, Closed)")
+	flags.StringVarP(&opts.assignee, "assignee", "A", "", "filter by assignee alias or email (substring match); implies --all")
 
 	return cmd
 }
@@ -183,6 +185,11 @@ func (l listProcessor) query() (*models.WIQLResult, error) {
 	return l.client.WIQL(l.cfg.Repository).Query(l.ctx, wiql, l.opts.top)
 }
 
+// wiqlEscape escapes a string value for safe embedding inside WIQL single-quoted literals.
+func wiqlEscape(s string) string {
+	return strings.ReplaceAll(s, "'", "''")
+}
+
 func (l listProcessor) buildWIQL() string {
 	var sb strings.Builder
 	sb.WriteString("SELECT [System.Id], [System.Title], [System.State], ")
@@ -191,22 +198,23 @@ func (l listProcessor) buildWIQL() string {
 
 	conditions := []string{}
 
-	// Filter by assignee unless --all is specified
-	if !l.opts.all && l.opts.mine {
-		conditions = append(conditions, "[System.AssignedTo] = @Me")
+	// Filter by assignee
+	if l.opts.assignee != "" {
+		// Explicit assignee: substring match on display name / email
+		conditions = append(conditions, fmt.Sprintf("[System.AssignedTo] = '%s'", wiqlEscape(l.opts.assignee)))
 	} else if !l.opts.all {
-		// Default: show assigned to me
+		// Default (including --mine): show only work items assigned to me
 		conditions = append(conditions, "[System.AssignedTo] = @Me")
 	}
 
 	// Filter by work item type
 	if l.opts.wiType != "" {
-		conditions = append(conditions, fmt.Sprintf("[System.WorkItemType] = '%s'", l.opts.wiType))
+		conditions = append(conditions, fmt.Sprintf("[System.WorkItemType] = '%s'", wiqlEscape(l.opts.wiType)))
 	}
 
 	// Filter by state
 	if l.opts.state != "" {
-		conditions = append(conditions, fmt.Sprintf("[System.State] = '%s'", l.opts.state))
+		conditions = append(conditions, fmt.Sprintf("[System.State] = '%s'", wiqlEscape(l.opts.state)))
 	}
 
 	// Default: exclude closed/done items
