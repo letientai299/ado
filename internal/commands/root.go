@@ -3,6 +3,7 @@ package commands
 import (
 	_ "embed"
 	"os"
+	"path/filepath"
 	"slices"
 	"sync"
 
@@ -37,8 +38,11 @@ var initOnce sync.Once
 func Root() *cobra.Command {
 	var stopProfiling profiling.StopFn
 
+	cmdName := filepath.Base(os.Args[0])
+	cmdName = cmdName[:len(cmdName)-len(filepath.Ext(cmdName))]
+
 	root := &cobra.Command{
-		Use:   os.Args[0],
+		Use:   cmdName,
 		Short: "Azure DevOps CLI",
 		Long:  doc,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
