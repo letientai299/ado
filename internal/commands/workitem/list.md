@@ -59,13 +59,62 @@ ado wi list -n 100
 
 ## Report Mode
 
-The `--report` flag generates markdown-formatted activity reports suitable for copying to status updates or documentation. It shows all work items (Closed, Resolved) that were completed or worked on since the specified date.
+The `--report` flag generates activity reports showing all work items (Closed,
+Resolved) completed or worked on since the specified date. To format the report
+output, define a custom output template (see below) named `report` and use
+`-o report`.
 
 **Date formats:**
 - `@Today-N`: Relative days (e.g., `@Today-7` for last 7 days)
 - `YYYY-MM-DD`: Absolute date (e.g., `2026-01-01`)
 
-The output is grouped by state and includes a prompt suggestion for AI summarization.
+## Custom Output Templates
+
+In the `ado.yml` config file, you can define custom output formats using [Go
+templates][go_tpl]. Each template receives a list of work item views.
+
+[go_tpl]: https://pkg.go.dev/text/template
+
+**Available fields:** `ID`, `Title`, `State`, `Type`, `AssignedTo`,
+`ChangedDate`, `ResolvedDate`, `ClosedDate`, `WebURL`.
+
+**Extra template functions:** `groupByState` groups items by their state into a
+`map[string][]WorkItemView`.
+
+### Example: report template
+
+```yaml
+workitem:
+  list:
+    custom_output_templates:
+      report: |
+        {{- $byState := . | groupByState }}
+        {{- range $state, $items := $byState }}
+        ## {{ $state }} ({{ len $items }})
+        {{- range $items }}
+        - {{ .Title }}
+        {{- end }}
+        {{- end }}
+```
+
+Usage: `ado wi list --report @Today-7 -o report`
+
+### Example: markdown links
+
+```yaml
+workitem:
+  list:
+    custom_output_templates:
+      markdown: |
+        {{ range . -}}
+        - [#{{ .ID }} {{ .Title }}]({{ .WebURL }})
+        {{ end }}
+```
+
+Usage: `ado wi list -o markdown`
+
+You can also override the built-in `simple` format by defining a template with
+that name.
 
 ## See Also
 

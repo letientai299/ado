@@ -22,9 +22,6 @@ const (
 //go:embed list_simple.tpl
 var listSimpleTpl string
 
-//go:embed list_report.tpl
-var listReportTpl string
-
 //go:embed list.md
 var listDoc string
 
@@ -293,14 +290,13 @@ func (l listProcessor) render(all []models.WorkItem) error {
 		return styles.DumpYAML(all)
 	case outputJSON:
 		return styles.DumpJSON(all)
-	case outputSimple:
-		if l.opts.report != "" {
-			return l.renderTemplate(listReportTpl, all)
-		}
-		return l.renderTemplate(listSimpleTpl, all)
 	default:
 		if tpl, ok := l.opts.CustomOutputTemplates[output]; ok {
 			return l.renderTemplate(tpl, all)
+		}
+
+		if output == outputSimple {
+			return l.renderTemplate(listSimpleTpl, all)
 		}
 	}
 
