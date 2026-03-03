@@ -207,4 +207,8 @@ const (
 	FieldAcceptanceCriteria = "Microsoft.VSTS.Common.AcceptanceCriteria"
 	// FieldReproSteps is the reproduction steps for bugs (HTML string).
 	FieldReproSteps = "Microsoft.VSTS.TCM.ReproSteps"
+	// FieldResolvedDate is when the work item was resolved (datetime).
+	FieldResolvedDate = "Microsoft.VSTS.Common.ResolvedDate"
+	// FieldClosedDate is when the work item was closed (datetime).
+	FieldClosedDate = "Microsoft.VSTS.Common.ClosedDate"
 )
