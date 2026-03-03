@@ -62,6 +62,17 @@
 #    # Custom output templates is a map of output format names to their templates.
 #    custom_output_templates:
 #      example_key: example_value
+      # report: |
+      #   # **For AI Summary:** Copy the work items below and ask: "Summarize this week's development progress into a brief status report suitable for stakeholders."
+
+      #   {{- $byState := . | groupByState }}
+      #   {{- range $state, $items := $byState }}
+
+      #   ## {{ $state }} ({{ len $items }})
+      #   {{- range $items }}
+      #   - {{ .Title }}
+      #   {{- end }}
+      #   {{- end }}
 #    # Default output format to use if not specified.
 #    default_output: "simple"
 #    # Maximum number of work items to return.
