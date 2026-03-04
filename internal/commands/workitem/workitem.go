@@ -17,7 +17,6 @@ func Cmd() *cobra.Command {
 		Long:    doc,
 	}
 	cmd.AddCommand(
-		createCmd(),
 		listCmd(),
 		viewCmd(),
 	)
