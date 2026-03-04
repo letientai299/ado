@@ -2,6 +2,7 @@ package workitem
 
 import (
 	_ "embed"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -59,7 +60,13 @@ func createCmd() *cobra.Command {
 	flags := cmd.Flags()
 	flags.StringVar(&opts.title, "title", "", "work item title")
 	flags.StringVarP(&opts.desc, "description", "d", "", "work item description")
-	flags.StringVarP(&opts.wiType, "type", "t", "Task", "work item type (e.g., Bug, Task, \"User Story\")")
+	flags.StringVarP(
+		&opts.wiType,
+		"type",
+		"t",
+		"Task",
+		"work item type (e.g., Bug, Task, \"User Story\")",
+	)
 	flags.StringVarP(&opts.assignee, "assignee", "A", "", "assign to user (display name or email)")
 	flags.StringVar(&opts.area, "area", "", "area path (e.g., Project\\Team)")
 	flags.StringVar(&opts.iteration, "iteration", "", "iteration path (e.g., Project\\Sprint 1)")
@@ -89,7 +96,7 @@ func (p *createProcessor) process() error {
 
 	opts.title = strings.TrimSpace(opts.title)
 	if opts.title == "" {
-		return fmt.Errorf("title is required, use --title or fill it in the editor")
+		return errors.New("title is required, use --title or fill it in the editor")
 	}
 
 	if !opts.yes {
