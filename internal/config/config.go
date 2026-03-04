@@ -27,6 +27,7 @@ const (
 	envAdoDebug  = "ADO_DEBUG"
 	envAdoPat    = "ADO_PAT"
 	envEditor    = "EDITOR"
+	envAdoClaude = "ADO_CLAUDE"
 )
 
 var configFileNames = []string{
@@ -85,6 +86,10 @@ type Config struct {
 	//
 	// See `ado help config editor`
 	Editor string `yaml:"editor,omitempty" json:"editor,omitempty"`
+
+	// Claude specifies the command to use for AI-powered log analysis.
+	// If not set, falls back to the ADO_CLAUDE environment variable, then "claude".
+	Claude string `yaml:"claude,omitempty" json:"claude,omitempty"`
 
 	// The token is used to authenticate to ADO, must not be logged.
 	// If envAdoPat is available, this will be set to its value.
@@ -236,6 +241,10 @@ func resolveEnv(cfg *Config) error {
 
 	if v, ok := os.LookupEnv(envEditor); ok {
 		cfg.Editor = v
+	}
+
+	if v, ok := os.LookupEnv(envAdoClaude); ok {
+		cfg.Claude = v
 	}
 
 	return nil

@@ -18,6 +18,7 @@ func Cmd() *cobra.Command {
 	}
 	cmd.AddCommand(
 		listCmd(),
+		buildsCmd(),
 		viewCmd(),
 		editCmd(),
 		logsCmd(),
