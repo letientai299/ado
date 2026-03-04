@@ -8,7 +8,7 @@ import (
 	"github.com/letientai299/ado/internal/models"
 	"github.com/letientai299/ado/internal/rest"
 	"github.com/letientai299/ado/internal/styles"
-	"github.com/letientai299/ado/internal/ui"
+	// "github.com/letientai299/ado/internal/ui"
 	"github.com/letientai299/ado/internal/util"
 	"github.com/letientai299/ado/internal/util/editor"
 	"github.com/letientai299/ado/internal/util/sh"
