@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
+	"os/exec"
 	"sort"
 	"strconv"
 	"strings"
@@ -13,6 +15,7 @@ import (
 	"github.com/letientai299/ado/internal/rest"
 	"github.com/letientai299/ado/internal/styles"
 	"github.com/letientai299/ado/internal/ui"
+	"github.com/letientai299/ado/internal/util/gitcli"
 	"github.com/spf13/cobra"
 )
 
@@ -22,10 +25,12 @@ var logsDoc string
 // LogsConfig holds configuration for the pipeline logs command.
 type LogsConfig struct {
 	filterConfig
-	build string
-	stage string
-	job   string
-	tail  int
+	build       string
+	stage       string
+	job         string
+	tail        int
+	claude      bool
+	interactive bool
 }
 
 func logsCmd() *cobra.Command {
@@ -52,6 +57,8 @@ func logsCmd() *cobra.Command {
 	flags.StringVarP(&opts.stage, "stage", "s", "", "stage name pattern (filter stages)")
 	flags.StringVarP(&opts.job, "job", "j", "", "job name pattern (filter jobs)")
 	flags.IntVarP(&opts.tail, "tail", "n", 0, "show only last N lines")
+	flags.BoolVar(&opts.claude, "claude", false, "analyze logs with claude CLI")
+	flags.BoolVarP(&opts.interactive, "interactive", "i", false, "start interactive claude session (use with --claude)")
 
 	return cmd
 }
@@ -62,6 +69,15 @@ func newLogsProcessor(c *common[*LogsConfig]) *logsProcessor {
 
 type logsProcessor struct {
 	*common[*LogsConfig]
+}
+
+// claudeContext holds metadata for constructing the claude prompt.
+type claudeContext struct {
+	pipelineName string
+	build        *models.Build
+	stageName    string
+	jobName      string
+	jobResult    models.TaskResult
 }
 
 func (l *logsProcessor) process(args []string) error {
@@ -85,7 +101,17 @@ func (l *logsProcessor) process(args []string) error {
 		return err
 	}
 
-	return l.displayLogs(build.Id, job)
+	cc := &claudeContext{
+		pipelineName: pipeline.Name,
+		build:        build,
+		jobName:      job.Name,
+		jobResult:    job.Result,
+	}
+	if stage != nil {
+		cc.stageName = stage.Name
+	}
+
+	return l.displayLogs(build.Id, job, cc)
 }
 
 func (l *logsProcessor) selectPipeline(args []string) (*models.BuildDefinition, error) {
@@ -537,7 +563,7 @@ func (l *logsProcessor) pickJob(jobs []jobDisplay) (*models.TimelineRecord, erro
 	return nil, errors.New("no job selected")
 }
 
-func (l *logsProcessor) displayLogs(buildID int32, job *models.TimelineRecord) error {
+func (l *logsProcessor) displayLogs(buildID int32, job *models.TimelineRecord, cc *claudeContext) error {
 	if job.Log == nil {
 		return errors.New("job has no logs")
 	}
@@ -558,6 +584,66 @@ func (l *logsProcessor) displayLogs(buildID int32, job *models.TimelineRecord) e
 		content = strings.Join(lines, "\n")
 	}
 
+	if l.opts.claude {
+		return l.runClaude(content, cc)
+	}
+
 	fmt.Print(content)
 	return nil
+}
+
+func (l *logsProcessor) runClaude(logContent string, cc *claudeContext) error {
+	claudeBin := l.cfg.Claude
+	if claudeBin == "" {
+		claudeBin = "claude"
+	}
+
+	// Write logs to a temp file inside the repo so Claude can read it
+	// without permission issues (Claude has access to the working directory).
+	repoRoot := gitcli.Root()
+	tmpFile, err := os.CreateTemp(repoRoot, ".ado-pipeline-logs-*.log")
+	if err != nil {
+		return fmt.Errorf("failed to create temp file: %w", err)
+	}
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
+
+	if _, err := tmpFile.WriteString(logContent); err != nil {
+		_ = tmpFile.Close()
+		return fmt.Errorf("failed to write logs to temp file: %w", err)
+	}
+	_ = tmpFile.Close()
+
+	prompt := buildClaudePrompt(cc, tmpFile.Name())
+
+	// -p (print mode) for non-interactive one-shot analysis,
+	// omit -p for interactive session when -i is set.
+	// --allowedTools Read lets Claude read the temp log file without prompting.
+	var args []string
+	if !l.opts.interactive {
+		args = append(args, "-p", prompt, "--allowedTools", "Read")
+	} else {
+		args = append(args, "--allowedTools", "Read", prompt)
+	}
+
+	cmd := exec.Command(claudeBin, args...) //nolint:gosec
+	cmd.Dir = gitcli.Root()
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to run claude (is %q installed?): %w", claudeBin, err)
+	}
+
+	return nil
+}
+
+func buildClaudePrompt(cc *claudeContext, logFile string) string {
+	var sb strings.Builder
+	sb.WriteString("Analyze the Azure DevOps pipeline build log in: " + logFile + ".")
+	sb.WriteString("You are in the root of the repository that produced this build. ")
+	sb.WriteString("Read the log file, scan the relevant source code to understand the context and correlate errors in the log with the actual code.")
+	sb.WriteString(fmt.Sprintf("Branch: %s\n", formatBranch(cc.build.SourceBranch)))
+	sb.WriteString("\nIdentify errors and warnings in the log, find the relevant source files, and suggest actionable fixes.")
+	return sb.String()
 }
