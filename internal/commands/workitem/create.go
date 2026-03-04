@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/letientai299/ado/internal/models"
-	"github.com/letientai299/ado/internal/rest"
-	"github.com/letientai299/ado/internal/styles"
+	// "github.com/letientai299/ado/internal/models"
+	// "github.com/letientai299/ado/internal/rest"
+	// "github.com/letientai299/ado/internal/styles"
 	// "github.com/letientai299/ado/internal/ui"
 	"github.com/letientai299/ado/internal/util"
 	"github.com/letientai299/ado/internal/util/editor"
-	"github.com/letientai299/ado/internal/util/sh"
+	// "github.com/letientai299/ado/internal/util/sh"
 	"github.com/spf13/cobra"
 )
 
@@ -78,62 +78,7 @@ func newCreateProcessor(c *common[*CreateConfig]) *createProcessor {
 }
 
 func (p *createProcessor) process() error {
-	opts := p.opts
-
-	// If title is not provided, open editor to fill in all fields
-	if opts.title == "" {
-		if err := p.editFields(); err != nil {
-			return err
-		}
-	}
-
-	opts.title = strings.TrimSpace(opts.title)
-	if opts.title == "" {
-		return fmt.Errorf("title is required, use --title or fill it in the editor")
-	}
-
-	// if !opts.yes {
-	// 	summary := fmt.Sprintf("Create %s: %q?", opts.wiType, opts.title)
-	// 	if !ui.Confirm(summary, true) {
-	// 		return nil
-	// 	}
-	// }
 	fmt.Printf("Return here")
-	return nil
-
-	fields := []rest.JsonPatchOp{
-		{Op: "add", Path: "/fields/" + models.FieldTitle, Value: opts.title},
-	}
-
-	for _, f := range []struct {
-		field string
-		value string
-	}{
-		{models.FieldDescription, opts.desc},
-		{models.FieldAssignedTo, opts.assignee},
-		{models.FieldAreaPath, opts.area},
-		{models.FieldIterationPath, opts.iteration},
-	} {
-		if f.value != "" {
-			fields = append(fields, rest.JsonPatchOp{
-				Op: "add", Path: "/fields/" + f.field, Value: f.value,
-			})
-		}
-	}
-
-	wi, err := p.client.WorkItems(p.cfg.Repository).Create(p.ctx, opts.wiType, fields)
-	if err != nil {
-		return fmt.Errorf("failed to create work item: %w", err)
-	}
-
-	wiURL := fmt.Sprintf("%s/%d", p.baseURL, wi.ID)
-	fmt.Printf("#%d %s\n", wi.ID, styles.H1(getStringField(*wi, models.FieldTitle)))
-	fmt.Println(wiURL)
-
-	if opts.browse {
-		return sh.Browse(wiURL)
-	}
-
 	return nil
 }
 
