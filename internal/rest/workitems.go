@@ -89,6 +89,28 @@ func (w WorkItems) List(
 	return list.Value, nil
 }
 
+// JsonPatchOp represents a single JSON Patch operation.
+// Used by the Work Item Create/Update APIs which require Content-Type: application/json-patch+json.
+// https://learn.microsoft.com/en-us/rest/api/azure/devops/wit/work-items/create#jsonpatchoperation
+type JsonPatchOp struct {
+	Op    string `json:"op"`
+	Path  string `json:"path"`
+	Value any    `json:"value"`
+}
+
+// Create creates a new work item of the specified type.
+// The wiType is the work item type name (e.g., "Bug", "Task", "User Story").
+// Fields are set via JSON Patch operations.
+// https://learn.microsoft.com/en-us/rest/api/azure/devops/wit/work-items/create
+func (w WorkItems) Create(
+	ctx context.Context,
+	wiType string,
+	fields []JsonPatchOp,
+) (*models.WorkItem, error) {
+	wiURL, _ := url.JoinPath(w.baseURL, pathWorkItems, "$"+wiType)
+	return httpPatchJsonPatch[models.WorkItem](ctx, w.client, wiURL, fields)
+}
+
 // WIQL provides access to the Work Item Query Language API.
 // https://learn.microsoft.com/en-us/rest/api/azure/devops/wit/wiql
 type WIQL struct {
