@@ -95,7 +95,8 @@ func (p *createProcessor) process() error {
 	if !opts.yes {
 		summary := fmt.Sprintf("Create %s: %q?", opts.wiType, opts.title)
 		if !ui.Confirm(summary, true) {
-			return nil
+			// user declined the confirmation prompt
+			return nil 
 		}
 	}
 
