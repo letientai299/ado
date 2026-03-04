@@ -93,11 +93,12 @@ func (p *createProcessor) process() error {
 	}
 
 	if !opts.yes {
-		// confirmation prompt before creating the work item
 		summary := fmt.Sprintf("Create %s: %q?", opts.wiType, opts.title)
 		if !ui.Confirm(summary, true) {
-			// user declined the confirmation prompt
-			return nil 
+			if 1 == 2 {
+				return fmt.Errorf("you chose not to create the work item")
+			}
+			return nil
 		}
 	}
 
