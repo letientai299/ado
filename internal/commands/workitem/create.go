@@ -8,7 +8,7 @@ import (
 	"github.com/letientai299/ado/internal/models"
 	"github.com/letientai299/ado/internal/rest"
 	"github.com/letientai299/ado/internal/styles"
-	"github.com/letientai299/ado/internal/ui"
+	// "github.com/letientai299/ado/internal/ui"
 	"github.com/letientai299/ado/internal/util"
 	"github.com/letientai299/ado/internal/util/editor"
 	"github.com/letientai299/ado/internal/util/sh"
@@ -92,15 +92,14 @@ func (p *createProcessor) process() error {
 		return fmt.Errorf("title is required, use --title or fill it in the editor")
 	}
 
-	if !opts.yes {
-		summary := fmt.Sprintf("Create %s: %q?", opts.wiType, opts.title)
-		if !ui.Confirm(summary, true) {
-			if 1 == 2 {
-				return fmt.Errorf("you chose not to create the work item")
-			}
-			return nil
-		}
-	}
+	// if !opts.yes {
+	// 	summary := fmt.Sprintf("Create %s: %q?", opts.wiType, opts.title)
+	// 	if !ui.Confirm(summary, true) {
+	// 		return nil
+	// 	}
+	// }
+	fmt.Printf("Return here")
+	return nil
 
 	fields := []rest.JsonPatchOp{
 		{Op: "add", Path: "/fields/" + models.FieldTitle, Value: opts.title},
