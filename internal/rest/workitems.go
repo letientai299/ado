@@ -89,6 +89,36 @@ func (w WorkItems) List(
 	return list.Value, nil
 }
 
+// WorkItemDeleteResponse is the response from deleting a work item.
+// https://learn.microsoft.com/en-us/rest/api/azure/devops/wit/work-items/delete#workitemdelete
+type WorkItemDeleteResponse struct {
+	ID        int    `json:"id"`
+	Name      string `json:"name"`
+	Type      string `json:"type"`
+	Project   string `json:"project"`
+	DeletedBy string `json:"deletedBy"`
+	DeletedDate string `json:"deletedDate"`
+	Code      int    `json:"code"`
+	Message   string `json:"message"`
+	URL       string `json:"url"`
+}
+
+// Delete sends a work item to the Recycle Bin (soft delete).
+// If destroy is true, the work item is permanently deleted (cannot be recovered).
+// https://learn.microsoft.com/en-us/rest/api/azure/devops/wit/work-items/delete
+func (w WorkItems) Delete(
+	ctx context.Context,
+	id int,
+	destroy bool,
+) (*WorkItemDeleteResponse, error) {
+	wiURL, _ := url.JoinPath(w.baseURL, pathWorkItems, strconv.Itoa(id))
+	var qs []_shared.Querier
+	if destroy {
+		qs = append(qs, _shared.KV[string]{Key: "destroy", Value: "true"})
+	}
+	return httpDelete[WorkItemDeleteResponse](ctx, w.client, wiURL, qs...)
+}
+
 // WIQL provides access to the Work Item Query Language API.
 // https://learn.microsoft.com/en-us/rest/api/azure/devops/wit/wiql
 type WIQL struct {
