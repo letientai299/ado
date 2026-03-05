@@ -2,7 +2,10 @@ package workitem
 
 import (
 	_ "embed"
+	"errors"
 	"fmt"
+	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/charmbracelet/log"
@@ -10,6 +13,7 @@ import (
 	"github.com/letientai299/ado/internal/models"
 	"github.com/letientai299/ado/internal/styles"
 	"github.com/letientai299/ado/internal/util"
+	"github.com/letientai299/ado/internal/util/gitcli"
 	"github.com/spf13/cobra"
 )
 
@@ -43,6 +47,8 @@ type ListConfig struct {
 	state        string                 `yaml:"-"` // filter by state
 	assignee     string                 `yaml:"-"` // filter by assignee (substring match)
 	report       string                 `yaml:"-"` // show all items (active+closed+resolved) changed since date
+	claude       bool                   `yaml:"-"` // polish report with Claude
+	interactive  bool                   `yaml:"-"` // interactive Claude session
 }
 
 func (l *ListConfig) OnResolved(c *cobra.Command) error {
@@ -111,8 +117,27 @@ func listCmd() *cobra.Command {
 		"filter by work item type (e.g., Bug, Task, \"User Story\")",
 	)
 	flags.StringVarP(&opts.state, "state", "s", "", "filter by state (e.g., New, Active, Closed)")
-	flags.StringVarP(&opts.assignee, "assignee", "A", "", "filter by assignee alias or email (substring match); implies --all")
-	flags.StringVar(&opts.report, "report", "", "show all items (closed, resolved) changed since date, e.g. 2026-01-01 or @Today-7")
+	flags.StringVarP(
+		&opts.assignee,
+		"assignee",
+		"A",
+		"",
+		"filter by assignee alias or email (substring match); implies --all",
+	)
+	flags.StringVar(
+		&opts.report,
+		"report",
+		"",
+		"show all items (closed, resolved) changed since date, e.g. 2026-01-01 or @Today-7",
+	)
+	flags.BoolVar(&opts.claude, "claude", false, "polish report with Claude AI (use with --report)")
+	flags.BoolVarP(
+		&opts.interactive,
+		"interactive",
+		"i",
+		false,
+		"start interactive Claude session (use with --claude)",
+	)
 
 	return cmd
 }
@@ -142,9 +167,17 @@ type listProcessor struct {
 }
 
 func (l listProcessor) process() error {
+	if l.opts.claude && l.opts.report == "" {
+		return errors.New("--claude requires --report flag")
+	}
+
 	wis, err := l.find()
 	if err != nil {
 		return err
+	}
+
+	if l.opts.claude {
+		return l.runClaude(wis)
 	}
 
 	return l.render(wis)
@@ -203,7 +236,10 @@ func (l listProcessor) buildWIQL() string {
 	// Filter by assignee
 	if l.opts.assignee != "" {
 		// Explicit assignee: substring match on display name / email
-		conditions = append(conditions, fmt.Sprintf("[System.AssignedTo] = '%s'", wiqlEscape(l.opts.assignee)))
+		conditions = append(
+			conditions,
+			fmt.Sprintf("[System.AssignedTo] = '%s'", wiqlEscape(l.opts.assignee)),
+		)
 	} else if !l.opts.all {
 		// Default (including --mine): show only work items assigned to me
 		conditions = append(conditions, "[System.AssignedTo] = @Me")
@@ -211,7 +247,10 @@ func (l listProcessor) buildWIQL() string {
 
 	// Filter by work item type
 	if l.opts.wiType != "" {
-		conditions = append(conditions, fmt.Sprintf("[System.WorkItemType] = '%s'", wiqlEscape(l.opts.wiType)))
+		conditions = append(
+			conditions,
+			fmt.Sprintf("[System.WorkItemType] = '%s'", wiqlEscape(l.opts.wiType)),
+		)
 	}
 
 	// Filter by state
@@ -234,14 +273,24 @@ func (l listProcessor) buildWIQL() string {
 		date := l.opts.report
 		// WIQL date expressions like @Today-7 should not be quoted
 		if strings.HasPrefix(date, "@Today") {
-			conditions = append(conditions,
-				fmt.Sprintf("([Microsoft.VSTS.Common.ResolvedDate] >= %s OR [Microsoft.VSTS.Common.ClosedDate] >= %s)", date, date),
+			conditions = append(
+				conditions,
+				fmt.Sprintf(
+					"([Microsoft.VSTS.Common.ResolvedDate] >= %s OR [Microsoft.VSTS.Common.ClosedDate] >= %s)",
+					date,
+					date,
+				),
 			)
 		} else {
 			// Regular date strings need to be quoted and escaped
 			escapedDate := wiqlEscape(date)
-			conditions = append(conditions,
-				fmt.Sprintf("([Microsoft.VSTS.Common.ResolvedDate] >= '%s' OR [Microsoft.VSTS.Common.ClosedDate] >= '%s')", escapedDate, escapedDate),
+			conditions = append(
+				conditions,
+				fmt.Sprintf(
+					"([Microsoft.VSTS.Common.ResolvedDate] >= '%s' OR [Microsoft.VSTS.Common.ClosedDate] >= '%s')",
+					escapedDate,
+					escapedDate,
+				),
 			)
 		}
 	}
@@ -308,7 +357,7 @@ func (l listProcessor) renderTemplate(tpl string, all []models.WorkItem) error {
 	for i, wi := range all {
 		items[i] = toWorkItemView(wi, l.baseURL)
 	}
-	
+
 	// Custom template functions for report formatting
 	funcMap := map[string]any{
 		"groupByState": func(items []WorkItemView) map[string][]WorkItemView {
@@ -319,7 +368,7 @@ func (l listProcessor) renderTemplate(tpl string, all []models.WorkItem) error {
 			return groups
 		},
 	}
-	
+
 	return styles.RenderOut(tpl, items, funcMap)
 }
 
@@ -379,4 +428,85 @@ func getAssignedTo(wi models.WorkItem) string {
 		}
 	}
 	return ""
+}
+
+func (l listProcessor) runClaude(wis []models.WorkItem) error {
+	claudeBin := l.cfg.Claude
+	if claudeBin == "" {
+		claudeBin = "claude"
+	}
+
+	// Render work items into a plain-text report for Claude to polish.
+	items := make([]WorkItemView, len(wis))
+	for i, wi := range wis {
+		items[i] = toWorkItemView(wi, l.baseURL)
+	}
+
+	var sb strings.Builder
+	for _, it := range items {
+		sb.WriteString(
+			fmt.Sprintf(
+				"#%d [%s] %s  (Type: %s, Assigned: %s",
+				it.ID,
+				it.State,
+				it.Title,
+				it.Type,
+				it.AssignedTo,
+			),
+		)
+		if it.ResolvedDate != "" {
+			sb.WriteString(", Resolved: " + it.ResolvedDate)
+		}
+		if it.ClosedDate != "" {
+			sb.WriteString(", Closed: " + it.ClosedDate)
+		}
+		sb.WriteString(")\n")
+	}
+
+	// Write to temp file inside the repo so Claude can read it.
+	repoRoot := gitcli.Root()
+	tmpFile, err := os.CreateTemp(repoRoot, ".ado-wi-report-*.txt")
+	if err != nil {
+		return fmt.Errorf("failed to create temp file: %w", err)
+	}
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
+
+	if _, err := tmpFile.WriteString(sb.String()); err != nil {
+		_ = tmpFile.Close()
+		return fmt.Errorf("failed to write report to temp file: %w", err)
+	}
+	_ = tmpFile.Close()
+
+	prompt := l.buildClaudePrompt(tmpFile.Name())
+
+	var args []string
+	if !l.opts.interactive {
+		args = append(args, "-p", prompt, "--allowedTools", "Read")
+	} else {
+		args = append(args, "--allowedTools", "Read", prompt)
+	}
+
+	cmd := exec.Command(claudeBin, args...) //nolint:gosec
+	cmd.Dir = repoRoot
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to run claude (is %q installed?): %w", claudeBin, err)
+	}
+
+	return nil
+}
+
+func (l listProcessor) buildClaudePrompt(reportFile string) string {
+	var sb strings.Builder
+	sb.WriteString("Read the Azure DevOps work item report in: " + reportFile + ". ")
+	sb.WriteString(
+		"Polish it into a concise, manager-friendly status report suitable for email or Slack. ",
+	)
+	sb.WriteString("Summarize each item briefly, highlight key accomplishments.")
+	sb.WriteString(fmt.Sprintf("Report period: since %s. ", l.opts.report))
+	sb.WriteString("Keep the tone professional and concise. Use plain text or markdown formatting.")
+	return sb.String()
 }
