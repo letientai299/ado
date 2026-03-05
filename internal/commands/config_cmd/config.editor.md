@@ -14,3 +14,7 @@ Config values for other common IDE/editors:
 
 - JetBrains IDE: `idea --wait`, `rider --wait`, ...
 - Visual Studio: `devenv /edit`
+
+> **Note:** The editor command must be available on your system's `PATH`. If you
+> get a "not recognized" error, either use the full path to the executable in
+> the config, or add its directory to your `PATH` environment variable.

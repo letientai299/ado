@@ -83,7 +83,30 @@ func httpDelete[T any](
 		log.Errorf("fail to create HTTP request: %v", err)
 		return nil, err
 	}
+	return call[T](c, req)
+}
 
+// httpPatchJsonPatch sends a PATCH request with Content-Type: application/json-patch+json.
+// Required by the Work Item Create/Update APIs.
+func httpPatchJsonPatch[T any](
+	ctx context.Context,
+	c Client,
+	url string,
+	body any,
+	qs ..._shared.Querier,
+) (*T, error) {
+	bodyReader, err := prepareBody(body)
+	if err != nil {
+		return nil, err
+	}
+
+	url = buildFullURL(ctx, url, qs)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, url, bodyReader)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json-patch+json")
 	return call[T](c, req)
 }
 

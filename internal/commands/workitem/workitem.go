@@ -20,6 +20,7 @@ func Cmd() *cobra.Command {
 		listCmd(),
 		viewCmd(),
 		deleteCmd(),
+		createCmd(),
 	)
 	return cmd
 }
