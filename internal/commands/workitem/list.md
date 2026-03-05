@@ -38,6 +38,10 @@ ado wi list --report @Today-7    # Last 7 days
 ado wi list --report 2026-02-01  # Since February 1st
 ado wi list --report @Today-30 --assignee alice  # Alice's last 30 days
 
+# Polish report with Claude AI
+ado wi list --report @Today-7 --claude
+ado wi list --report @Today-7 --claude -i  # Interactive Claude session
+
 # Output formats
 ado wi list -o yaml
 ado wi list -o json
@@ -54,6 +58,8 @@ ado wi list -n 100
 - `-t, --type`: Filter by work item type (Bug, Task, User Story, Feature, Epic)
 - `-s, --state`: Filter by state (New, Active, Resolved, Closed, Done)
 - `--report`: Generate activity report for date range (e.g. 2026-01-01 or @Today-7)
+- `--claude`: Polish report with Claude AI (requires `--report`)
+- `-i, --interactive`: Start interactive Claude session (use with `--claude`)
 - `-n, --top`: Maximum number of work items to return (default: 50)
 - `-o, --output`: Output format (simple, json, yaml)
 
@@ -98,6 +104,28 @@ workitem:
 ```
 
 Usage: `ado wi list --report @Today-7 -o report`
+
+## Claude AI Report
+
+The `--claude` flag pipes the report through [Claude CLI][claude_cli] to polish
+it into a manager-friendly status report. This flag requires `--report`.
+
+[claude_cli]: https://docs.anthropic.com/en/docs/claude-cli
+
+```bash
+# One-shot polished report
+ado wi list --report @Today-7 --claude
+
+# Interactive session to iterate on the report
+ado wi list --report @Today-7 --claude -i
+```
+
+Claude groups items by state, highlights key accomplishments, and formats the
+result for email or Slack. Configure the Claude binary path in `ado.yml`:
+
+```yaml
+claude: /path/to/claude
+```
 
 ### Example: markdown links
 
