@@ -2,6 +2,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/letientai299/ado/internal/config/config",
   "properties": {
+    "claude": {
+      "type": "string",
+      "markdownDescription": "Claude specifies the command to use for AI-powered log analysis.\nIf not set, falls back to the ADO_CLAUDE environment variable, then \"claude\"."
+    },
     "debug": {
       "type": "boolean",
       "markdownDescription": "Debug mode enables verbose logging"
