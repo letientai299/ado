@@ -12,6 +12,7 @@ import (
 	"github.com/letientai299/ado/internal/models"
 	"github.com/letientai299/ado/internal/rest"
 	"github.com/letientai299/ado/internal/styles"
+	"github.com/letientai299/ado/internal/util/gitcli"
 	"github.com/spf13/cobra"
 )
 
@@ -25,6 +26,7 @@ type BuildsConfig struct {
 	filterConfig
 	pipelineID int32
 	top        int
+	yamlFile   string
 }
 
 func buildsCmd() *cobra.Command {
@@ -49,6 +51,7 @@ func buildsCmd() *cobra.Command {
 	flags := cmd.Flags()
 	flags.Int32VarP(&opts.pipelineID, "pipeline-id", "p", 0, "pipeline definition ID")
 	flags.IntVarP(&opts.top, "number", "n", 10, "number of builds to show")
+	flags.StringVar(&opts.yamlFile, "yaml", "", "filter pipeline by YAML file path")
 
 	return cmd
 }
@@ -97,6 +100,20 @@ func (b buildsProcessor) selectPipeline(args []string) (*models.BuildDefinition,
 	pipelines, err := b.list()
 	if err != nil {
 		return nil, err
+	}
+
+	if b.opts.yamlFile != "" {
+		want := strings.TrimPrefix(strings.ToLower(gitcli.ResolveRepoRelativePath(b.opts.yamlFile)), "/")
+		var matched []models.BuildDefinition
+		for _, p := range pipelines {
+			if p.Process != nil {
+				got := strings.TrimPrefix(strings.ToLower(p.Process.YamlFilename), "/")
+				if got == want {
+					matched = append(matched, p)
+				}
+			}
+		}
+		pipelines = matched
 	}
 
 	pipelines = b.filter(pipelines)

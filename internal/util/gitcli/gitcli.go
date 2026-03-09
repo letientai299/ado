@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -30,6 +31,24 @@ var (
 	cachedRepo *git.Repository
 	cachedWd   string
 )
+
+// ResolveRepoRelativePath converts an absolute or relative path to a repo-relative
+// path by stripping the git repository root prefix. Falls back to the input as-is.
+func ResolveRepoRelativePath(p string) string {
+	abs, err := filepath.Abs(p)
+	if err != nil {
+		return p
+	}
+	root := filepath.FromSlash(Root())
+	rel, err := filepath.Rel(root, abs)
+	if err != nil {
+		return p
+	}
+	if strings.HasPrefix(rel, "..") {
+		return p
+	}
+	return filepath.ToSlash(rel)
+}
 
 // Root finds the git repo root or fallback to current working if fail
 func Root() string {
