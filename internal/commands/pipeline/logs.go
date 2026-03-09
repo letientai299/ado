@@ -53,6 +53,7 @@ func logsCmd() *cobra.Command {
 	}
 
 	flags := cmd.Flags()
+	flags.StringVarP(&opts.pipeline, "pipeline", "p", "", "pipeline ID, YAML path, or name keyword")
 	flags.StringVarP(&opts.build, "build", "b", "", "build number or ID (skip build picker)")
 	flags.StringVarP(&opts.stage, "stage", "s", "", "stage name pattern (filter stages)")
 	flags.StringVarP(&opts.job, "job", "j", "", "job name pattern (filter jobs)")
@@ -81,7 +82,7 @@ type claudeContext struct {
 }
 
 func (l *logsProcessor) process(args []string) error {
-	pipeline, err := l.selectPipeline(args)
+	pipeline, err := l.resolvePipeline(l.opts.pipeline, args)
 	if err != nil {
 		return err
 	}
@@ -112,46 +113,6 @@ func (l *logsProcessor) process(args []string) error {
 	}
 
 	return l.displayLogs(build.Id, job, cc)
-}
-
-func (l *logsProcessor) selectPipeline(args []string) (*models.BuildDefinition, error) {
-	// Try if the first arg is a pipeline ID
-	if len(args) == 1 {
-		if id, err := strconv.ParseInt(args[0], 10, 32); err == nil {
-			m, err := l.client.Pipelines().Definitions(l.cfg.Repository).ByID(l.ctx, int32(id))
-			if err == nil {
-				return m, nil
-			}
-		}
-	}
-
-	// Fallback to list/filter logic
-	pipelines, err := l.list()
-	if err != nil {
-		return nil, err
-	}
-
-	pipelines = l.filter(pipelines)
-
-	switch len(pipelines) {
-	case 0:
-		return nil, errors.New("no pipeline found matching the criteria")
-	case 1:
-		return &pipelines[0], nil
-	default:
-		return l.pickPipeline(pipelines)
-	}
-}
-
-func (l *logsProcessor) pickPipeline(
-	pipelines []models.BuildDefinition,
-) (*models.BuildDefinition, error) {
-	selected := pick(pipelines)
-	if selected.IsSome() {
-		p := selected.Get()
-		return &p, nil
-	}
-	return nil, errors.New("no pipeline selected")
 }
 
 // buildDisplay is a display-friendly wrapper for builds.
