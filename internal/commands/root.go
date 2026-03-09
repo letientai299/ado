@@ -64,6 +64,7 @@ func Root() *cobra.Command {
 		SilenceUsage: true,
 	}
 
+	addTemplateHelpers()
 	root.SetHelpTemplate(helpTemplate)
 	root.SetUsageTemplate(usageTemplate)
 	root.SetHelpFunc(helpFunc(root.HelpFunc()))
