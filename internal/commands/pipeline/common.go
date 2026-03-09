@@ -2,8 +2,10 @@ package pipeline
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/letientai299/ado/internal/config"
@@ -13,6 +15,7 @@ import (
 	"github.com/letientai299/ado/internal/ui"
 	"github.com/letientai299/ado/internal/util"
 	"github.com/letientai299/ado/internal/util/fp"
+	"github.com/letientai299/ado/internal/util/gitcli"
 	"github.com/spf13/cobra"
 )
 
@@ -63,6 +66,7 @@ func newCommon[T keywordProvider](cmd *cobra.Command, opts T) (*common[T], error
 
 type filterConfig struct {
 	keywords []string
+	pipeline string
 }
 
 // Keywords return the filter keywords.
@@ -96,6 +100,17 @@ func (c *common[T]) filter(all []models.BuildDefinition) []models.BuildDefinitio
 	return result
 }
 
+// containsKeyword filters pipelines whose name or path contains the given keyword.
+func (c *common[T]) containsKeyword(all []models.BuildDefinition, keyword string) []models.BuildDefinition {
+	var result []models.BuildDefinition
+	for _, p := range all {
+		if c.containsAll(p, []string{keyword}) {
+			result = append(result, p)
+		}
+	}
+	return result
+}
+
 // containsAll checks if a pipeline's name or path contains all keywords.
 func (c *common[T]) containsAll(p models.BuildDefinition, keywords []string) bool {
 	name := strings.ToLower(p.Name)
@@ -107,6 +122,84 @@ func (c *common[T]) containsAll(p models.BuildDefinition, keywords []string) boo
 		}
 	}
 	return true
+}
+
+// resolvePipeline resolves the pipeline definition from the --pipeline flag or
+// positional args. The value may be a numeric ID, a YAML file path, or a name
+// keyword; falls back to an interactive picker when ambiguous.
+func (c *common[T]) resolvePipeline(pipelineFlag string, args []string) (*models.BuildDefinition, error) {
+	ref := pipelineFlag
+	if ref == "" && len(args) == 1 {
+		ref = args[0]
+	}
+
+	if ref != "" {
+		// Numeric ID
+		if id, err := strconv.ParseInt(ref, 10, 32); err == nil {
+			m, err := c.client.Pipelines().Definitions(c.cfg.Repository).ByID(c.ctx, int32(id))
+			if err == nil {
+				return m, nil
+			}
+		}
+
+		// YAML path
+		pipelines, err := c.list()
+		if err != nil {
+			return nil, err
+		}
+		want := strings.TrimPrefix(strings.ToLower(gitcli.ResolveRepoRelativePath(ref)), "/")
+		var matched []models.BuildDefinition
+		for _, p := range pipelines {
+			if p.Process != nil {
+				got := strings.TrimPrefix(strings.ToLower(p.Process.YamlFilename), "/")
+				if got == want {
+					matched = append(matched, p)
+				}
+			}
+		}
+		if len(matched) == 1 {
+			return &matched[0], nil
+		}
+		if len(matched) > 1 {
+			pipelines = matched
+		} else {
+			// No YAML match: treat ref as a name keyword filter
+			pipelines = c.containsKeyword(pipelines, ref)
+		}
+
+		switch len(pipelines) {
+		case 0:
+			return nil, errors.New("no pipeline found matching the criteria")
+		case 1:
+			return &pipelines[0], nil
+		default:
+			return pickOne(pipelines)
+		}
+	}
+
+	// No ref: filter by keywords from args, then pick
+	pipelines, err := c.list()
+	if err != nil {
+		return nil, err
+	}
+	pipelines = c.filter(pipelines)
+	switch len(pipelines) {
+	case 0:
+		return nil, errors.New("no pipeline found matching the criteria")
+	case 1:
+		return &pipelines[0], nil
+	default:
+		return pickOne(pipelines)
+	}
+}
+
+func pickOne(pipelines []models.BuildDefinition) (*models.BuildDefinition, error) {
+	selected := pick(pipelines)
+	if selected.IsSome() {
+		p := selected.Get()
+		return &p, nil
+	}
+	return nil, errors.New("no pipeline selected")
 }
 
 const pipelinePickTpl = `{{.Name}} {{if .Process}}({{.Process.YamlFilename | const}}){{end}}`

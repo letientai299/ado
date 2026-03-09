@@ -1,8 +1,49 @@
 package gitcli
 
 import (
+	"path/filepath"
 	"testing"
 )
+
+func TestResolveRepoRelativePath(t *testing.T) {
+	root := Root()
+
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{
+			name: "absolute path inside repo",
+			in:   filepath.Join(root, "internal", "util", "util.go"),
+			want: "internal/util/util.go",
+		},
+		{
+			name: "relative path from repo root",
+			in:   "internal/util/util.go",
+			want: "internal/util/util.go",
+		},
+		{
+			name: "path outside repo returns input as-is",
+			in:   filepath.Join(root, "..", "outside_file.txt"),
+			want: filepath.Join(root, "..", "outside_file.txt"),
+		},
+		{
+			name: "repo root itself",
+			in:   root,
+			want: ".",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ResolveRepoRelativePath(tt.in)
+			if got != tt.want {
+				t.Errorf("ResolveRepoRelativePath(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
 
 func TestOpenCaching(t *testing.T) {
 	ClearCache()

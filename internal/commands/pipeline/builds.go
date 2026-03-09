@@ -4,7 +4,6 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -23,8 +22,7 @@ var buildsSimpleTpl string
 
 type BuildsConfig struct {
 	filterConfig
-	pipelineID int32
-	top        int
+	top int
 }
 
 func buildsCmd() *cobra.Command {
@@ -47,7 +45,7 @@ func buildsCmd() *cobra.Command {
 	}
 
 	flags := cmd.Flags()
-	flags.Int32VarP(&opts.pipelineID, "pipeline-id", "p", 0, "pipeline definition ID")
+	flags.StringVarP(&opts.pipeline, "pipeline", "p", "", "pipeline ID, YAML path, or name keyword")
 	flags.IntVarP(&opts.top, "number", "n", 10, "number of builds to show")
 
 	return cmd
@@ -58,19 +56,13 @@ type buildsProcessor struct {
 }
 
 func (b buildsProcessor) process(args []string) error {
-	pipelineID := b.opts.pipelineID
-
-	// If no --pipeline-id, resolve from keywords or picker
-	if pipelineID == 0 {
-		pipeline, err := b.selectPipeline(args)
-		if err != nil {
-			return err
-		}
-		pipelineID = pipeline.Id
+	pipeline, err := b.resolvePipeline(b.opts.pipeline, args)
+	if err != nil {
+		return err
 	}
 
 	builds, err := b.client.Builds().ForProject(b.cfg.Repository).List(b.ctx, rest.BuildListOptions{
-		DefinitionID: pipelineID,
+		DefinitionID: pipeline.Id,
 		Top:          b.opts.top,
 	})
 	if err != nil {
@@ -82,38 +74,6 @@ func (b buildsProcessor) process(args []string) error {
 	}
 
 	return b.render(builds)
-}
-
-func (b buildsProcessor) selectPipeline(args []string) (*models.BuildDefinition, error) {
-	if len(args) == 1 {
-		if id, err := strconv.ParseInt(args[0], 10, 32); err == nil {
-			m, err := b.client.Pipelines().Definitions(b.cfg.Repository).ByID(b.ctx, int32(id))
-			if err == nil {
-				return m, nil
-			}
-		}
-	}
-
-	pipelines, err := b.list()
-	if err != nil {
-		return nil, err
-	}
-
-	pipelines = b.filter(pipelines)
-
-	switch len(pipelines) {
-	case 0:
-		return nil, errors.New("no pipeline found matching the criteria")
-	case 1:
-		return &pipelines[0], nil
-	default:
-		selected := pick(pipelines)
-		if selected.IsSome() {
-			p := selected.Get()
-			return &p, nil
-		}
-		return nil, errors.New("no pipeline selected")
-	}
 }
 
 // BuildItem is the DTO for build display in the template.
